@@ -1,0 +1,5 @@
+examples/
+.venv/
+exportToHTML/
+!docs/examples
+__init__.py

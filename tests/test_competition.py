@@ -28,7 +28,15 @@ def test_competition_sparse_matches_dense():
     assert comp.ndim == 1  # matvec_T must ravel sparse matmul output
 
 
-def test_competition_floor_prevents_zero():
+def test_competition_zero_passes_through_raw():
+    """Unreachable destinations must yield ZERO competition, not a floor.
+
+    The old floor-at-1e-6 behaviour let an empty-but-employed zone
+    inject O * 1e6 into every origin's accessibility. The raw zero is
+    handled downstream by safe_divide (O / 0 -> 0 contribution).
+    """
     decay = np.zeros((2, 2))
     comp = compute_competition(decay, POPULATION)
-    assert np.all(comp > 0)
+    assert np.all(comp == 0.0)
+    assert comp.shape == (2,)
+

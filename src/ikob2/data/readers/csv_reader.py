@@ -21,27 +21,29 @@ def read_csv(filename, type_caster=float, has_index_column=True):
     if not isinstance(filename, pathlib.Path):
         filename = pathlib.Path(filename)
 
-    try:
-        matrix = np.loadtxt(filename, dtype=type_caster, delimiter=",")
-        if has_index_column:
-            logger.warning(
-                "Reading file %s without headers, but with an index column.",
-                filename,
-            )
-    except ValueError:
-        matrix = np.loadtxt(filename, dtype=type_caster, skiprows=1, delimiter=",")
+    matrix = np.genfromtxt(
+        filename,
+        dtype=type_caster,
+        delimiter=",",
+        skip_header=1,
+        invalid_raise=False
+    )
+
+    # Remove fully empty rows
+    if matrix.ndim == 2:
+        matrix = matrix[~np.isnan(matrix).all(axis=1)]
 
     if has_index_column:
         _check_index_column(matrix, filename)
         matrix = matrix[:, 1:]
 
-    if len(matrix.shape) == 2:
-        if len(matrix[0, :]) == 1:
+    if matrix.ndim == 2:
+        if matrix.shape[1] == 1:
             return matrix[:, 0]
-        if len(matrix[:, 0]) == 1:
+        if matrix.shape[0] == 1:
             return matrix[0]
-    return matrix
 
+    return matrix
 
 def read_csv_int(filename, has_index_column=True):
     return read_csv(filename, type_caster=int, has_index_column=has_index_column)
