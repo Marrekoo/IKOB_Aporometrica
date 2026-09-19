@@ -194,7 +194,9 @@ def cmd_build_pt(args) -> None:
                       max_access_min=args.max_access_min,
                       transfer_radius_m=args.transfer_radius_m,
                       wait_cap_min=args.wait_cap_min,
-                      boarding_penalty_min=args.boarding_penalty_min)
+                      boarding_penalty_min=args.boarding_penalty_min,
+                      rail_detour=args.rail_detour,
+                      other_detour=args.other_detour)
     build_pt_layer(store, router, o_xy, codes, xy,
                    max_minutes=args.max_minutes)
     store.set_meta("pt", {
@@ -202,7 +204,8 @@ def cmd_build_pt(args) -> None:
         "walk_kmh": args.walk_kmh, "walk_detour": args.walk_detour,
         "max_access_min": args.max_access_min,
         "wait": "min(headway/2, %g) min per boarding" % args.wait_cap_min,
-        "boarding_penalty_min": args.boarding_penalty_min})
+        "boarding_penalty_min": args.boarding_penalty_min,
+        "rail_detour": args.rail_detour, "other_detour": args.other_detour})
     print(f"PT time layer 'all' written to {args.store}")
 
 
@@ -292,6 +295,10 @@ def main(argv=None) -> None:
     t.add_argument("--transfer-radius-m", type=float, default=300.0)
     t.add_argument("--wait-cap-min", type=float, default=7.5)
     t.add_argument("--boarding-penalty-min", type=float, default=0.0)
+    t.add_argument("--rail-detour", type=float, default=1.15,
+                   help="rail km = crow-fly between stops x this")
+    t.add_argument("--other-detour", type=float, default=1.25,
+                   help="bus/tram/metro km = crow-fly between stops x this")
     t.add_argument("--max-minutes", type=float, default=180.0)
     t.set_defaults(func=cmd_build_pt)
 

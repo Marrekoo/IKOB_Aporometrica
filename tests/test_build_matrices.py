@@ -70,3 +70,32 @@ def test_distance_store_supplies_distances_to_a_scenario_store(tmp_path):
         build_matrices(peak, zones, ["car"], detour=DetourModel.constant(2.0),
                        car_model=CarCostModel(0.10), parking_search=False,
                        distance_store=other)
+
+
+def test_pt_matrices_with_and_without_fare_inputs(tmp_path):
+    from ikob2.skims.pt_fare import PtFareModel
+
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    codes = np.array(["Z0", "Z1", "Z2"])
+    zones = ZoneSet(codes=codes, names=codes,
+                    centroid_x=np.array([0.0, 10000.0, 20000.0]),
+                    centroid_y=np.zeros(3), crs="EPSG:28992")
+    store = SkimStore.create(tmp_path / "s", ["Z0"], {"near": ["Z0"]})
+    store.add_layer("all", ["Z0", "Z1", "Z2"])
+    store.write_rows("all", "pt", "time", 0, [[np.nan, 30.0, 50.0]])
+    m, _ = build_matrices(store, zones, ["pt"], detour=DetourModel.constant(1.3),
+                          car_model=CarCostModel(), parking_search=False)
+    assert m["pt"].cost is None                      # no fare inputs yet
+    store.write_rows("all", "pt", "rail_km", 0, [[np.nan, 10.0, 0.0]])
+    store.write_rows("all", "pt", "other_km", 0, [[np.nan, 0.0, 10.0]])
+    store.write_rows("all", "pt", "other_boardings", 0, [[np.nan, 0.0, 1.0]])
+    m, _ = build_matrices(store, zones, ["pt"], detour=DetourModel.constant(1.3),
+                          car_model=CarCostModel(), parking_search=False,
+                          pt_fare_model=PtFareModel(regional_boarding_eur=2.0,
+                                                    regional_eur_per_km=0.1))
+    pt = m["pt"]
+    assert pt.cost_id.startswith("ptfare(")
+    assert pt.cost[0, 1] == pytest.approx(
+        PtFareModel().rail_fare([10.0])[0], rel=1e-5)
+    assert pt.cost[0, 2] == pytest.approx(2.0 + 0.1 * 10.0)
+    assert np.isnan(pt.cost[0, 0]) and pt.time[0, 2] == 50.0

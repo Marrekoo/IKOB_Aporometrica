@@ -12,14 +12,20 @@ from ikob2.skims.store import SkimStore
 logger = logging.getLogger(__name__)
 
 
+FARE_VARIABLES = ("rail_km", "other_km", "other_boardings")
+
+
 def build_pt_layer(store: SkimStore, router: PtRouter, origin_xy: np.ndarray,
                    dest_codes, dest_xy: np.ndarray, *, layer: str = "all",
                    mode: str = "pt", variable: str = "time",
-                   max_minutes: float = 180.0, block_size: int = 10) -> None:
+                   max_minutes: float = 180.0, block_size: int = 10,
+                   fare_inputs: bool = True) -> None:
     """Door-to-door PT minutes for every store origin to every destination
     zone, in an extra layer `layer` (created if missing), resumable per
     origin block. origin_xy / dest_xy are RD New metres in the order of
-    store.origins / dest_codes."""
+    store.origins / dest_codes. With `fare_inputs` the variables rail_km,
+    other_km and other_boardings (of the fastest journey) are stored too,
+    so that fares can be computed later under any fare model."""
     dest_codes = [str(c) for c in dest_codes]
     if len(origin_xy) != len(store.origins):
         raise ValueError("origin_xy does not match the store's origins.")
@@ -29,9 +35,17 @@ def build_pt_layer(store: SkimStore, router: PtRouter, origin_xy: np.ndarray,
         raise ValueError(f"Layer '{layer}' has different destinations.")
     if len(dest_xy) != len(dest_codes):
         raise ValueError("dest_xy does not match dest_codes.")
-    store.allocate(layer, mode, variable)
-    for start, stop in store.pending_blocks(layer, mode, variable, block_size):
-        t = router.time_matrix(origin_xy[start:stop], dest_xy,
-                               max_minutes=max_minutes)
-        store.write_rows(layer, mode, variable, start, t)
+    names = [variable, *(FARE_VARIABLES if fare_inputs else ())]
+    for name in names:
+        store.allocate(layer, mode, name)
+    pending = sorted({b for name in names
+                      for b in store.pending_blocks(layer, mode, name,
+                                                    block_size)})
+    for start, stop in pending:
+        res = router.journeys(origin_xy[start:stop], dest_xy,
+                              max_minutes=max_minutes, track=fare_inputs)
+        store.write_rows(layer, mode, variable, start, res["time"])
+        if fare_inputs:
+            for name in FARE_VARIABLES:
+                store.write_rows(layer, mode, name, start, res[name])
         logger.info("pt rows %d-%d done", start, stop)

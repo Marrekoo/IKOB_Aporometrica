@@ -168,9 +168,32 @@ store layer `all` (`pt/time`).
         [--date 2026-09-15 --window 7 9 --walk-kmh 4]
 
 Limits: headways are per line and stop (parallel lines are not combined
-into a higher frequency), all route types are treated alike, and there is
-no fare yet (the PT run is time-only until distances and fares by
-distance are added).
+into a higher frequency) and all route types have the same wait rule.
+
+### PT fares (`skims.pt_fare`)
+
+`build-pt` also stores, for the time-optimal journey of every pair, the
+in-vehicle kilometres by rail and by other lines and the number of
+boardings onto other lines (`rail_km`, `other_km`, `other_boardings`). The
+kilometres are the crow-fly distance between consecutive stops times a
+detour (rail 1.15, other 1.25; `--rail-detour`, `--other-detour`),
+accumulated along the shortest-path tree. The fare is computed when a run
+is set up, so fare assumptions change without new routing:
+
+* **Rail**: the paper's anchors, average fare per km 2.60 EUR over 1 km and
+  0.20 EUR over 100 km, joined by a power law (fare(1 km) = 2.60, fare(100
+  km) = 20, minimum 2.60). The shape between the anchors is an assumption
+  and is not validated against a tariff table: supply one with
+  `--pt-rail-table km,eur.csv`.
+* **Bus, tram, metro, ferry**: 1.08 EUR boarding + 0.18 EUR per km, the
+  boarding charged once per journey (`--pt-boardings count` charges every
+  boarding).
+
+Example fares from Leidsche Rijn: Amsterdam (36 km rail + 8 km bus) 15.2
+EUR, Amersfoort 13.4, Rotterdam 17.2, Arnhem (73 km rail) 17.4, Groningen
+(199 km rail) 27.1; median over reachable pairs 20 EUR. The fare goes to the
+run as the PT cost matrix, gated by the segments' cost margins like the
+car cost.
 
 ## National network (feasibility)
 

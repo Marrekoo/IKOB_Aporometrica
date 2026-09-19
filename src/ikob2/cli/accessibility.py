@@ -45,6 +45,7 @@ from ikob2.skims.car import (
     car_time_and_cost,
     crowfly_km,
 )
+from ikob2.skims.pt_fare import PtFareModel
 from ikob2.skims.store import SkimStore
 from ikob2.utils.paths import DataLayout
 
@@ -75,7 +76,7 @@ def _sector_tables(statline_dir: Path, wage_period: str, wfh_period: str):
 
 
 def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
-                   distance_store=None):
+                   distance_store=None, pt_fare_model=None):
     """Mode -> ModeMatrices over (store origins, all zones).
 
     distance_store : optional second store holding the car `distance`
@@ -105,9 +106,18 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
         if mode == "pt":
             # PT is computed at buurt level for every destination
             t = store.block("all", "pt", "time", destinations=codes)
-            logger.warning("PT has no fare yet: its cost margin is not "
-                           "applied (time-only gate).")
-            out[mode] = ModeMatrices(t)
+            if ("all", "pt", "rail_km") in store.arrays():
+                model = pt_fare_model or PtFareModel()
+                fare = model.fare(
+                    store.block("all", "pt", "rail_km", destinations=codes),
+                    store.block("all", "pt", "other_km", destinations=codes),
+                    store.block("all", "pt", "other_boardings",
+                                destinations=codes))
+                out[mode] = ModeMatrices(t, fare, model.matrix_id)
+            else:
+                logger.warning("PT store has no fare inputs (rebuild with "
+                               "build-pt): time-only gate.")
+                out[mode] = ModeMatrices(t)
             continue
         t = store.combined(mode, "time", codes, near="near", far="far")
         if mode == "car":
@@ -127,6 +137,21 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
         elif mode == "bike":
             out[mode] = ModeMatrices(t)
     return out, codes
+
+
+def pt_fare_model(args) -> PtFareModel:
+    """Fare model from the command line (rail anchors, regional charge,
+    optional rail tariff table CSV with columns km, eur)."""
+    table = None
+    if args.pt_rail_table:
+        df = pd.read_csv(args.pt_rail_table)
+        table = tuple(zip(df["km"].astype(float), df["eur"].astype(float)))
+    return PtFareModel(
+        rail_eur_per_km_at_1km=args.pt_rail_1km,
+        rail_eur_per_km_at_100km=args.pt_rail_100km,
+        rail_table=table,
+        regional_boarding_eur=args.pt_regional_boarding,
+        regional_eur_per_km=args.pt_regional_km, boardings=args.pt_boardings)
 
 
 def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpec:
@@ -192,7 +217,7 @@ def cmd_run(args) -> None:
         store, zones, args.modes, detour=detour,
         car_model=CAR_MODELS[args.car_model],
         parking_search=not args.no_parking_search,
-        distance_store=dist_store)
+        distance_store=dist_store, pt_fare_model=pt_fare_model(args))
 
     seg_cfg = SegmentConfig()
     segs = run_pipeline(args.kwb, args.statline, seg_cfg)
@@ -284,6 +309,18 @@ def main(argv=None) -> None:
     p.add_argument("--theta", type=float, default=1.5)
     p.add_argument("--car-model", choices=list(CAR_MODELS), default="fossil")
     p.add_argument("--no-parking-search", action="store_true")
+    p.add_argument("--pt-rail-1km", type=float, default=2.60,
+                   help="rail fare per km over 1 km (EUR)")
+    p.add_argument("--pt-rail-100km", type=float, default=0.20,
+                   help="rail fare per km over 100 km (EUR)")
+    p.add_argument("--pt-rail-table", default=None,
+                   help="CSV km,eur of a rail tariff (overrides the anchors)")
+    p.add_argument("--pt-regional-boarding", type=float, default=1.08)
+    p.add_argument("--pt-regional-km", type=float, default=0.18)
+    p.add_argument("--pt-boardings", choices=["single", "count"],
+                   default="single",
+                   help="regional boarding charge once per journey or per "
+                        "boarding")
     p.add_argument("--detour", default=None,
                    help="calibrated DetourModel JSON (default: 1.3)")
     p.add_argument("--wage-period", default="2022JJ00")
