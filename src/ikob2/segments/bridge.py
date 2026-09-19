@@ -109,6 +109,93 @@ def load_envelope(path: str | Path, **kwargs) -> pd.DataFrame:
     return validate_envelope(pd.read_csv(path), **kwargs)
 
 
+def rescale_budgets(envelope: pd.DataFrame,
+                    legs_per_tour: float | Mapping[str, float]) -> pd.DataFrame:
+    """Convert per-TOUR budgets to per-one-way-TRIP budgets.
+
+    The reference budgets come from ODiN tours, which are trip chains
+    (not necessarily round trips) of one or more legs, while the fare
+    matrix prices one one-way trip. A tour budget spread over
+    `legs_per_tour` priced legs gives the per-trip budget
+    low / legs, high / legs (the km equivalents likewise). 1.0 leaves
+    the table as it is: it is then read as a one-way trip budget.
+
+    legs_per_tour : one number for all segments, or a mapping household
+        type -> number (every type present in the envelope is needed).
+    The atom is a share of households and does not change.
+    """
+    df = envelope.copy()
+    if isinstance(legs_per_tour, Mapping):
+        missing = sorted(set(df["household_type"]) - set(legs_per_tour))
+        if missing:
+            raise KeyError(f"legs_per_tour lacks household type(s) "
+                           f"{missing}.")
+        legs = df["household_type"].map(legs_per_tour).astype(float)
+    else:
+        legs = pd.Series(float(legs_per_tour), index=df.index)
+    if not np.all(np.isfinite(legs)) or (legs <= 0).any():
+        raise ValueError("legs_per_tour must be positive and finite.")
+    for col in ("low", "high", "km_low", "km_high"):
+        if col in df.columns:
+            df[col] = df[col] / legs
+    df.attrs["legs_per_tour"] = (dict(legs_per_tour)
+                                 if isinstance(legs_per_tour, Mapping)
+                                 else float(legs_per_tour))
+    return df
+
+
+def load_reference_budgets(path: str | Path, *,
+                           censored: str = "atom",
+                           legs_per_tour: float | Mapping[str, float] = 1.0
+                           ) -> pd.DataFrame:
+    """The reference-budget table (per-trip cost budgets by household
+    type and income decile; data/envelope/reference_budgets.csv) as a
+    validated envelope.
+
+    Cells the reference budget cannot compute (the first decile: the
+    protected basket exhausts the income) have no bounds. `censored`
+    decides what they become:
+
+      "atom"  : every priced trip is unacceptable to the segment
+                (atom = 1, low = high = 0); free modes still clear;
+      "drop"  : the rows are removed, so `envelope_segment_names` (and
+                `only=`) leave those segments out of a run;
+      "error" : raise.
+
+    legs_per_tour : the basis of the table's budgets. The published
+    values are per ODiN tour; the default 1.0 reads them as per ONE-WAY
+    TRIP (no conversion). Pass the average number of priced legs per
+    tour (a number, or a mapping household type -> number) to divide
+    them down to per-trip budgets; see `rescale_budgets`.
+
+    Extra columns (km_low, km_high, the distance equivalents of the
+    budgets) are kept.
+    """
+    if censored not in ("atom", "drop", "error"):
+        raise ValueError(f"censored must be 'atom', 'drop' or 'error', "
+                         f"got {censored!r}.")
+    df = pd.read_csv(path)
+    for col in ("low", "high"):
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    missing = df["low"].isna() | df["high"].isna()
+    if missing.any():
+        if censored == "error":
+            raise ValueError(f"{int(missing.sum())} censored row(s) without "
+                             f"bounds in {path}.")
+        if censored == "drop":
+            df = df[~missing].copy()
+        else:
+            df["atom"] = 0.0
+            df.loc[missing, ["low", "high", "atom"]] = [0.0, 0.0, 1.0]
+    return rescale_budgets(validate_envelope(df), legs_per_tour)
+
+
+def envelope_segment_names(envelope: pd.DataFrame) -> list[str]:
+    """Segment names covered by an envelope, for build_segments(only=)."""
+    return [segment_name(r.household_type, r.income_class)
+            for r in envelope.itertuples()]
+
+
 # ── Engine segments ──────────────────────────────────────────────────
 
 def build_segments(

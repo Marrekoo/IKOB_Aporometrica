@@ -431,3 +431,131 @@ def test_square_state_path_still_rejects_wrong_opportunity_length():
         SegmentedRunner(decay_epsilon=None).run_hansen(
             state, segs, cost_matrices={"time": time},
             opportunities={"default": jobs[:-1]})
+
+
+# ── Reference budgets (Table 6) ──────────────────────────────────────
+
+from ikob2.segments.bridge import (  # noqa: E402
+    envelope_segment_names,
+    load_reference_budgets,
+)
+
+BUDGETS = "data/envelope/reference_budgets.csv"
+
+
+def test_reference_budgets_match_the_published_table():
+    env = load_reference_budgets(BUDGETS)
+    assert len(env) == 40
+    assert set(env.household_type) == {"single", "couple", "single_parent",
+                                       "couple_children"}
+    assert set(env.income_class) == {f"D{i}" for i in range(1, 11)}
+
+    def row(t, c):
+        return env[(env.household_type == t)
+                   & (env.income_class == c)].iloc[0]
+
+    # spot checks against the paper's Figure 5 excerpt and Table 6
+    assert (row("couple", "D2").low, row("couple", "D2").high) == (4.87, 23.52)
+    assert (row("couple_children", "D5").low,
+            row("couple_children", "D5").high) == (43.32, 245.56)
+    assert (row("single", "D2").low, row("single", "D2").high,
+            row("single", "D2").km_low) == (1.85, 25.53, 0.0)
+    assert (row("single_parent", "D10").low, row("single_parent", "D10").high,
+            row("single_parent", "D10").km_high) == (191.79, 782.01, 4115.84)
+    assert (row("couple", "D10").low, row("couple", "D10").high) == (224.30, 691.11)
+    # the table is not monotone in income for single households (Q6 < Q5)
+    assert row("single", "D6").low < row("single", "D5").low
+
+
+def test_censored_first_decile_policies():
+    atom = load_reference_budgets(BUDGETS, censored="atom")
+    d1 = atom[atom.income_class == "D1"]
+    assert len(d1) == 4 and (d1.atom == 1.0).all()
+    assert (d1.low == 0).all() and (d1.high == 0).all()
+    assert (atom[atom.income_class != "D1"].atom == 0.0).all()
+
+    dropped = load_reference_budgets(BUDGETS, censored="drop")
+    assert len(dropped) == 36 and "D1" not in set(dropped.income_class)
+    with pytest.raises(ValueError, match="censored"):
+        load_reference_budgets(BUDGETS, censored="error")
+    with pytest.raises(ValueError, match="must be"):
+        load_reference_budgets(BUDGETS, censored="maybe")
+
+
+def test_reference_budgets_drive_segments_and_the_gate():
+    env = load_reference_budgets(BUDGETS)
+    names = envelope_segment_names(env)
+    assert len(names) == 40 and "single_onbekend" not in names
+    segs = build_segments(TIME, envelope=env, money_cost_id=FARE, only=names)
+    assert len(segs) == 40
+    q1 = next(s for s in segs if s.name == "single_D1")
+    assert q1.class_filter.cost.atom == 1.0
+    q5 = next(s for s in segs if s.name == "couple_D5")
+    assert q5.class_filter.cost == CurveSpec("uniform", (23.16, 148.17))
+
+    # a censored segment reaches only free (cost 0) trips; a middle
+    # segment with budget 23-148 EUR clears a 6 EUR trip
+    state, time, money, jobs = small_state()
+    a = SegmentedRunner(decay_epsilon=None).run_hansen(
+        state, [q1, q5], cost_matrices={"time": time, FARE: money})
+    w = weibull(time, 2.0, 45.0)
+    np.testing.assert_allclose(a["single_D1"], np.diag(w) * jobs, rtol=1e-5)
+    np.testing.assert_allclose(a["couple_D5"], w @ jobs, rtol=1e-5)
+
+
+# ── Tour versus trip basis ───────────────────────────────────────────
+
+from ikob2.segments.bridge import rescale_budgets  # noqa: E402
+
+
+def test_default_basis_is_one_way_trip_and_leaves_the_table_unchanged():
+    env = load_reference_budgets(BUDGETS)
+    raw = pd.read_csv(BUDGETS)
+    d2 = env[(env.household_type == "couple") & (env.income_class == "D2")].iloc[0]
+    assert (d2.low, d2.high) == (4.87, 23.52)
+    assert env.attrs["legs_per_tour"] == 1.0
+    assert len(env) == len(raw)
+
+
+def test_legs_per_tour_divides_bounds_and_km_but_not_atom():
+    base = load_reference_budgets(BUDGETS)
+    two = load_reference_budgets(BUDGETS, legs_per_tour=2.0)
+    for col in ("low", "high", "km_low", "km_high"):
+        np.testing.assert_allclose(two[col], base[col] / 2.0)
+    np.testing.assert_array_equal(two["atom"], base["atom"])
+    assert two.attrs["legs_per_tour"] == 2.0
+    assert (two[two.income_class == "D1"].atom == 1.0).all()
+
+
+def test_legs_per_tour_per_household_type():
+    legs = {"single": 1.5, "couple": 2.0, "single_parent": 2.5,
+            "couple_children": 3.0}
+    env = load_reference_budgets(BUDGETS, legs_per_tour=legs)
+    base = load_reference_budgets(BUDGETS)
+    for t, n in legs.items():
+        sel = env.household_type == t
+        np.testing.assert_allclose(env.loc[sel, "high"],
+                                   base.loc[sel, "high"] / n)
+    with pytest.raises(KeyError, match="couple_children"):
+        load_reference_budgets(BUDGETS, legs_per_tour={
+            "single": 1.0, "couple": 1.0, "single_parent": 1.0})
+
+
+@pytest.mark.parametrize("bad", [0.0, -1.0, np.nan, np.inf])
+def test_legs_per_tour_validation(bad):
+    with pytest.raises(ValueError, match="positive and finite"):
+        load_reference_budgets(BUDGETS, legs_per_tour=bad)
+
+
+def test_rescaled_budget_changes_who_clears_a_fare():
+    # a 40 EUR one-way trip: cleared by D5 couples (23-148 EUR) when the
+    # table is read per trip, but only partly once it is per 3-leg tour
+    env1 = load_reference_budgets(BUDGETS)
+    env3 = rescale_budgets(env1, 3.0)
+    s1 = build_segments(TIME, envelope=env1, money_cost_id=FARE,
+                        only=["couple_D5"])[0].class_filter.cost
+    s3 = build_segments(TIME, envelope=env3, money_cost_id=FARE,
+                        only=["couple_D5"])[0].class_filter.cost
+    c = np.array([[40.0]], dtype=DTYPE)
+    assert uniform(c, *s1.params)[0, 0] > uniform(c, *s3.params)[0, 0]
+    assert s3.params == pytest.approx((23.16 / 3, 148.17 / 3))

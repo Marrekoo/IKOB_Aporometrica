@@ -17,6 +17,7 @@ are removed by sparsification, so clipping never changes results.
 
 import numpy as np
 
+from ikob2.core import families
 from ikob2.core.numerics import DTYPE, ensure_dense, maybe_to_sparse
 
 
@@ -32,6 +33,10 @@ def exponential(cost: np.ndarray, beta: float) -> np.ndarray:
 
 
 def power(cost: np.ndarray, beta: float) -> np.ndarray:
+    """LEGACY power decay c^-beta. Not a survival function: it exceeds 1
+    below c = 1 (and is capped only by the 1e-6 floor), so it cannot be a
+    probability marginal for compose_filters. Use 'pareto' (power law
+    beyond a threshold) or 'lomax' (shifted power law) instead."""
     safe_cost = np.maximum(cost, 1e-6)
     return (safe_cost ** (-beta)).astype(DTYPE, copy=False)
 
@@ -154,12 +159,37 @@ def with_atom(survival: np.ndarray, cost: np.ndarray, atom: float) -> np.ndarray
         DTYPE, copy=False)
 
 
+def _family_curve(name: str):
+    """Survival curve of a core.families family, as a float32 marginal."""
+    fam = families.get_family(name)
+
+    def curve(cost: np.ndarray, *params: float) -> np.ndarray:
+        families.validate_params(name, params)
+        log_s = fam.log_survival(np.maximum(cost, 0.0).astype(np.float64,
+                                                              copy=False),
+                                 *[float(p) for p in params])
+        return np.exp(log_s).astype(DTYPE, copy=False)
+
+    curve.__name__ = name
+    curve.__doc__ = f"Survival function of the '{name}' family " \
+                    f"(parameters {fam.params}); see core.families."
+    return curve
+
+
 _CURVES = {
     "exponential": exponential,
     "power": power,
     "logistic": logistic,
     "weibull": weibull,
     "uniform": uniform,
+    # further survival families (core.families)
+    "lomax": _family_curve("lomax"),
+    "pareto": _family_curve("pareto"),
+    "tanner": _family_curve("tanner"),
+    "gamma": _family_curve("gamma"),
+    "lognormal": _family_curve("lognormal"),
+    "loglogistic": _family_curve("loglogistic"),
+    "step": _family_curve("step"),
 }
 
 

@@ -58,6 +58,13 @@ _CURVE_ARITY = {
     "power": ("beta",),
     "weibull": ("shape", "scale"),
     "uniform": ("low", "high"),
+    "lomax": ("alpha", "scale"),
+    "pareto": ("alpha", "z0"),
+    "tanner": ("rho", "chi", "scale"),
+    "gamma": ("shape", "scale"),
+    "lognormal": ("mu", "sigma"),
+    "loglogistic": ("shape", "scale"),
+    "step": ("threshold",),
 }
 
 
@@ -152,8 +159,14 @@ class CurveSpec:
             raise FilterConfigError(
                 f"Curve '{curve}' in {where} missing parameter(s) {missing}."
             )
-        return cls(curve, tuple(float(block[p]) for p in required),
-                   atom=float(block.get("atom", 0.0)))
+        params = tuple(float(block[p]) for p in required)
+        from ikob2.core import families
+        if curve in families.FAMILIES:
+            try:
+                families.validate_params(curve, params)
+            except ValueError as exc:
+                raise FilterConfigError(f"{where}: {exc}") from None
+        return cls(curve, params, atom=float(block.get("atom", 0.0)))
 
 
 @dataclass(frozen=True)

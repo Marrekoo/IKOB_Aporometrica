@@ -54,6 +54,21 @@ The 44 segments enter the accessibility engine as ordinary
                           opportunities={...})            # paper's measure
     shen = runner.run(state, segs, pops, cost_matrices={...})  # competition
 
+* **Reference budgets** (`data/envelope/reference_budgets.csv`, the
+  paper's Table 6: EUR per tour, low and high, plus the distance
+  equivalents) load with `load_reference_budgets(path, censored=...)`.
+  Deciles Q1..Q10 are the standardised-income deciles D1..D10. The first
+  decile is censored (no bounds): `censored="atom"` makes it a segment
+  for whom no priced trip is acceptable, `"drop"` leaves it out. There
+  is no row for `onbekend`; pass `only=envelope_segment_names(env)` to
+  run the 40 ranked segments.
+  **Basis.** The budgets come from ODiN tours (trip chains of one or more
+  legs, not necessarily round trips), the fare matrix prices one one-way
+  trip. By default the table is read as a per-one-way-trip budget
+  (`legs_per_tour=1.0`, no conversion). Pass the average number of priced
+  legs per tour, as a number or per household type, to divide the bounds
+  down: `load_reference_budgets(path, legs_per_tour={"single": 1.6, ...})`
+  (or `rescale_budgets` on a loaded envelope). The atom does not change.
 * **Envelope table** (CSV): `household_type, income_class, low, high[, atom]`
   - the per-trip cost threshold is uniform on [low, high] EUR; `atom` is
   the share for whom no priced trip is acceptable (a censored cell is
