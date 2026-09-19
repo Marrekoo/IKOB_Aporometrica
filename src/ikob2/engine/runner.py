@@ -403,7 +403,7 @@ class SegmentedRunner:
 
     def run_hansen(
         self,
-        state: ModelState,
+        state: ModelState | None,
         segments: Sequence[Segment],
         variants: Sequence[Variant] = (),
         cost_matrices: Mapping[str, object] | None = None,
@@ -419,35 +419,87 @@ class SegmentedRunner:
         opportunity vector, so income-matched jobs D_{j,s} are pools
         with one segment group each. No populations are needed.
 
+        Two modes:
+
+        * With a `state` (square): origins and destinations are the same
+          n zones; variants, the state's zone_weights and its default
+          cost matrix / opportunities apply, as in run().
+        * With `state=None` (rectangular): origins i and destinations j
+          are different zone sets. `cost_matrices` (n_origins x
+          n_destinations, dense or scipy sparse) and `opportunities`
+          (pool -> (n_destinations,)) are then required, variants are
+          not supported (they transform a ModelState), and the result
+          has n_origins entries. This is the study-area case: a few
+          hundred origin zones against every destination that matters,
+          a matrix of megabytes instead of a national n x n one. Only
+          the destination side needs jobs; only the origin side needs
+          rows in the skims.
+
         Composed filter matrices are deduplicated on weight_key exactly
         as in run(): segments with equal filters share one matrix.
-        Returns segment name -> (n_zones,) accessibility.
+        Returns segment name -> (n_origins,) accessibility.
         """
-        for variant in variants:
-            state = variant(state)
-        state.validate()
-
-        n = state.n_zones
-        if cost_matrices is None:
-            cost_matrices = {"time": state.generalized_cost}
-        if opportunities is None:
-            opportunities = {"default": state.opportunities}
+        if state is not None:
+            for variant in variants:
+                state = variant(state)
+            state.validate()
+            n_origins = n_dest = state.n_zones
+            if cost_matrices is None:
+                cost_matrices = {"time": state.generalized_cost}
+            if opportunities is None:
+                opportunities = {"default": state.opportunities}
+            total_opportunities = state.opportunities
+        else:
+            if variants:
+                raise ValueError(
+                    "variants transform a ModelState; pass a state, or "
+                    "apply the variant to the cost matrices yourself.")
+            if cost_matrices is None or opportunities is None:
+                raise ValueError(
+                    "Rectangular run_hansen (state=None) needs both "
+                    "cost_matrices and opportunities.")
+            n_origins = n_dest = None
+            total_opportunities = None
 
         validate_pools(
             segments, opportunities,
-            total_opportunities=state.opportunities,
+            total_opportunities=total_opportunities,
         ).raise_if_failed()
         opportunities = {
             pool: as_dtype(vec) for pool, vec in opportunities.items()
         }
-        for pool, vec in opportunities.items():
-            if vec.shape != (n,):
+        lengths = {pool: vec.shape for pool, vec in opportunities.items()}
+        if any(len(shape) != 1 for shape in lengths.values()):
+            raise ValueError(f"Opportunity vectors must be 1-D: {lengths}")
+        if n_dest is None:
+            dests = {shape[0] for shape in lengths.values()}
+            if len(dests) != 1:
+                raise ValueError(
+                    f"Opportunity pools disagree on the number of "
+                    f"destinations: {lengths}")
+            n_dest = dests.pop()
+        for pool, (length,) in lengths.items():
+            if length != n_dest:
                 raise ValueError(
                     f"Opportunities for pool '{pool}' have shape "
-                    f"{vec.shape}, expected ({n},)"
-                )
+                    f"({length},), expected ({n_dest},)")
 
         self._register_filter_recipes(cost_matrices, segments)
+
+        if n_origins is None:
+            first = segments[0].time_cost_id
+            n_origins = cost_matrices[first].shape[0]
+        expected = (n_origins, n_dest)
+        for segment in segments:
+            for cost_id in (segment.time_cost_id, segment.money_cost_id):
+                if cost_id is None:
+                    continue
+                shape = tuple(cost_matrices[cost_id].shape)
+                if shape != expected:
+                    raise ValueError(
+                        f"Cost matrix '{cost_id}' (segment "
+                        f"'{segment.name}') has shape {shape}, expected "
+                        f"(origins, destinations) = {expected}.")
 
         by_wk: dict[tuple, list[Segment]] = {}
         for segment in segments:
@@ -468,7 +520,7 @@ class SegmentedRunner:
                 D = self.registry.get(("decay", wk))
                 for segment in members:
                     a = matvec(D, opportunities[segment.pool])
-                    if state.zone_weights is not None:
+                    if state is not None and state.zone_weights is not None:
                         a = (a * state.zone_weights).astype(DTYPE)
                     per_segment[segment.name] = a
         finally:

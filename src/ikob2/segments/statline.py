@@ -31,7 +31,10 @@ ODATA_ROOT = "https://opendata.cbs.nl/ODataApi/odata"
 INCOME_TABLE = "86161NED"
 CHILDREN_TABLE = "71487ned"
 
+WAGE_TABLE = "81431ned"     # jobs, wages, working hours by SBI2008 section
+
 INCOME_SNAPSHOT = "{table}_{period}.csv"
+WAGE_SNAPSHOT = "{table}_{period}.csv"
 CHILDREN_SNAPSHOT = "{table}_{period}.csv"
 
 
@@ -86,6 +89,19 @@ def fetch_single_parent_counts(
     return _odata_get(
         table, select,
         f"Perioden eq '{period}' and LeeftijdKindEren eq '{age_total}'")
+
+
+def fetch_sector_wages(
+    period: str, *, table: str = WAGE_TABLE, characteristic: str = "T001098",
+) -> pd.DataFrame:
+    """Jobs (x 1000) and mean hourly wage per SBI2008 section
+    (81431NED, characteristic 'Totaal' = all employee jobs)."""
+    select = ["KenmerkenBaanWerknemerBedrijf", "BedrijfstakkenBranchesSBI2008",
+              "Perioden", "Banen_1", "Uurloon_3"]
+    return _odata_get(
+        table, select,
+        f"Perioden eq '{period}' and "
+        f"KenmerkenBaanWerknemerBedrijf eq '{characteristic}'")
 
 
 def snapshot_path(root: str | Path, template: str, table: str,

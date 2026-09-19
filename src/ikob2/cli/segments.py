@@ -50,7 +50,12 @@ def cmd_fetch(args) -> None:
     p2 = statline.snapshot_path(out, statline.CHILDREN_SNAPSHOT,
                                 statline.CHILDREN_TABLE, cfg.children_period)
     children.to_csv(p2, index=False)
-    print(f"Wrote {p1} ({len(income)} rows) and {p2} ({len(children)} rows).")
+    wages = statline.fetch_sector_wages(args.wage_period)
+    p3 = statline.snapshot_path(out, statline.WAGE_SNAPSHOT,
+                                statline.WAGE_TABLE, args.wage_period)
+    wages.to_csv(p3, index=False)
+    print(f"Wrote {p1} ({len(income)} rows), {p2} ({len(children)} rows) "
+          f"and {p3} ({len(wages)} rows).")
 
 
 def cmd_run(args) -> None:
@@ -61,6 +66,37 @@ def cmd_run(args) -> None:
                               index=False)
     print(f"Wrote {len(result.household_based)} buurten x "
           f"{len(cfg.segment_columns)} segments to {args.out}.")
+    for k, v in result.report.items():
+        print(f"  {k}: {v}")
+
+
+def cmd_jobs(args) -> None:
+    import pandas as pd
+
+    from ikob2.segments import jobs_impute as ji
+    from ikob2.segments.jobs import parse_legacy_jobs
+    from ikob2.segments.kwb import read_kwb
+    from ikob2.segments.lisa import (lisa_gemeente_of_buurten,
+                                     parse_lisa_sectors)
+
+    cfg = _cfg(args)
+    kwb = read_kwb(args.kwb, cfg)
+    raw = pd.read_excel(args.lisa, sheet_name="LISA Gemeenten per sector")
+    train, target = (parse_lisa_sectors(raw, args.train_year),
+                     parse_lisa_sectors(raw, args.year))
+    gem = lisa_gemeente_of_buurten(kwb, target.index)
+    legacy = pd.read_excel(args.legacy, sheet_name="buurten-arbeidsplaatsen",
+                           header=2)
+    jobs = parse_legacy_jobs(legacy, args.legacy_year).sum(axis=1)
+    edu = ji.parse_education_shares(pd.read_excel(args.education))
+    cov = ji.buurt_covariates(kwb, edu)
+    model = ji.fit_sector_model(
+        train, ji.municipal_covariates(cov, jobs, gem))
+    result = ji.impute_sector_jobs(jobs, gem, target, model, cov)
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    result.jobs.rename_axis("buurtcode").to_csv(args.out)
+    print(f"Wrote {len(result.jobs)} buurten x {result.jobs.shape[1]} "
+          f"sectors ({args.year}) to {args.out}.")
     for k, v in result.report.items():
         print(f"  {k}: {v}")
 
@@ -78,6 +114,7 @@ def main(argv=None) -> None:
 
     f = sub.add_parser("fetch", help="download StatLine snapshots")
     f.add_argument("--out", default="data/statline")
+    f.add_argument("--wage-period", default="2022JJ00")
     f.set_defaults(func=cmd_fetch)
 
     r = sub.add_parser("run", help="compute segments")
@@ -86,6 +123,21 @@ def main(argv=None) -> None:
     r.add_argument("--out", default="output/nl_segments.gpkg")
     r.add_argument("--layer", default="buurt_segments")
     r.set_defaults(func=cmd_run)
+
+    j = sub.add_parser("jobs", help="impute LISA sector jobs onto buurten")
+    j.add_argument("--kwb", required=True)
+    j.add_argument("--lisa", required=True, help="LISA_Gemeenten_*.xlsx")
+    j.add_argument("--legacy", required=True,
+                   help="Alle_Zones_2030_2040.xlsx (buurt job totals)")
+    j.add_argument("--education", required=True,
+                   help="Ralph_Sahar_CBS_buurten_met_banen_naar_"
+                        "opleidingsniveau.xlsx (2016 education shares)")
+    j.add_argument("--year", type=int, default=2022)
+    j.add_argument("--train-year", type=int, default=2016,
+                   help="LISA year matching the education shares")
+    j.add_argument("--legacy-year", default="2018")
+    j.add_argument("--out", default="output/sector_jobs_2022.csv")
+    j.set_defaults(func=cmd_jobs)
 
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level,

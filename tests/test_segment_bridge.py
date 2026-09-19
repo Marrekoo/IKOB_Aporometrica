@@ -321,3 +321,113 @@ def test_aggregate_by_population_weighted_mean():
     np.testing.assert_allclose(allv[0], (10 + 60 + 10) / 6)
     with pytest.raises(ValueError, match="Unknown key"):
         aggregate_by(per, pop, segs, "bogus")
+
+
+# ── Rectangular Hansen (origins x destinations) ──────────────────────
+
+def rect_problem(n_o=3, n_d=7, seed=2):
+    rng = np.random.default_rng(seed)
+    time = rng.uniform(3, 90, (n_o, n_d)).astype(DTYPE)
+    money = rng.uniform(0.5, 18, (n_o, n_d)).astype(DTYPE)
+    jobs = rng.uniform(5, 200, n_d).astype(DTYPE)
+    return time, money, jobs
+
+
+def test_rectangular_matches_hand_computation():
+    time, money, jobs = rect_problem()
+    env = full_envelope(4.0, 12.0, 0.2)
+    segs = build_segments(TIME, envelope=env, money_cost_id=FARE,
+                          only=["single_D1", "couple_D4"])
+    out = SegmentedRunner(decay_epsilon=None).run_hansen(
+        None, segs, cost_matrices={"time": time, FARE: money},
+        opportunities={"default": jobs})
+    sm = np.where(money > 0, uniform(money, 4.0, 12.0) * 0.8,
+                  uniform(money, 4.0, 12.0))
+    expected = (weibull(time, 2.0, 45.0) * sm) @ jobs
+    assert out["single_D1"].shape == (3,)
+    np.testing.assert_allclose(out["single_D1"], expected, rtol=1e-5)
+    np.testing.assert_allclose(out["couple_D4"], expected, rtol=1e-5)
+
+
+def test_rectangular_equals_rows_of_the_square_run():
+    # origins = subset of the zones; result must be the corresponding
+    # rows of the full square computation
+    state, time, money, jobs = small_state(n=9, seed=4)
+    segs = build_segments(TIME, envelope=full_envelope(),
+                          money_cost_id=FARE, only=["single_D1"])
+    runner = SegmentedRunner(decay_epsilon=None)
+    full = runner.run_hansen(state, segs,
+                             cost_matrices={"time": time, FARE: money})
+    origins = np.array([1, 4, 7])
+    rect = runner.run_hansen(
+        None, segs,
+        cost_matrices={"time": time[origins], FARE: money[origins]},
+        opportunities={"default": jobs})
+    np.testing.assert_allclose(rect["single_D1"], full["single_D1"][origins],
+                               rtol=1e-6)
+
+
+def test_rectangular_sparse_matrices_and_pools():
+    from scipy import sparse
+    time, money, jobs = rect_problem(n_o=4, n_d=12, seed=6)
+    segs = build_segments(TIME, pool_by="income_class",
+                          only=["single_D1", "single_D2"])
+    other = jobs[::-1].copy()
+    dense = SegmentedRunner(decay_epsilon=None).run_hansen(
+        None, segs, cost_matrices={"time": time},
+        opportunities={"D1": jobs, "D2": other})
+    sp = SegmentedRunner(decay_epsilon=None).run_hansen(
+        None, segs, cost_matrices={"time": sparse.csr_matrix(time)},
+        opportunities={"D1": jobs, "D2": other})
+    for name in ("single_D1", "single_D2"):
+        np.testing.assert_allclose(sp[name], dense[name], rtol=1e-5)
+    assert not np.allclose(dense["single_D1"], dense["single_D2"])
+
+
+def test_rectangular_epsilon_sparsifies_far_destinations():
+    time, _, jobs = rect_problem(n_o=2, n_d=6, seed=8)
+    time[:, 3:] = 5000.0                       # unreachable destinations
+    segs = build_segments(TIME, only=["single_D1"])
+    a = SegmentedRunner(decay_epsilon=1e-6).run_hansen(
+        None, segs, cost_matrices={"time": time},
+        opportunities={"default": jobs})["single_D1"]
+    near = (weibull(time[:, :3], 2.0, 45.0)) @ jobs[:3]
+    np.testing.assert_allclose(a, near, rtol=1e-4)
+
+
+def test_rectangular_misconfiguration():
+    time, money, jobs = rect_problem()
+    segs = build_segments(TIME, only=["single_D1"])
+    runner = SegmentedRunner(decay_epsilon=None)
+    with pytest.raises(ValueError, match="needs both"):
+        runner.run_hansen(None, segs, cost_matrices={"time": time})
+    with pytest.raises(ValueError, match="needs both"):
+        runner.run_hansen(None, segs, opportunities={"default": jobs})
+    with pytest.raises(ValueError, match="variants transform"):
+        runner.run_hansen(None, segs, variants=[MultiplyGeneralizedCost(2.0)],
+                          cost_matrices={"time": time},
+                          opportunities={"default": jobs})
+    with pytest.raises(ValueError, match="has shape \\(3, 7\\).*\\(3, 6\\)"):
+        runner.run_hansen(None, segs, cost_matrices={"time": time},
+                          opportunities={"default": jobs[:-1]})
+    with pytest.raises(ValueError, match="disagree"):
+        pooled = build_segments(TIME, pool_by="income_class",
+                                only=["single_D1", "single_D2"])
+        runner.run_hansen(None, pooled, cost_matrices={"time": time},
+                          opportunities={"D1": jobs, "D2": jobs[:-1]})
+    priced = build_segments(TIME, envelope=full_envelope(),
+                            money_cost_id=FARE, only=["single_D1"])
+    with pytest.raises(ValueError, match="has shape"):
+        runner.run_hansen(None, priced,
+                          cost_matrices={"time": time, FARE: money[:2]},
+                          opportunities={"default": jobs})
+    assert runner.registry.pinned_size_mb() == 0.0
+
+
+def test_square_state_path_still_rejects_wrong_opportunity_length():
+    state, time, _, jobs = small_state(n=4)
+    segs = build_segments(TIME, only=["single_D1"])
+    with pytest.raises(ValueError, match="expected"):
+        SegmentedRunner(decay_epsilon=None).run_hansen(
+            state, segs, cost_matrices={"time": time},
+            opportunities={"default": jobs[:-1]})

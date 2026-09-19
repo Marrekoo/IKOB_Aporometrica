@@ -60,11 +60,23 @@ The 44 segments enter the accessibility engine as ordinary
   `atom = 1`). Every requested segment needs a row (`only=` restricts).
   Free modes pass no envelope and get a time-only filter, so all their
   segments share one composed matrix.
+* **Rectangular runs.** For a study area, pass `state=None` to
+  `run_hansen` with `cost_matrices` of shape (origins x destinations)
+  and pool vectors over the destinations: `a = runner.run_hansen(None,
+  segs, cost_matrices={"time": t, fare_id: c}, opportunities=pools)`.
+  Origins only need skim rows; destinations only need jobs. Utrecht
+  city (111 buurten) against all 14,412 buurten is 6 MB per matrix
+  instead of 831 MB square. Variants and zone weights need a state and
+  are not available there. The competition-adjusted `run` needs every
+  origin's population and stays square.
 * **Hansen vs Shen.** `run_hansen` is `a_i = sum_j D_j f(t_ij, c_ij)` per
   segment with no competition and no populations: the expected number of
   acceptable opportunities. `run` is the competition-adjusted measure.
 * **Pools** carry income-matched opportunities: `pool_by="income_class"`
   needs one opportunity vector per income class.
+* **Job pools from LISA:** `jobs_impute` spreads municipal LISA sector
+  jobs over buurten, `jobs.sector_income_weights` + `sector_pools` turn
+  them into one pool per income class (`docs/data_lineage.md`).
 * `populations_for_zones` aligns segment persons to the engine's zone
   order; zones without a row are empty. `aggregate_by` reports
   population-weighted means by income class or household type.

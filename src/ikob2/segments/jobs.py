@@ -1,25 +1,13 @@
 """
-Job supply per income-matched pool (interim, legacy-derived).
+Job supply per income-matched pool.
 
 The paper measures opportunities D_{j,s}: jobs matched to a segment's
-income. The proper source is LISA (jobs by industry, SBI), which is not
-available. Until it is, the legacy IKOB job table is used: jobs per
-buurt in FOUR income groups (laag, middellaag, middelhoog, hoog),
-derived upstream from NRM zone totals and a 2016 LISA education-level
-distribution (see docs/data_lineage.md).
-
-The segments have eleven income classes, so the four job groups are
-matched to them by QUANTILE MATCHING: the job groups partition the
-income-rank axis [0, 1] in proportion to their national job shares
-(laag lowest), and income decile D_k covers the rank interval
-[(k-1)/10, k/10]. The share of decile k's interval falling in job group
-g is the weight W[k, g], and the pool of decile k is the mixture
-
-    pool_k = sum_g W[k, g] * jobs_g        (rows of W sum to 1)
-
-so a decile sees the jobs of the group(s) at its own income rank, not a
-share of them. 'onbekend' has no rank and sees all jobs. This is an
-assumption, replaced when LISA-by-SBI data becomes available.
+income. Jobs come per buurt and LISA sector (see jobs_impute); each
+sector is placed on the income-rank axis by its mean wage, and the
+income-decile pools PARTITION the jobs (`sector_income_weights`,
+`sector_pools`). This module also reads the legacy IKOB job table
+(four income groups per buurt), whose buurt totals are the row marginal
+of the sector imputation. See docs/data_lineage.md.
 """
 
 from __future__ import annotations
@@ -80,72 +68,73 @@ def load_legacy_jobs(path: str | Path, year: str = "2018",
     return parse_legacy_jobs(raw, year)
 
 
-# ── Quantile matching ────────────────────────────────────────────────
+# ── Sector jobs -> income pools (wage-ranked partition) ──────────────
 
-def quantile_weights(
-    group_totals: Sequence[float],
+def sector_income_weights(
+    sector_wage: pd.Series,
+    sector_jobs: pd.Series,
     income_classes: Sequence[str] = INCOME_CLASSES,
 ) -> pd.DataFrame:
-    """Weights W (income class x job group); rows sum to 1 except
-    'onbekend', which is all ones (it sees every job group in full).
+    """Share of each sector's jobs that falls in each income class.
 
-    group_totals : national jobs per group, ordered low -> high. Only
-        their proportions matter.
+    Sectors are ranked by mean wage (lowest first) and laid along the
+    income-rank axis [0, 1] in proportion to their national jobs; income
+    decile Dk covers [(k-1)/10, k/10]. Sector s's jobs are spread over
+    the deciles it overlaps, in proportion to the overlap:
+
+        W[k, s] = |decile k ∩ sector s| / |sector s|      (columns sum to 1)
+
+    so the decile pools PARTITION the jobs: pool_k = sum_s W[k, s] * J_s
+    and sum_k pool_k = J. This is the D_{j,s} of the paper (jobs matched
+    to an income level). 'onbekend' has no rank and sees all jobs
+    (all-ones row). Within-sector wage dispersion is ignored: every job
+    of a sector sits at that sector's mean-wage rank.
+
     """
-    totals = np.asarray(group_totals, dtype=float)
-    if totals.shape != (len(JOB_GROUPS),):
-        raise ValueError(f"Need {len(JOB_GROUPS)} group totals, got "
-                         f"{totals.shape}.")
-    if not np.all(np.isfinite(totals)) or np.any(totals < 0) \
-            or totals.sum() <= 0:
-        raise ValueError("Group totals must be finite, non-negative and "
+    wage = sector_wage.astype(float)
+    jobs = sector_jobs.reindex(wage.index).astype(float)
+    if jobs.isna().any() or (jobs < 0).any() or jobs.sum() <= 0:
+        raise ValueError("Sector jobs must be non-negative, complete and "
                          "sum to a positive number.")
-    edges = np.concatenate([[0.0], np.cumsum(totals) / totals.sum()])
+    if wage.isna().any():
+        raise ValueError("Sector wages are incomplete.")
+    order = wage.sort_values(kind="stable").index
+    edges = np.concatenate([[0.0], np.cumsum(jobs[order]) / jobs.sum()])
 
     ranked = [c for c in income_classes if c != "onbekend"]
     n = len(ranked)
-    rows = {}
+    W = pd.DataFrame(0.0, index=list(income_classes), columns=wage.index)
     for k, cls in enumerate(ranked):
         lo, hi = k / n, (k + 1) / n
-        overlap = np.clip(np.minimum(hi, edges[1:])
-                          - np.maximum(lo, edges[:-1]), 0.0, None)
-        rows[cls] = overlap / (hi - lo)
+        for i, s in enumerate(order):
+            length = edges[i + 1] - edges[i]
+            if length <= 0:
+                continue
+            overlap = max(0.0, min(hi, edges[i + 1]) - max(lo, edges[i]))
+            W.loc[cls, s] = overlap / length
     if "onbekend" in income_classes:
-        rows["onbekend"] = np.ones(len(JOB_GROUPS))
-    return pd.DataFrame(rows, index=list(JOB_GROUPS)).T.loc[
-        list(income_classes)]
+        W.loc["onbekend"] = 1.0
+    return W
 
 
-def job_pools(
-    jobs: pd.DataFrame,
+def sector_pools(
+    sector_jobs: pd.DataFrame,
     zone_codes: Sequence[str],
-    weights: pd.DataFrame | None = None,
+    weights: pd.DataFrame,
 ) -> dict[str, np.ndarray]:
-    """Opportunity vector per income class, aligned to the engine zones.
-
-    jobs : frame indexed by buurtcode with the four job-group columns
-        (parse_legacy_jobs output). Zones without a row have no jobs
-        (logged). weights : quantile_weights(); defaults to weights
-        from the national totals in `jobs` itself.
-    Returns {income_class: (n_zones,) float32} for use as the runner's
-    `opportunities`, with SegmentedRunner pools named by income class
-    (build_segments(pool_by="income_class")).
-    """
+    """Opportunity vector per income class from imputed sector jobs
+    (buurt x sector), aligned to the engine zones: pool = J @ W.T."""
     codes = [str(c).strip() for c in zone_codes]
     if len(set(codes)) != len(codes):
         raise ValueError("zone_codes contains duplicates.")
-    missing = [g for g in JOB_GROUPS if g not in jobs.columns]
+    missing = [s for s in weights.columns if s not in sector_jobs.columns]
     if missing:
-        raise KeyError(f"Job table lacks group column(s) {missing}.")
-    if weights is None:
-        weights = quantile_weights(jobs[list(JOB_GROUPS)].sum().to_numpy())
-
-    aligned = jobs[list(JOB_GROUPS)].reindex(codes)
+        raise KeyError(f"Sector jobs lack column(s) {missing}.")
+    aligned = sector_jobs[list(weights.columns)].reindex(codes)
     n_missing = int(aligned.isna().all(axis=1).sum())
     if n_missing:
-        logger.warning("%d of %d engine zones have no job row; treated "
-                       "as having no jobs.", n_missing, len(codes))
-    J = np.nan_to_num(aligned.to_numpy(float), nan=0.0)         # (n, 4)
-    W = weights[list(JOB_GROUPS)].to_numpy(float)               # (C, 4)
-    return {cls: (J @ W[k]).astype(np.float32)
-            for k, cls in enumerate(weights.index)}
+        logger.warning("%d of %d engine zones have no sector jobs; "
+                       "treated as having none.", n_missing, len(codes))
+    J = np.nan_to_num(aligned.to_numpy(float), nan=0.0)
+    return {cls: (J @ weights.loc[cls].to_numpy(float)).astype(np.float32)
+            for cls in weights.index}

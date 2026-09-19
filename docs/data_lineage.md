@@ -58,26 +58,75 @@ they are not maintained and may be broken.
 | Input | Legacy | In `ikob2` |
 |---|---|---|
 | Segment populations | 4 income classes, KWB 2022 | 44 segments (`ikob2.segments`) |
-| Jobs | 4 income groups, NRM + LISA 2016 education shares | `ikob2.segments.jobs`, interim |
-| Job-to-segment matching | one group per income class | quantile matching (below) |
+| Jobs | 4 income groups, NRM + LISA 2016 education shares | LISA 2022 sectors imputed on buurten (`jobs_impute`) |
+| Job-to-segment matching | one group per income class | sectors ranked by wage, partition over deciles (below) |
 | Skims | NRM 2018, 2018 buurt codes | to be rebuilt (OSM/GTFS) |
 | Fares | fare model on distance skim | unchanged (`FareModel`) |
 
-### Quantile matching (interim assumption)
+## Sector jobs from LISA (`ikob2.segments.lisa`, `jobs_impute`)
 
-The four job groups partition the income-rank axis [0, 1] in proportion
-to their national job shares, `laag` lowest. Income decile Dk covers the
-rank interval [(k-1)/10, k/10]; the share of that interval inside job
-group g is the weight W[k, g], and the decile's opportunity vector is
-`sum_g W[k, g] * jobs_g` (rows of W sum to 1). `onbekend` has no rank
-and sees all jobs. With the legacy national totals D1-D2 map almost
-entirely to `laag` and D9-D10 to `hoog`; deciles on a group boundary are
-split. This is replaced when LISA by industry (SBI) is available.
+LISA municipal data (BIJ12; peildatum 1 April; jobs rounded to tens;
+2016-2025 on 2025 municipal boundaries; municipalities identified by
+name; **15 LISA sectors**, not a finer SBI split) replaces the legacy
+education-based income split. The year is a parameter (first run: 2022,
+so jobs and the KWB 2022 segment populations describe the same year).
 
-## Planned: refit jobs to current marginals by SBI
+**Imputation onto buurten** (GSPREE-style, `python -m ikob2.cli.segments
+jobs ...`):
 
-The intention is to actualise the jobs by refitting them to current
-marginals for SBI codes that match the job types. Not implemented; the
-open points to settle and document are: which marginals (year, spatial
-level), which SBI-to-income-group correspondence, and how the LISA 2016
-education shares are superseded.
+1. Buurt job totals: the legacy 2018 table (only the shares within a
+   municipality matter), rescaled so each municipality's buurten add up
+   to the LISA total of the target year.
+2. Structure model: per sector, a Poisson log-linear model with a
+   log-total offset of the municipal sector composition (LISA 2016) on
+   jobs-weighted municipal means of buurt covariates: the 2016 education
+   mix of jobs (praktisch, hoger; Amsterdam LISA file), urbanisation
+   class and ln house value (KWB 2022). Covariates are in natural units;
+   buurt values are clipped to the range of the municipal means the model
+   was fitted on (buurt values vary far more, and the model is
+   exponential).
+3. Seed: predicted composition per buurt; then IPF per municipality to
+   the buurt totals (rows) and the LISA sector totals (columns).
+
+First run (2022, all 342 municipalities): 9,426,120 jobs imputed = LISA
+total; every municipality converges; largest marginal error 1e-8 jobs;
+14,411 buurten (one 'Buitenland' buurt has no municipality). The model
+reduces the job-weighted total-variation distance to the true municipal
+composition from 0.184 (national average) to 0.132. 5,330 buurten had
+incomplete covariates (filled with the municipal or national mean) and
+3,614 were clipped to the fitted range.
+
+**Assumptions and limits (read before using the result):**
+* Only the municipal marginals are data. The split of sectors over
+  buurten inside a municipality is the model's transfer of a
+  between-municipality relation (ecological inference); no buurt-level
+  truth exists to check it. 2016 education shares are assumed to
+  describe 2022.
+* 80% of 2022 buurten have education data (codes changed since 2016).
+* Municipality names are matched exactly plus an alias table
+  (`GEMEENTE_ALIASES`: '(L.)'-type suffixes, the 2023 merger into Voorne
+  aan Zee, Weesp into Amsterdam, a truncated Nuenen name).
+* LISA rows absent for a municipality x sector are treated as 0 (tiny
+  sectors in small municipalities; rows add up to the total within
+  rounding).
+
+## Sector -> income level (`jobs.sector_income_weights`)
+
+Wage per LISA sector comes from CBS 81431NED (employee jobs and mean
+hourly wage by SBI2008 section, 2022), the job-weighted mean over the
+SBI sections of each sector (`lisa.SECTOR_TO_SBI`; **assumed** to match
+LISA's sector definitions, verify against LISA documentation). Sectors
+are ranked by wage and laid along the income-rank axis in proportion to
+their national jobs; decile Dk covers [(k-1)/10, k/10]; each sector's
+jobs are spread over the deciles it overlaps in proportion to the
+overlap. The decile pools therefore **partition** the jobs (they add up
+to the total), which is the D_{j,s} of the paper. `onbekend` sees all
+jobs.
+
+(An earlier four-group quantile matching gave overlapping pools, as every
+decile inside a group saw the whole group; it was removed.)
+
+Limits: within-sector wage dispersion is ignored (every job of a sector
+sits at its mean-wage rank), so e.g. financial services is entirely at
+the top and hospitality entirely at the bottom. A wage distribution per
+sector (rather than a mean) would soften this; 81431NED only has means.
