@@ -86,3 +86,21 @@ Example:
     p = f.moment_matched_scale("weibull", (2.5, 1.0), 30.0)
     f.survival("weibull", p, [10, 30, 60])
     f.implied_vot(("weibull", p), ("exponential", (0.5,)), 30.0, 6.0)
+
+## Time margins from the survey fits (`segments.time_margins`)
+
+The Weibull time margins of the non-exponential specifications are in
+`data/margins/S_T_work.csv` (from the R fit of the professionals'
+stated maximum acceptable commuting times): scale `eta` (minutes) and
+shape `k` per mode (bike, public transport, car) and per job type
+(no home working / home working possible). All shapes are between 2.7
+and 3.2 (increasing hazard, class IFR); home-working jobs accept longer
+trips in every mode (for cars a median of 48.6 against 39.9 minutes).
+`load_time_margins(path)` returns `{(mode, wfh): CurveSpec("weibull",
+(k, eta))}` and checks the stored median and class against the
+parameters. Modes use the skim names `bike`, `pt`, `car`.
+
+The home-working split belongs to the JOB, not the traveller, so which
+curve applies depends on the destination. Until jobs are divided into
+"admits home working" and "does not", a run uses one of the two curves for
+all jobs.
