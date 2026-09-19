@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=7.0"]
+routing = ["r5py>=1.1"]          # skims via R5 (needs Java 21)
 legacy = ["openpyxl>=3.1"]   # read the legacy IKOB Excel inputs
 
 [tool.setuptools.packages.find]
