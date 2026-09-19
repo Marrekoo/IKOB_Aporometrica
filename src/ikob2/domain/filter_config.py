@@ -31,7 +31,10 @@ Fail-loud policy:
     probability marginal — it lives at the class-filter level and is
     applied after composition, see core/compose.py);
   * unknown keys anywhere are errors, not warnings;
-  * "frank" requires theta, all other families forbid it.
+  * "frank" and "gumbel" require theta, all other families forbid it;
+    "gumbel" (Gumbel-Hougaard) additionally requires theta >= 1
+    (theta = 1 is independence; use "comonotone" for the theta -> inf
+    limit, JSON has no infinity).
 
 epsilon is deliberately ABSENT from this schema: sparsification
 strength keeps its single owner (the CLI) and is applied once, to the
@@ -44,7 +47,7 @@ from dataclasses import dataclass
 
 INCOME_CLASSES = ("laag", "middellaag", "middelhoog", "hoog")
 
-_PARAMETRIC_FAMILIES = {"frank"}
+_PARAMETRIC_FAMILIES = {"frank", "gumbel"}
 _PARAMETERLESS_FAMILIES = {"independence", "comonotone", "countermonotone"}
 _FAMILIES = _PARAMETRIC_FAMILIES | _PARAMETERLESS_FAMILIES
 
@@ -53,6 +56,7 @@ _CURVE_ARITY = {
     "logistic": ("alpha", "omega"),
     "exponential": ("beta",),
     "power": ("beta",),
+    "weibull": ("shape", "scale"),
 }
 
 
@@ -82,10 +86,14 @@ class CopulaSpec:
             )
         if self.family in _PARAMETRIC_FAMILIES and self.theta is None:
             raise FilterConfigError(f"Copula '{self.family}' requires theta.")
+        if self.family == "gumbel" and self.theta < 1.0:
+            raise FilterConfigError(
+                f"Copula 'gumbel' requires theta >= 1, got {self.theta}."
+            )
         if self.family in _PARAMETERLESS_FAMILIES and self.theta is not None:
             raise FilterConfigError(
                 f"Copula '{self.family}' takes no theta (got {self.theta}). "
-                f"Remove it, or use 'frank'."
+                f"Remove it, or use a parametric family (frank, gumbel)."
             )
 
     @classmethod

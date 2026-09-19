@@ -86,15 +86,63 @@ def frank(u: np.ndarray, v: np.ndarray, theta: float) -> np.ndarray:
     return out.astype(DTYPE, copy=False)
 
 
+def gumbel_hougaard(u: np.ndarray, v: np.ndarray, theta: float) -> np.ndarray:
+    """
+    Gumbel-Hougaard copula, theta >= 1, evaluated on SURVIVAL values.
+
+        C(u,v) = exp( -[ (-ln u)^theta + (-ln v)^theta ]^(1/theta) )
+
+    With u = S_T(t), v = S_M(c) this is exactly the joint survival
+    f_theta(t, c) = exp{-[Lambda_T^theta + Lambda_M^theta]^(1/theta)}
+    of the two-gate model (cumulative hazards Lambda = -ln S): theta = 1
+    is independence (u * v), theta -> inf is min(u, v), and Kendall's
+    tau = 1 - 1/theta. Positive dependence only; theta < 1 is rejected.
+
+    Unlike Frank this copula is NOT radially symmetric, so it is only
+    correct applied to survival marginals directly, as done here.
+
+    Stable form: with a = max(L_u, L_v), b = min(L_u, L_v),
+        [L_u^theta + L_v^theta]^(1/theta) = a * (1 + (b/a)^theta)^(1/theta)
+    which never overflows however large theta is (b/a <= 1), and
+    handles S = 0 (L = inf -> result 0) and S = 1 (L = 0) exactly.
+    """
+    if not np.isfinite(theta) or theta < 1.0:
+        raise ValueError(f"gumbel theta must be finite and >= 1, got {theta}")
+    if theta == 1.0:
+        return u * v
+
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore",
+                   under="ignore"):
+        lu = -np.log(u.astype(np.float64, copy=False))
+        lv = -np.log(v.astype(np.float64, copy=False))
+        a = np.maximum(lu, lv)
+        b = np.minimum(lu, lv)
+        ratio = np.where(a > 0.0, b / np.where(a > 0.0, a, 1.0), 0.0)
+        # a = inf: b/a may be nan; the survival is 0 there anyway.
+        total = np.where(np.isinf(a), np.inf,
+                         a * (1.0 + ratio ** theta) ** (1.0 / theta))
+        out = np.exp(-total)
+
+    np.clip(out, 0.0, 1.0, out=out)
+    return out.astype(DTYPE, copy=False)
+
+
+_PARAMETRIC_COPULAS = {
+    "frank": frank,
+    "gumbel": gumbel_hougaard,
+}
+
 _COPULAS = {
     "independence": lambda u, v: independence(u, v),
     "comonotone": lambda u, v: comonotone(u, v),
     "countermonotone": lambda u, v: countermonotone(u, v),
-    "frank": frank,  # requires theta
 }
 
 
 def get_copula(family: str):
+    if family in _PARAMETRIC_COPULAS:
+        raise ValueError(f"Copula '{family}' is parametric; pass theta "
+                         f"via compose_filters.")
     if family not in _COPULAS:
         raise ValueError(f"Unknown copula family: {family}")
     return _COPULAS[family]
@@ -139,8 +187,8 @@ def compose_filters(
     time_weights : (n, n) marginal survival filter F_t(T), unscaled.
     cost_weights : (n, n) marginal survival filter F_c(C), unscaled,
         or None for cost-free modes (collapses to time_weights).
-    family, theta : copula choice. theta is required for "frank" and
-        forbidden otherwise (fail loud, no silent defaults).
+    family, theta : copula choice. theta is required for the
+        parametric families ("frank", "gumbel") and forbidden otherwise (fail loud, no silent defaults).
     scaling : mode-availability factor, applied AFTER composition.
     epsilon : REQUIRED keyword, single owner (CLI). Applied once to
         the composed, scaled matrix. None disables sparsification.
@@ -170,10 +218,10 @@ def compose_filters(
                     f"Pass scaling= to the composer instead."
                 )
 
-        if family == "frank":
+        if family in _PARAMETRIC_COPULAS:
             if theta is None:
-                raise ValueError("family='frank' requires theta.")
-            composed = frank(u, v, theta)
+                raise ValueError(f"family='{family}' requires theta.")
+            composed = _PARAMETRIC_COPULAS[family](u, v, theta)
         else:
             if theta is not None:
                 raise ValueError(

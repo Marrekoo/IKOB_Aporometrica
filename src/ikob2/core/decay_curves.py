@@ -36,6 +36,31 @@ def power(cost: np.ndarray, beta: float) -> np.ndarray:
     return (safe_cost ** (-beta)).astype(DTYPE, copy=False)
 
 
+def weibull(cost: np.ndarray, shape: float, scale: float) -> np.ndarray:
+    """
+    Weibull survival function of a threshold distribution.
+
+    S(t) = exp(-(t / scale) ** shape),   shape k > 0, scale eta > 0.
+
+    k > 1 is increasing-hazard (soft-threshold decay, the shape found
+    for the time margin), k = 1 is exponential with rate 1/scale, and
+    k < 1 is decreasing-hazard. S(0) = 1 exactly, so this is a pure
+    survival function (no atom at zero).
+
+    The exponent is clipped like the other curves: (t/eta)^k overflows
+    float32 for large t and k, and weights at the clip boundary are
+    ~1e-35, removed by epsilon-sparsification anyway.
+    """
+    if not (shape > 0 and np.isfinite(shape)):
+        raise ValueError(f"weibull shape must be positive and finite, got {shape}")
+    if not (scale > 0 and np.isfinite(scale)):
+        raise ValueError(f"weibull scale must be positive and finite, got {scale}")
+    ratio = np.maximum(cost, 0.0).astype(np.float64, copy=False) / scale
+    with np.errstate(over="ignore"):
+        hazard = np.minimum(ratio ** shape, _EXP_CLIP)
+    return np.exp(-hazard).astype(DTYPE, copy=False)
+
+
 def logistic(cost: np.ndarray, alpha: float, omega: float,
              scaling: float = 1.0) -> np.ndarray:
     """
@@ -73,6 +98,7 @@ _CURVES = {
     "exponential": exponential,
     "power": power,
     "logistic": logistic,
+    "weibull": weibull,
 }
 
 
