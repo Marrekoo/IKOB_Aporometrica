@@ -65,7 +65,12 @@ The 44 segments enter the accessibility engine as ordinary
   **Basis.** The budgets come from ODiN tours (trip chains of one or more
   legs, not necessarily round trips), the fare matrix prices one one-way
   trip. By default the table is read as a per-one-way-trip budget
-  (`legs_per_tour=1.0`, no conversion). Pass the average number of priced
+  (`legs_per_tour=1.0`, no conversion). The bounds already reflect the
+  ODiN trips of each class (the per-trip budget is the residual envelope
+  divided by that class's priced trips), so they are not monotone in
+  income: a decile that travels more has a lower per-trip bound (single
+  households: decile 6 low 25.26 against 34.58 in decile 5). That is a
+  property of the data, not an error. Pass the average number of priced
   legs per tour, as a number or per household type, to divide the bounds
   down: `load_reference_budgets(path, legs_per_tour={"single": 1.6, ...})`
   (or `rescale_budgets` on a loaded envelope). The atom does not change.
