@@ -6,3 +6,4 @@ __init__.py
 __pycache__/
 *.egg-info/
 data/skim_dev/
+data/skims/

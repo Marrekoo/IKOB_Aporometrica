@@ -39,6 +39,10 @@ WAGE_TABLE = "81431ned"     # jobs, wages, working hours by SBI2008 section
 INCOME_SNAPSHOT = "{table}_{period}.csv"
 WAGE_SNAPSHOT = "{table}_{period}.csv"
 KWB_ESTABLISHMENTS_SNAPSHOT = "kwb_establishments_{table}.csv"
+HOME_WORK_TABLE = "85718NED"      # home working by person characteristics
+SECTOR_EDUCATION_TABLE = "82072NED"  # employee jobs by SBI2008 and education
+HOME_WORK_SNAPSHOT = "home_working_{table}_{period}.csv"
+SECTOR_EDUCATION_SNAPSHOT = "sector_education_{table}_{period}.csv"
 
 # KWB reports establishments in these SBI2008 groups (title regex ->
 # canonical group code). The topic KEYS differ per KWB vintage, the
@@ -165,6 +169,42 @@ def fetch_kwb_establishments(table: str) -> pd.DataFrame:
     if out["buurtcode"].duplicated().any():
         raise ValueError(f"{table}: duplicate buurt codes in the feed.")
     return out.drop(columns="SoortRegio_2").reset_index(drop=True)
+
+
+def fetch_home_working_by_education(
+    period: str, *, table: str = HOME_WORK_TABLE,
+) -> pd.DataFrame:
+    """Employed persons (x 1000) by education level and home-working
+    category (85718NED): all education levels' totals, 'meestal of soms
+    thuiswerken', 'meestal', 'soms' and 'niet'. Education keys:
+    2018700 low (basisonderwijs, vmbo, mbo1), 2018740 middle (havo, vwo,
+    mbo2-4), 2018790 high (hbo, wo)."""
+    edu = ["2018700", "2018740", "2018790", "T009002"]
+    cats = ["T001205", "A027929", "A027930", "A027931", "A027934"]
+    f_edu = " or ".join(f"Persoonskenmerken eq '{k}'" for k in edu)
+    f_cat = " or ".join(f"Thuiswerken eq '{k}'" for k in cats)
+    select = ["Persoonskenmerken", "Thuiswerken", "PositieInDeWerkkring",
+              "Geslacht", "Perioden", "WerkzameBeroepsbevolking_1"]
+    df = _odata_get(
+        table, select,
+        f"Perioden eq '{period}' and PositieInDeWerkkring eq 'T001095' "
+        f"and Geslacht eq 'T001038' and ({f_edu}) and ({f_cat})")
+    return df
+
+
+def fetch_sector_education_jobs(
+    period: str = "2010JJ00", *, table: str = SECTOR_EDUCATION_TABLE,
+) -> pd.DataFrame:
+    """Employee jobs (x 1000) by SBI2008 section and education level
+    (82072NED, published for 2010 only): total and low/middle/high."""
+    edu = ["10000", "18700", "18740", "18790"]
+    f_edu = " or ".join(f"Onderwijsniveau eq '{k}'" for k in edu)
+    select = ["Geslacht", "Persoonskenmerken", "Onderwijsniveau",
+              "BedrijfstakkenSBI2008", "Perioden", "BanenVanWerknemers_1"]
+    return _odata_get(
+        table, select,
+        f"Perioden eq '{period}' and Geslacht eq '1100' and "
+        f"Persoonskenmerken eq '10000' and ({f_edu})")
 
 
 def snapshot_path(root: str | Path, template: str, table: str,

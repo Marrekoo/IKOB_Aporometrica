@@ -58,8 +58,17 @@ def cmd_fetch(args) -> None:
     p4 = statline.snapshot_path(out, statline.KWB_ESTABLISHMENTS_SNAPSHOT,
                                 args.kwb_table, "")
     est.to_csv(p4, index=False)
+    hw = statline.fetch_home_working_by_education(args.wfh_period)
+    p5 = statline.snapshot_path(out, statline.HOME_WORK_SNAPSHOT,
+                                statline.HOME_WORK_TABLE, args.wfh_period)
+    hw.to_csv(p5, index=False)
+    se = statline.fetch_sector_education_jobs()
+    p6 = statline.snapshot_path(out, statline.SECTOR_EDUCATION_SNAPSHOT,
+                                statline.SECTOR_EDUCATION_TABLE, "2010JJ00")
+    se.to_csv(p6, index=False)
     print(f"Wrote {p1} ({len(income)} rows), {p2} ({len(children)} rows), "
-          f"{p3} ({len(wages)} rows) and {p4} ({len(est)} rows).")
+          f"{p3} ({len(wages)} rows), {p4} ({len(est)} rows), "
+          f"{p5} ({len(hw)} rows) and {p6} ({len(se)} rows).")
 
 
 def cmd_run(args) -> None:
@@ -125,6 +134,8 @@ def main(argv=None) -> None:
     f = sub.add_parser("fetch", help="download StatLine snapshots")
     f.add_argument("--out", default="data/statline")
     f.add_argument("--wage-period", default="2022JJ00")
+    f.add_argument("--wfh-period", default="2024JJ00",
+                   help="year of the home-working incidence by education")
     f.add_argument("--kwb-table", default="85318NED",
                    help="KWB StatLine table for establishments per buurt "
                         "(85318NED = 2022)")
