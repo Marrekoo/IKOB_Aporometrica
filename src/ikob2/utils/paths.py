@@ -20,6 +20,7 @@ The data folder layout (default: /home/marco/IKOB data).
         calibration/             detour model and other calibrations
       outputs/
         runs/<run>/              one folder per accessibility run
+        comparisons/             run-versus-run comparison tables
 
 Nothing under `inputs/` is ever written by the code. `intermediate/` and
 `outputs/` can be deleted and rebuilt.
@@ -35,7 +36,7 @@ DEFAULT_ROOT = Path("/home/marco/IKOB data")
 INPUT_DIRS = ("kwb", "lisa", "osm", "gtfs", "legacy_ikob", "survey", "odin")
 CACHE_DIRS = ("statline",)
 INTERMEDIATE_DIRS = ("segments", "jobs", "skims", "calibration")
-OUTPUT_DIRS = ("runs",)
+OUTPUT_DIRS = ("runs", "comparisons")
 
 README = """# IKOB data
 
@@ -51,6 +52,7 @@ Data folder of the IKOB Aporometrica project (code: IKOB_Aporometrica).
         calibration/     detour model for car distances
     outputs/runs/<run>/  accessibility results of one run
                          (python -m ikob2.cli.accessibility)
+    outputs/comparisons/ run-versus-run comparisons (cli.compare)
 
 Files that were already in the root of this folder (the GeoPackages and
 S_T_work.csv) were left where they are; `inputs/` links to them.
@@ -117,6 +119,9 @@ class DataLayout:
 
     def run_dir(self, run: str) -> Path:
         return self.outputs / "runs" / run
+
+    def comparison_dir(self) -> Path:
+        return self.outputs / "comparisons"
 
     def statline(self) -> Path:
         return self.cache / "statline"

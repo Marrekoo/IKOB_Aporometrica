@@ -82,12 +82,13 @@ def run_accessibility(
     sector_jobs: pd.DataFrame,
     wfh_share: pd.Series,
     sector_wage: pd.Series,
-    envelope: pd.DataFrame,
+    envelope: pd.DataFrame | None,
     time_margins: Mapping,
     matrices: Mapping[str, ModeMatrices],
     copula: CopulaSpec = INDEPENDENCE,
     epsilon: float | None = 1e-9,
     unreachable_minutes: float = 1e4,
+    segment_names: Sequence[str] | None = None,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -96,14 +97,22 @@ def run_accessibility(
     sector_jobs : imputed jobs, buurt x LISA sector (covering the
         destinations; buurten missing there have no jobs).
     wfh_share / sector_wage : per LISA sector.
-    envelope : validated cost-margin table (only its segments are run).
+    envelope : validated cost-margin table (only its segments are run);
+        None switches the cost gate off: time-only accessibility, cost
+        matrices are ignored, and `segment_names` says which segments to
+        run.
     time_margins : {(mode, wfh): CurveSpec} (segments.time_margins).
     matrices : mode -> ModeMatrices over (origins, destinations).
     """
     origins = [str(o) for o in origins]
     destinations = [str(d) for d in destinations]
     n_o, n_d = len(origins), len(destinations)
-    names = envelope_segment_names(envelope)
+    if envelope is not None:
+        names = envelope_segment_names(envelope)
+    elif segment_names is not None:
+        names = list(segment_names)
+    else:
+        raise ValueError("Without an envelope, give segment_names.")
 
     pop = populations
     if "buurtcode" in pop.columns:
@@ -131,8 +140,9 @@ def run_accessibility(
             raise ValueError(f"Mode '{mode}' matrix {mm.time.shape} does "
                              f"not match ({n_o}, {n_d}) origins x "
                              f"destinations.")
+        gated = mm.cost is not None and envelope is not None
         cost_matrices = {"time": _finite(mm.time, unreachable_minutes)}
-        if mm.cost is not None:
+        if gated:
             cost_matrices[mm.cost_id] = _finite(mm.cost, unreachable_minutes)
         total = {n: np.zeros(n_o) for n in names}
         for wfh in WFH_TYPES:
@@ -142,9 +152,9 @@ def run_accessibility(
                                f"have {sorted(time_margins)}.")
             segs = build_segments(
                 spec,
-                envelope=envelope if mm.cost is not None else None,
-                money_cost_id=mm.cost_id if mm.cost is not None else None,
-                copula=copula if mm.cost is not None else INDEPENDENCE,
+                envelope=envelope if gated else None,
+                money_cost_id=mm.cost_id if gated else None,
+                copula=copula if gated else INDEPENDENCE,
                 pool_by="income_class", only=names)
             per = runner.run_hansen(None, segs, cost_matrices=cost_matrices,
                                     opportunities=pools[wfh])
@@ -154,7 +164,7 @@ def run_accessibility(
                         mode, wfh, len(segs),
                         len({s.weight_key for s in segs}))
         rows.append(_long(mode, origins, names, total, pop, envelope,
-                          priced=mm.cost is not None))
+                          priced=gated))
     table = pd.concat(rows, ignore_index=True)
     meta = {"origins": n_o, "destinations": n_d, "segments": len(names),
             "modes": list(matrices), "epsilon": epsilon,
@@ -170,13 +180,13 @@ def _finite(a: np.ndarray, fill: float) -> np.ndarray:
 
 
 def _long(mode, origins, names, total, pop, envelope, *, priced):
-    atom = {segment_name(r.household_type, r.income_class): float(r.atom)
-            for r in envelope.itertuples()}
+    atom = ({segment_name(r.household_type, r.income_class): float(r.atom)
+             for r in envelope.itertuples()} if envelope is not None else {})
     parts = []
     for n in names:
         ht, ic = n.rsplit("_", 1)[0], n.rsplit("_", 1)[1]
         # 'couple_children_D3' -> household 'couple_children', class 'D3'
-        a = atom[n] if priced else 0.0
+        a = atom.get(n, 0.0) if priced else 0.0
         raw = total[n]
         parts.append(pd.DataFrame({
             "buurtcode": origins, "mode": mode, "segment": n,

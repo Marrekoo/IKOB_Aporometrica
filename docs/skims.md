@@ -40,7 +40,7 @@ continues where an interrupted run stopped.
 Needs Java 21 and the `routing` extra (`pip install -e .[routing]`).
 
 * **car, bike:** R5 on the OSM network; free-flow car speeds (no
-  congestion), 16 km/h cycling. Times are between buurt centroids
+  congestion), 16 km/h cycling (confirmed as the project's cycling speed). Times are between buurt centroids
   snapped to the street network.
 * **walk:** by default from zone geometry (`--walk-model zone`):
   crow-fly centroid distance x 1.3 at 4.8 km/h, and within a zone the

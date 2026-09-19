@@ -104,6 +104,34 @@ car distances come from a crow-fly detour model, the sector jobs are
 imputed, walking and public transport are missing, and the time margin
 is a survey fit not yet checked against these skims.
 
+## Impedance-shape comparison (El-Geneidy-style test)
+
+Two time-only runs (no cost margin, no home-working split), car and bike,
+same skims and jobs, one common time margin:
+
+    ... --run elgeneidy_step45 --time-shape step --cutoff 45 --no-cost-gate
+    ... --run elgeneidy_exp45  --time-shape exponential --cutoff 45 --no-cost-gate
+    python -m ikob2.cli.compare elgeneidy_step45 elgeneidy_exp45
+
+`step` is the hard 45-minute cut-off; `exponential` is calibrated to it
+with the same mean acceptable time (rate 1/45, the moment matching of the
+paper; `--exp-calibration half` instead gives 50% acceptance at 45
+minutes). Preliminary result (111 Utrecht origins, 40 segments):
+
+| | car | bike |
+|---|---|---|
+| Spearman, all origin x segment cells | 0.94 | 0.99 |
+| Spearman, origin means | 0.90 | 0.92 |
+| overlap of the top 10% of origins | 64% | 64% |
+| mean level, exponential / cut-off | 1.40 | 0.74 |
+| ratio by income decile (range) | 1.17 to 1.73 | 0.72 to 0.86 |
+
+The ranking is largely the same, while levels differ by 26% to 40% and
+the ratio differs across income deciles: the exponential's long tail
+credits far-away jobs, and deciles whose job pool lies further away gain
+more (car decile 8: 1.73, decile 10: 1.17). Agreement on rankings does not
+mean agreement on the distribution across groups.
+
 ## Not covered yet
 
 Walking (no time margin), public transport (skims, distances, fares),

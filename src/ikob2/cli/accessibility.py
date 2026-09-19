@@ -24,10 +24,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec
+from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec, CurveSpec
 from ikob2.run.accessibility import ModeMatrices, run_accessibility
 from ikob2.segments import statline
-from ikob2.segments.bridge import load_reference_budgets
+from ikob2.segments.bridge import envelope_segment_names, load_reference_budgets
 from ikob2.segments.config import SegmentConfig
 from ikob2.segments.lisa import sector_wages
 from ikob2.segments.pipeline import run_pipeline
@@ -101,6 +101,21 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
     return out, codes
 
 
+def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpec:
+    """A common time margin for the impedance-shape comparison: 'step' is
+    the hard cut-off at `cutoff` minutes (isochrone); 'exponential' is
+    calibrated to it: 'mean' gives the exponential the same mean
+    acceptable time (rate 1/cutoff, the paper's moment matching), 'half'
+    makes acceptance 50% at the cut-off (rate ln 2 / cutoff)."""
+    if shape == "step":
+        return CurveSpec("step", (float(cutoff),))
+    if shape == "exponential":
+        rate = (1.0 / cutoff if calibration == "mean"
+                else float(np.log(2.0) / cutoff))
+        return CurveSpec("exponential", (rate,))
+    raise ValueError(f"Unknown time shape {shape!r}.")
+
+
 def resolve_paths(args) -> None:
     """Fill unset paths from the data folder layout (--data-root)."""
     if args.data_root:
@@ -158,14 +173,22 @@ def cmd_run(args) -> None:
                                       censored=args.censored,
                                       legs_per_tour=args.legs_per_tour)
     margins = load_time_margins(args.margins)
+    envelope_arg = envelope
+    if args.time_shape != "weibull":
+        margins = {(m, w): time_curve(args.time_shape, args.cutoff,
+                                      args.exp_calibration)
+                   for m in args.modes for w in ("no_wfh", "wfh_possible")}
+    if args.no_cost_gate:
+        envelope_arg = None
     copula = (INDEPENDENCE if args.copula == "independence"
               else CopulaSpec("gumbel", args.theta))
 
     result = run_accessibility(
         origins=store.origins, destinations=dest_codes, populations=pop,
         sector_jobs=sector_jobs, wfh_share=wfh, sector_wage=wage,
-        envelope=envelope, time_margins=margins, matrices=matrices,
-        copula=copula, epsilon=args.epsilon)
+        envelope=envelope_arg, time_margins=margins, matrices=matrices,
+        copula=copula, epsilon=args.epsilon,
+        segment_names=envelope_segment_names(envelope))
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
@@ -203,6 +226,19 @@ def main(argv=None) -> None:
     p.add_argument("--budgets", default="data/envelope/reference_budgets.csv")
     p.add_argument("--margins", default=None)
     p.add_argument("--modes", nargs="+", default=["car", "bike"])
+    p.add_argument("--time-shape", choices=["weibull", "exponential", "step"],
+                   default="weibull",
+                   help="weibull: the survey fits by mode and job type; "
+                        "exponential / step: one common curve (impedance-"
+                        "shape comparison)")
+    p.add_argument("--cutoff", type=float, default=45.0,
+                   help="cut-off minutes for --time-shape step / exponential")
+    p.add_argument("--exp-calibration", choices=["mean", "half"],
+                   default="mean",
+                   help="exponential calibrated to the cut-off: same mean "
+                        "(rate 1/cutoff) or 50%% acceptance at the cut-off")
+    p.add_argument("--no-cost-gate", action="store_true",
+                   help="time-only accessibility (ignore the cost margin)")
     p.add_argument("--legs-per-tour", type=float, default=1.0)
     p.add_argument("--censored", choices=["atom", "drop"], default="atom")
     p.add_argument("--population-basis", default="population_scaled",
