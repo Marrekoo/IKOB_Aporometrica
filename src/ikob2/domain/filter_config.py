@@ -65,7 +65,10 @@ _CURVE_ARITY = {
     "lognormal": ("mu", "sigma"),
     "loglogistic": ("shape", "scale"),
     "step": ("threshold",),
+    "quadratic_ramp": ("low", "high"),
 }
+# Curves given by knots: {"curve": ..., "knots": [[z, f], ...]}
+_KNOT_CURVES = {"piecewise_linear", "piecewise_quadratic"}
 
 
 class FilterConfigError(ValueError):
@@ -137,14 +140,34 @@ class CurveSpec:
             )
 
     @classmethod
+    def _from_knots(cls, block: dict, curve: str, where: str) -> "CurveSpec":
+        from ikob2.core import families
+        _reject_unknown_keys(block, {"curve", "atom", "knots"}, where)
+        if "knots" not in block:
+            raise FilterConfigError(
+                f"Curve '{curve}' in {where} needs 'knots': [[z, f], ...].")
+        try:
+            knots = [(float(z), float(f)) for z, f in block["knots"]]
+        except (TypeError, ValueError):
+            raise FilterConfigError(
+                f"'knots' in {where} must be a list of [z, f] pairs.") \
+                from None
+        params = tuple(v for pair in knots for v in pair)
+        try:
+            families.validate_params(curve, params)
+        except ValueError as exc:
+            raise FilterConfigError(f"{where}: {exc}") from None
+        return cls(curve, params, atom=float(block.get("atom", 0.0)))
+
+    @classmethod
     def from_dict(cls, block: dict, where: str) -> "CurveSpec":
         if "curve" not in block:
             raise FilterConfigError(f"Curve block in {where} lacks 'curve'.")
         curve = block["curve"]
-        if curve not in _CURVE_ARITY:
+        if curve not in _CURVE_ARITY and curve not in _KNOT_CURVES:
             raise FilterConfigError(
                 f"Unknown curve '{curve}' in {where}. "
-                f"Known: {sorted(_CURVE_ARITY)}."
+                f"Known: {sorted(set(_CURVE_ARITY) | _KNOT_CURVES)}."
             )
         if "scaling" in block:
             raise FilterConfigError(
@@ -152,6 +175,8 @@ class CurveSpec:
                 f"part of a probability marginal. Move it to the class "
                 f"filter level."
             )
+        if curve in _KNOT_CURVES:
+            return cls._from_knots(block, curve, where)
         required = _CURVE_ARITY[curve]
         _reject_unknown_keys(block, {"curve", "atom", *required}, where)
         missing = [p for p in required if p not in block]

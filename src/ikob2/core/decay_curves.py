@@ -190,6 +190,10 @@ _CURVES = {
     "lognormal": _family_curve("lognormal"),
     "loglogistic": _family_curve("loglogistic"),
     "step": _family_curve("step"),
+    "quadratic_ramp": _family_curve("quadratic_ramp"),
+    # knot families: parameters are the flattened knots (z0, f0, z1, f1, ...)
+    "piecewise_linear": _family_curve("piecewise_linear"),
+    "piecewise_quadratic": _family_curve("piecewise_quadratic"),
 }
 
 

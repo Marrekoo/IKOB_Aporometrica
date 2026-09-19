@@ -15,6 +15,14 @@ probability marginal; each has closed-form log-survival and hazard.
     exponential  rate b                    h = b            (constant)
     weibull      shape k, scale s          h = (k/s)(z/s)^(k-1)
     lomax        shape a, scale s          h = a / (s + z)  (decreasing)
+    quadratic_ramp  low, high              f = 1 up to low, then a smooth
+                                           two-piece quadratic (C1) ramp
+                                           to 0 at high
+    piecewise_linear     knots (z, f)      linear interpolation of a
+                                           survival function given at
+                                           knots; 0 beyond the last knot
+    piecewise_quadratic  knots (z, f)      shape-preserving C1 quadratic
+                                           spline through the same knots
     pareto       shape a, threshold z0     f = 1 (z <= z0), (z/z0)^-a
                                            beyond: constant elasticity a;
                                            the SURVIVAL form of the power
@@ -55,6 +63,7 @@ class Family:
     validate: Callable              # (*params) -> None or ValueError
     mean: Callable | None = None    # (*params) -> E[X] = integral of f
     shape: Callable | None = None   # (*params) -> hazard class string
+    variadic: bool = False          # knot families: any even number of params
 
 
 def _positive(name, value):
@@ -265,6 +274,189 @@ _register(Family(
     mean=lambda t: float(t), shape=lambda t: "degenerate"))
 
 
+# ── quadratic ramp (smooth two-piece quadratic between low and high) ──
+
+def _ramp_u(z, low, high):
+    return np.clip((_z(z) - low) / (high - low), 0.0, 1.0)
+
+
+def _ramp_survival(z, low, high):
+    u = _ramp_u(z, low, high)
+    return np.where(u <= 0.5, 1.0 - 2.0 * u * u, 2.0 * (1.0 - u) ** 2)
+
+
+def _ramp_logs(z, low, high):
+    with np.errstate(divide="ignore"):
+        return np.log(_ramp_survival(z, low, high))
+
+
+def _ramp_h(z, low, high):
+    z = _z(z)
+    u = np.clip((z - low) / (high - low), 0.0, 1.0)
+    w = high - low
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lower = 4.0 * u / (w * (1.0 - 2.0 * u * u))
+        upper = 2.0 / (w * (1.0 - u))
+    h = np.where(u <= 0.5, lower, upper)
+    return np.where((z <= low), 0.0, np.where(z >= high, np.inf, h))
+
+
+def _validate_ramp(low, high):
+    _nonneg("low", low)
+    _positive("high", high)
+    if not high > low:
+        raise ValueError(f"quadratic_ramp needs low < high, got "
+                         f"({low}, {high})")
+
+
+# ── piecewise linear / piecewise quadratic through knots ─────────────
+
+def _knots(params):
+    a = np.asarray(params, dtype=np.float64)
+    return a[0::2], a[1::2]
+
+
+def _validate_knots(*params):
+    if len(params) < 4 or len(params) % 2:
+        raise ValueError("knots need at least two (z, f) pairs "
+                         "(an even number of values)")
+    x, y = _knots(params)
+    if not np.all(np.isfinite(x)) or not np.all(np.isfinite(y)):
+        raise ValueError("knots must be finite")
+    if x[0] != 0.0 or y[0] != 1.0:
+        raise ValueError("the first knot must be (0, 1): a survival "
+                         "function is 1 at zero impedance")
+    if np.any(np.diff(x) <= 0):
+        raise ValueError("knot impedances must be strictly increasing")
+    if np.any(y < 0) or np.any(y > 1):
+        raise ValueError("knot survival values must lie in [0, 1]")
+    if np.any(np.diff(y) > 0):
+        raise ValueError("knot survival values must be non-increasing")
+
+
+def _pl_survival(z, *params):
+    x, y = _knots(params)
+    return np.interp(_z(z), x, y, right=0.0)
+
+
+def _pl_logs(z, *params):
+    with np.errstate(divide="ignore"):
+        return np.log(_pl_survival(z, *params))
+
+
+def _pl_h(z, *params):
+    x, y = _knots(params)
+    z = _z(z)
+    k = np.clip(np.searchsorted(x, z, side="right") - 1, 0, len(x) - 2)
+    slope = (y[k + 1] - y[k]) / (x[k + 1] - x[k])
+    f = _pl_survival(z, *params)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        h = -slope / f
+    return np.where(z > x[-1], np.inf, np.where(f > 0, h, np.inf))
+
+
+def _pl_mean(*params):
+    x, y = _knots(params)
+    return float(np.sum(np.diff(x) * (y[:-1] + y[1:]) / 2.0))
+
+
+def _qspline(params):
+    """Shape-preserving C1 quadratic spline through the knots: returns
+    piece starts, ends and coefficients (a, b, c) of f = a + b u + c u^2
+    with u = z - start. Slopes at the knots are limited (harmonic mean of
+    neighbouring secants, capped at twice a secant) and every knot
+    interval gets one extra breakpoint chosen so that the spline is
+    monotone; see the module notes."""
+    x, y = _knots(params)
+    n = len(x)
+    h = np.diff(x)
+    delta = np.diff(y) / h                      # secant slopes, <= 0
+    d = np.zeros(n)
+    for i in range(1, n - 1):
+        a, b = delta[i - 1], delta[i]
+        d[i] = 2.0 * a * b / (a + b) if a * b > 0 else 0.0
+    if n == 2:
+        d[0] = d[1] = delta[0]
+    else:
+        def end_slope(dl, d_next):
+            e = (3.0 * dl - d_next) / 2.0
+            if e * dl <= 0:
+                return 0.0
+            return float(np.sign(dl) * min(abs(e), 2.0 * abs(dl)))
+        d[0] = end_slope(delta[0], d[1])
+        d[-1] = end_slope(delta[-1], d[-2])
+    starts, ends, A, B, C = [], [], [], [], []
+    for i in range(n - 1):
+        dl = delta[i]
+        if dl == 0.0:
+            starts.append(x[i]); ends.append(x[i + 1])
+            A.append(y[i]); B.append(0.0); C.append(0.0)
+            continue
+        al, be = d[i] / dl, d[i + 1] / dl
+        t = (1.0 - be) / (al - be) if (al - 1.0) * (be - 1.0) < 0 else 0.5
+        xi = x[i] + t * h[i]
+        s = 2.0 * dl - t * d[i] - (1.0 - t) * d[i + 1]
+        # [x_i, xi]
+        starts.append(x[i]); ends.append(xi)
+        A.append(y[i]); B.append(d[i]); C.append((s - d[i]) / (2.0 * t * h[i]))
+        # [xi, x_{i+1}]
+        y_xi = y[i] + (d[i] + s) / 2.0 * t * h[i]
+        starts.append(xi); ends.append(x[i + 1])
+        A.append(y_xi); B.append(s)
+        C.append((d[i + 1] - s) / (2.0 * (1.0 - t) * h[i]))
+    return (np.array(starts), np.array(ends), np.array(A), np.array(B),
+            np.array(C), float(x[-1]))
+
+
+def _pq_eval(z, params):
+    starts, ends, A, B, C, last = _qspline(params)
+    z = _z(z)
+    k = np.clip(np.searchsorted(starts, z, side="right") - 1, 0,
+                len(starts) - 1)
+    u = z - starts[k]
+    f = A[k] + B[k] * u + C[k] * u * u
+    slope = B[k] + 2.0 * C[k] * u
+    f = np.where(z > last, 0.0, np.clip(f, 0.0, 1.0))
+    return f, slope
+
+
+def _pq_survival(z, *params):
+    return _pq_eval(z, params)[0]
+
+
+def _pq_logs(z, *params):
+    with np.errstate(divide="ignore"):
+        return np.log(_pq_survival(z, *params))
+
+
+def _pq_h(z, *params):
+    f, slope = _pq_eval(z, params)
+    z = _z(z)
+    last = _knots(params)[0][-1]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        h = -slope / f
+    return np.where(z > last, np.inf, np.where(f > 0, h, np.inf))
+
+
+def _pq_mean(*params):
+    starts, ends, A, B, C, _ = _qspline(params)
+    w = ends - starts
+    # exact integral of a quadratic over each piece
+    return float(np.sum(A * w + B * w ** 2 / 2.0 + C * w ** 3 / 3.0))
+
+
+_register(Family(
+    "quadratic_ramp", ("low", "high"), _ramp_logs, _ramp_h, _validate_ramp,
+    mean=lambda low, high: low + (high - low) / 2.0,
+    shape=lambda low, high: "piecewise"))
+_register(Family(
+    "piecewise_linear", ("knots",), _pl_logs, _pl_h, _validate_knots,
+    mean=_pl_mean, shape=lambda *p: "piecewise", variadic=True))
+_register(Family(
+    "piecewise_quadratic", ("knots",), _pq_logs, _pq_h, _validate_knots,
+    mean=_pq_mean, shape=lambda *p: "piecewise", variadic=True))
+
+
 def get_family(name: str) -> Family:
     try:
         return FAMILIES[name]
@@ -276,7 +468,7 @@ def get_family(name: str) -> Family:
 def validate_params(name: str, params) -> None:
     """Raise ValueError for parameters outside the family's domain."""
     fam = get_family(name)
-    if len(params) != len(fam.params):
+    if not fam.variadic and len(params) != len(fam.params):
         raise ValueError(f"{name} takes {fam.params}, got {len(params)} "
                          f"parameter(s).")
     fam.validate(*[float(p) for p in params])

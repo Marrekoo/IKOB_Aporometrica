@@ -19,7 +19,24 @@ them can be a time or cost marginal in the gate `f(t, c) = S_T(t) S_M(c)`.
 | `loglogistic` | `shape`, `scale` | 1 / (1 + (z/scale)^shape) | unimodal (shape > 1) | |
 | `step` | `threshold` | 1 up to threshold | - | the isochrone (degenerate threshold) |
 | `uniform` | `low`, `high` | piecewise linear | - | cost margin from an envelope |
+| `piecewise_linear` | `knots` `[[z, f], ...]` | linear interpolation between knots; 0 beyond the last | piecewise constant | e.g. stated-tolerance survival at survey bin edges; `uniform` is the knots (0,1), (low,1), (high,0) |
+| `piecewise_quadratic` | `knots` `[[z, f], ...]` | shape-preserving C1 quadratic spline through the knots; 0 beyond the last | continuous, piecewise linear | the smooth counterpart: same knots, continuous hazard, always monotone |
+| `quadratic_ramp` | `low`, `high` | 1 up to low, then a smooth two-piece quadratic ramp (f = 1 - 2u^2, then 2(1-u)^2, u = (z-low)/(high-low)) to 0 at high | continuous | the classic quadratic kernel cut-off; mean = (low+high)/2 |
 | `logistic` | `alpha`, `omega` | legacy IKOB sigmoid | - | not derived from a threshold distribution |
+
+**Knot curves.** `piecewise_linear` and `piecewise_quadratic` are given
+by a survival function at knots, for example the stated-tolerance
+survey read at its 15-minute bin edges:
+`{"curve": "piecewise_quadratic", "knots": [[0, 1], [15, 0.92], [30, 0.5],
+[45, 0.15], [60, 0.02], [90, 0]]}`. The first knot must be (0, 1),
+impedances strictly increasing, survival values in [0, 1] and
+non-increasing; beyond the last knot the survival is 0 (a last value
+above 0 is a jump: a share of the population whose threshold sits exactly
+there). The quadratic spline interpolates the knots exactly, is
+continuously differentiable, and never overshoots (slopes are limited and
+each knot interval gets one extra breakpoint), so it can be used where a
+linear interpolation's kinked hazard would matter; on smooth data it is
+closer to the truth than linear interpolation.
 
 Every curve also takes an optional `"atom"` (share for whom no positive
 impedance is acceptable).
