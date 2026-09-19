@@ -251,3 +251,94 @@ def test_evaluate_marginal_with_knots_and_atom():
     assert out[0, 0] == 1.0
     assert out[0, 1] == pytest.approx(0.8 * 0.5, rel=1e-5)
     assert out[0, 2] == 0.0
+
+
+# ── triangular with a free mode ──────────────────────────────────────
+
+def test_triangular_survival_values():
+    # low 10, mode 20, high 50: F(20) = 10/40 = 0.25
+    z = np.array([0, 10, 15, 20, 35, 50, 60.0])
+    f = fam.survival("triangular", (10, 20, 50), z)
+    np.testing.assert_allclose(
+        f, [1, 1, 1 - 25 / 400, 0.75, 1 - (1 - 15 ** 2 / (40 * 30)), 0, 0],
+        atol=1e-12)
+    assert fam.survival("triangular", (10, 20, 50), np.array([35.0]))[0] \
+        == pytest.approx(15 ** 2 / (40 * 30))
+
+
+def test_triangular_with_midpoint_mode_is_the_quadratic_ramp():
+    z = np.linspace(0, 70, 500)
+    np.testing.assert_allclose(
+        fam.survival("triangular", (10, 30, 50), z),
+        fam.survival("quadratic_ramp", (10, 50), z), atol=1e-12)
+    h1 = fam.hazard("triangular", (10, 30, 50), z[(z > 10) & (z < 50)])
+    h2 = fam.hazard("quadratic_ramp", (10, 50), z[(z > 10) & (z < 50)])
+    np.testing.assert_allclose(h1, h2, rtol=1e-9)
+
+
+@pytest.mark.parametrize("params", [(10, 20, 50), (10, 10, 50), (10, 50, 50),
+                                    (0, 5, 60), (10, 30, 50)])
+def test_triangular_is_a_survival_function_with_the_right_mean(params):
+    z = np.linspace(0, 80, 8001)
+    f = fam.survival("triangular", params, z)
+    assert f[0] == 1.0 and f.min() >= 0 and f.max() <= 1
+    assert np.all(np.diff(f) <= 1e-12) and f[-1] == 0.0
+    a, c, b = params
+    mean = fam.mean_threshold("triangular", params)
+    assert mean == pytest.approx((a + b + c) / 3)
+    val, _ = integrate.quad(lambda x: float(fam.survival(
+        "triangular", params, np.array([x]))[0]), 0, b, limit=400)
+    assert val == pytest.approx(mean, rel=1e-6)
+
+
+def test_triangular_mode_moves_the_weight_and_hazard_is_pdf_over_survival():
+    low_mode = fam.survival("triangular", (10, 12, 50), np.array([30.0]))[0]
+    high_mode = fam.survival("triangular", (10, 48, 50), np.array([30.0]))[0]
+    assert low_mode < high_mode                # more mass at low thresholds
+    z = np.array([15.0, 25.0, 40.0])
+    a, c, b = 10.0, 25.0, 50.0
+    pdf = np.array([2 * (15 - a) / ((b - a) * (c - a)),
+                    2 * (25 - a) / ((b - a) * (c - a)),
+                    2 * (b - 40) / ((b - a) * (b - c))])
+    f = fam.survival("triangular", (a, c, b), z)
+    np.testing.assert_allclose(fam.hazard("triangular", (a, c, b), z), pdf / f)
+    assert fam.hazard("triangular", (a, c, b), np.array([5.0]))[0] == 0
+    assert fam.hazard("triangular", (a, c, b), np.array([55.0]))[0] == np.inf
+
+
+def test_right_angled_triangular_edge_modes():
+    # mode = low: density falls linearly from low to high
+    z = np.array([10.0, 30.0, 50.0])
+    f = fam.survival("triangular", (10, 10, 50), z)
+    # S(z) = ((high - z) / (high - low))^2
+    np.testing.assert_allclose(f, [1, 0.25, 0], atol=1e-12)
+    # mode = high: S(z) = 1 - ((z-low)/(high-low))^2
+    g = fam.survival("triangular", (10, 50, 50), z)
+    np.testing.assert_allclose(g, [1, 0.75, 0], atol=1e-12)
+
+
+@pytest.mark.parametrize("bad", [(20, 10, 50), (10, 60, 50), (10, 10, 10),
+                                 (-1, 5, 50), (10, np.nan, 50)])
+def test_triangular_validation(bad):
+    with pytest.raises(ValueError):
+        fam.validate_params("triangular", bad)
+
+
+def test_triangular_through_curves_and_config(tmp_path):
+    z = np.linspace(0, 70, 300).astype(DTYPE)
+    got = get_decay_function("triangular")(z, 10.0, 20.0, 50.0)
+    assert got.dtype == DTYPE
+    np.testing.assert_allclose(got, fam.survival("triangular",
+                                                 (10, 20, 50), z),
+                               rtol=1e-5, atol=1e-7)
+    cf = load_filter_config(_config(
+        tmp_path, {"curve": "triangular", "low": 10, "mode": 20, "high": 50,
+                   "atom": 0.1})).filters["fiets"]["laag"]
+    assert cf.time.params == (10.0, 20.0, 50.0) and cf.time.atom == 0.1
+    with pytest.raises(FilterConfigError, match="low <= mode <= high"):
+        load_filter_config(_config(
+            tmp_path, {"curve": "triangular", "low": 10, "mode": 60,
+                       "high": 50}))
+    with pytest.raises(FilterConfigError, match="missing parameter"):
+        load_filter_config(_config(
+            tmp_path, {"curve": "triangular", "low": 10, "high": 50}))

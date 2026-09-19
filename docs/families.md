@@ -21,6 +21,7 @@ them can be a time or cost marginal in the gate `f(t, c) = S_T(t) S_M(c)`.
 | `uniform` | `low`, `high` | piecewise linear | - | cost margin from an envelope |
 | `piecewise_linear` | `knots` `[[z, f], ...]` | linear interpolation between knots; 0 beyond the last | piecewise constant | e.g. stated-tolerance survival at survey bin edges; `uniform` is the knots (0,1), (low,1), (high,0) |
 | `piecewise_quadratic` | `knots` `[[z, f], ...]` | shape-preserving C1 quadratic spline through the knots; 0 beyond the last | continuous, piecewise linear | the smooth counterpart: same knots, continuous hazard, always monotone |
+| `triangular` | `low`, `mode`, `high` | survival of a triangular density on [low, high] with its peak at `mode` (F = (z-low)^2 / ((high-low)(mode-low)) up to the mode, 1 - (high-z)^2 / ((high-low)(high-mode)) after) | continuous | mean (low+mode+high)/3; mode = low is a right-angled density falling to `high`, mode = high one rising to it |
 | `quadratic_ramp` | `low`, `high` | 1 up to low, then a smooth two-piece quadratic ramp (f = 1 - 2u^2, then 2(1-u)^2, u = (z-low)/(high-low)) to 0 at high | continuous | the classic quadratic kernel cut-off; mean = (low+high)/2 |
 | `logistic` | `alpha`, `omega` | legacy IKOB sigmoid | - | not derived from a threshold distribution |
 
@@ -45,9 +46,9 @@ impedance is acceptable).
 survival function of a threshold with a uniform density on
 [low, high]. The time margin of the non-exponential specifications is
 the Weibull (paper, Section 3.2); the exponential is the benchmark.
-`quadratic_ramp` is the survival function of the symmetric TRIANGULAR
-density on [low, high] (mode at the midpoint): f = 1 - 2u^2 up to the
-midpoint and 2(1-u)^2 after it.
+`triangular` is the survival function of a triangular density on
+[low, high] with a free mode; `quadratic_ramp` is its symmetric case (mode
+at the midpoint): f = 1 - 2u^2 up to the midpoint and 2(1-u)^2 after it.
 
 **Two things that differ from the usual friction-function names.** The
 plain power law `z^-beta` and the raw gamma friction factor `z^-rho

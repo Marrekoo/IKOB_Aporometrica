@@ -66,6 +66,7 @@ _CURVE_ARITY = {
     "loglogistic": ("shape", "scale"),
     "step": ("threshold",),
     "quadratic_ramp": ("low", "high"),
+    "triangular": ("low", "mode", "high"),
 }
 # Curves given by knots: {"curve": ..., "knots": [[z, f], ...]}
 _KNOT_CURVES = {"piecewise_linear", "piecewise_quadratic"}

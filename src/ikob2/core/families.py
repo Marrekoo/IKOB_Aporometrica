@@ -15,6 +15,10 @@ probability marginal; each has closed-form log-survival and hazard.
     exponential  rate b                    h = b            (constant)
     weibull      shape k, scale s          h = (k/s)(z/s)^(k-1)
     lomax        shape a, scale s          h = a / (s + z)  (decreasing)
+    triangular      low, mode, high        triangular density on [low, high]
+                                           with its peak at mode (survival
+                                           1 - CDF); quadratic_ramp is the
+                                           mode = midpoint case
     quadratic_ramp  low, high              f = 1 up to low, then a smooth
                                            two-piece quadratic (C1) ramp
                                            to 0 at high
@@ -309,6 +313,43 @@ def _validate_ramp(low, high):
                          f"({low}, {high})")
 
 
+# ── triangular density with a free mode ──────────────────────────────
+
+def _tri_cdf(z, a, c, b):
+    z = _z(z)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rising = (z - a) ** 2 / ((b - a) * (c - a))
+        falling = 1.0 - (b - z) ** 2 / ((b - a) * (b - c))
+    out = np.where(z <= a, 0.0,
+                   np.where(z >= b, 1.0,
+                            np.where(z <= c, rising, falling)))
+    return np.clip(np.nan_to_num(out, nan=0.0), 0.0, 1.0)
+
+
+def _tri_logs(z, a, c, b):
+    with np.errstate(divide="ignore"):
+        return np.log(1.0 - _tri_cdf(z, a, c, b))
+
+
+def _tri_h(z, a, c, b):
+    z = _z(z)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        pdf = np.where(z <= c, 2.0 * (z - a) / ((b - a) * (c - a)),
+                       2.0 * (b - z) / ((b - a) * (b - c)))
+        h = pdf / (1.0 - _tri_cdf(z, a, c, b))
+    pdf_ok = np.where((z > a) & (z < b), h, 0.0)
+    return np.where(z >= b, np.inf, np.where(z <= a, 0.0,
+                                             np.nan_to_num(pdf_ok, nan=0.0)))
+
+
+def _validate_tri(low, mode, high):
+    _nonneg("low", low)
+    _positive("high", high)
+    if not (np.isfinite(mode) and low <= mode <= high and low < high):
+        raise ValueError(f"triangular needs low <= mode <= high and "
+                         f"low < high, got ({low}, {mode}, {high})")
+
+
 # ── piecewise linear / piecewise quadratic through knots ─────────────
 
 def _knots(params):
@@ -449,6 +490,10 @@ _register(Family(
     "quadratic_ramp", ("low", "high"), _ramp_logs, _ramp_h, _validate_ramp,
     mean=lambda low, high: low + (high - low) / 2.0,
     shape=lambda low, high: "piecewise"))
+_register(Family(
+    "triangular", ("low", "mode", "high"), _tri_logs, _tri_h, _validate_tri,
+    mean=lambda a, c, b: (a + b + c) / 3.0,
+    shape=lambda a, c, b: "piecewise"))
 _register(Family(
     "piecewise_linear", ("knots",), _pl_logs, _pl_h, _validate_knots,
     mean=_pl_mean, shape=lambda *p: "piecewise", variadic=True))
