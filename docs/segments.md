@@ -49,7 +49,9 @@ shifted by a mean total variation distance of 0.031 (95th percentile
 0.155), national segment totals by up to 16%.
 
 **The output of this pipeline is the baseline.** The R output is not kept
-and there is no parity test against it.
+and there is no parity test against it. Regression tests pin the
+pipeline's own numbers: a synthetic case that always runs, and the full
+2022 KWB run (set `IKOB_KWB_2022_GPKG` to the CBS file to enable it).
 
 ## Implementation notes
 

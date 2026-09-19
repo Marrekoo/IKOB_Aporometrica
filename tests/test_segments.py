@@ -1,5 +1,6 @@
 """Segment pipeline (GSPREE port): unit tests on synthetic data."""
 
+import os
 from dataclasses import replace
 
 import numpy as np
@@ -440,3 +441,63 @@ def test_read_kwb_study_area_and_missing_columns(tmp_path):
     bad = replace(CFG, kwb_vars={**CFG.kwb_vars, "p_hh_low_income": "nope"})
     with pytest.raises(KeyError, match="nope"):
         read_kwb(p, bad)
+
+
+# ── Regression baseline ──────────────────────────────────────────────
+# Pinned outputs of the pipeline itself (the R output is not a
+# reference). A change here means the pipeline's numbers moved: update
+# the constants only for an intended, documented change.
+
+def test_regression_baseline_synthetic():
+    res = compute_segments(make_kwb(), make_income_raw(), make_children_raw(),
+                           CFG)
+    hb = res.household_based
+    seg = CFG.segment_columns
+    assert hb[seg].to_numpy().sum() == pytest.approx(77368.3068280514, rel=1e-6)
+    pinned = {"single_D1": 1200.1677952172408,
+              "couple_children_D5": 4357.149791922338,
+              "single_parent_onbekend": 23.76255768524883,
+              "couple_D10": 2415.1150961348476}
+    for col, value in pinned.items():
+        assert hb[col].sum() == pytest.approx(value, rel=1e-6), col
+    np.testing.assert_allclose(
+        hb.loc[0, seg[:6]].to_numpy(float),
+        [29.558153, 56.353564, 17.611563, 60.395864, 28.450175, 58.112726],
+        rtol=1e-6)
+    r = res.report
+    assert (r["n_buurten"], r["converged"], r["skipped"]) == (70, 70, 0)
+    assert r["persons_vs_inwoners_mean_abs_pct_diff"] == pytest.approx(
+        8.925514051469497, rel=1e-6)
+    assert r["calibration_sources"] == {"p_laag40": 70}
+
+
+KWB_2022 = os.environ.get("IKOB_KWB_2022_GPKG", "")
+
+
+@pytest.mark.skipif(not (os.path.exists(KWB_2022)
+                         and os.path.exists("data/statline")),
+                    reason="set IKOB_KWB_2022_GPKG to the CBS "
+                           "wijkenbuurten_2022_v3.gpkg to run")
+def test_regression_baseline_kwb_2022():
+    from ikob2.segments.pipeline import run_pipeline
+
+    res = run_pipeline(KWB_2022, "data/statline", CFG)
+    hb, seg = res.household_based, CFG.segment_columns
+    r = res.report
+    assert (r["n_buurten"], r["converged"], r["not_converged"],
+            r["skipped"]) == (14412, 13711, 0, 701)
+    assert r["calibration_sources"] == {"p_laag40": 10024,
+                                        "gemeente_median_p_laag40": 4387,
+                                        "gemeente_shape": 1}
+    assert r["hh_marginal_max_abs_diff"] < 1e-9
+    assert r["d1_d4_max_abs_diff_to_target"] == pytest.approx(
+        0.513868886749138, rel=1e-3)
+    assert hb[seg].to_numpy().sum() == pytest.approx(16570844.11317493, rel=1e-5)
+    pinned = {"single_D1": 564523.8896756277,
+              "couple_children_D5": 726589.8467962849,
+              "single_parent_onbekend": 203311.503577972,
+              "couple_D10": 653373.8978065187}
+    for col, value in pinned.items():
+        assert hb[col].sum() == pytest.approx(value, rel=1e-5), col
+    assert res.population_scaled[seg].to_numpy().sum() == pytest.approx(
+        17582260.0, rel=1e-6)
