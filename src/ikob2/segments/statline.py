@@ -27,6 +27,9 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 ODATA_ROOT = "https://opendata.cbs.nl/ODataApi/odata"
+# The Feed endpoint pages large result sets with nextLink instead of
+# refusing queries that could return >= 10 000 rows.
+ODATA_FEED_ROOT = "https://opendata.cbs.nl/ODataFeed/odata"
 
 INCOME_TABLE = "86161NED"
 CHILDREN_TABLE = "71487ned"
@@ -35,15 +38,31 @@ WAGE_TABLE = "81431ned"     # jobs, wages, working hours by SBI2008 section
 
 INCOME_SNAPSHOT = "{table}_{period}.csv"
 WAGE_SNAPSHOT = "{table}_{period}.csv"
+KWB_ESTABLISHMENTS_SNAPSHOT = "kwb_establishments_{table}.csv"
+
+# KWB reports establishments in these SBI2008 groups (title regex ->
+# canonical group code). The topic KEYS differ per KWB vintage, the
+# titles do not, so keys are resolved from the table's DataProperties.
+ESTABLISHMENT_GROUPS: dict[str, str] = {
+    "total": r"^Bedrijfsvestigingen totaal",
+    "A": r"^A Landbouw",
+    "B-F": r"^B-F Nijverheid",
+    "G+I": r"^G\+I Handel",
+    "H+J": r"^H\+J Vervoer",
+    "K-L": r"^K-L Financi",
+    "M-N": r"^M-N Zakelijke",
+    "O-Q": r"^O-Q ",
+    "R-U": r"^R-U Cultuur",
+}
 CHILDREN_SNAPSHOT = "{table}_{period}.csv"
 
 
 def _odata_get(table: str, select: list[str], filter_expr: str | None,
-               timeout: float = 120.0) -> pd.DataFrame:
+               timeout: float = 120.0, root: str = ODATA_ROOT) -> pd.DataFrame:
     params = {"$select": ",".join(select), "$format": "json"}
     if filter_expr:
         params["$filter"] = filter_expr
-    url = (f"{ODATA_ROOT}/{table}/TypedDataSet?"
+    url = (f"{root}/{table}/TypedDataSet?"
            f"{urllib.parse.urlencode(params, quote_via=urllib.parse.quote)}")
     rows: list[dict] = []
     while url:
@@ -102,6 +121,50 @@ def fetch_sector_wages(
         table, select,
         f"Perioden eq '{period}' and "
         f"KenmerkenBaanWerknemerBedrijf eq '{characteristic}'")
+
+
+def resolve_establishment_keys(table: str) -> dict[str, str]:
+    """Group code -> topic key of the establishment counts in a KWB
+    table. Groups a vintage does not publish are omitted."""
+    import re
+
+    url = f"{ODATA_ROOT}/{table}/DataProperties?$format=json"
+    with urllib.request.urlopen(url, timeout=120) as resp:
+        props = json.load(resp)["value"]
+    topics = [(p["Key"], p.get("Title") or "") for p in props
+              if p.get("Type") == "Topic"]
+    keys: dict[str, str] = {}
+    for group, pattern in ESTABLISHMENT_GROUPS.items():
+        hits = [k for k, t in topics if re.search(pattern, t)]
+        if len(hits) == 1:
+            keys[group] = hits[0]
+        elif len(hits) > 1:
+            raise ValueError(f"{table}: title pattern for {group!r} matches "
+                             f"several topics: {hits}")
+    return keys
+
+
+def fetch_kwb_establishments(table: str) -> pd.DataFrame:
+    """Establishments per buurt and SBI group from a KWB table.
+
+    Returns columns buurtcode, gemeentenaam and one column per group
+    (`total`, `A`, `B-F`, ...); CBS rounds these counts and blanks
+    suppressed cells (NaN). Uses the Feed endpoint, which pages results.
+    """
+    keys = resolve_establishment_keys(table)
+    if "total" not in keys:
+        raise ValueError(f"{table}: no establishment total found.")
+    select = ["Codering_3", "Gemeentenaam_1", "SoortRegio_2", *keys.values()]
+    out = _odata_get(table, select, "SoortRegio_2 eq 'Buurt'",
+                     root=ODATA_FEED_ROOT)
+    out = out.rename(columns={"Codering_3": "buurtcode",
+                              "Gemeentenaam_1": "gemeentenaam",
+                              **{v: k for k, v in keys.items()}})
+    # The Feed endpoint ignores the region filter, so select buurten here.
+    out = out[out["buurtcode"].str.match(r"^BU\d+")]
+    if out["buurtcode"].duplicated().any():
+        raise ValueError(f"{table}: duplicate buurt codes in the feed.")
+    return out.drop(columns="SoortRegio_2").reset_index(drop=True)
 
 
 def snapshot_path(root: str | Path, template: str, table: str,

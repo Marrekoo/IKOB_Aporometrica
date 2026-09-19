@@ -74,9 +74,10 @@ so jobs and the KWB 2022 segment populations describe the same year).
 **Imputation onto buurten** (GSPREE-style, `python -m ikob2.cli.segments
 jobs ...`):
 
-1. Buurt job totals: the legacy 2018 table (only the shares within a
-   municipality matter), rescaled so each municipality's buurten add up
-   to the LISA total of the target year.
+1. Buurt job totals: a blend of the legacy 2018 shares and the KWB
+   establishment shares (weight 0.25 on establishments, see below),
+   rescaled so each municipality's buurten add up to the LISA total of
+   the target year.
 2. Structure model: per sector, a Poisson log-linear model with a
    log-total offset of the municipal sector composition (LISA 2016) on
    jobs-weighted municipal means of buurt covariates: the 2016 education
@@ -85,8 +86,11 @@ jobs ...`):
    buurt values are clipped to the range of the municipal means the model
    was fitted on (buurt values vary far more, and the model is
    exponential).
-3. Seed: predicted composition per buurt; then IPF per municipality to
-   the buurt totals (rows) and the LISA sector totals (columns).
+3. Seed: each LISA sector is weighted by the buurt's establishments in
+   its KWB group (below); the covariate model only divides a group over
+   its LISA sectors. Then IPF per municipality to the buurt totals
+   (rows) and the LISA sector totals (columns). Without establishments
+   the seed is the covariate model alone.
 
 First run (2022, all 342 municipalities): 9,426,120 jobs imputed = LISA
 total; every municipality converges; largest marginal error 1e-8 jobs;
@@ -95,6 +99,59 @@ reduces the job-weighted total-variation distance to the true municipal
 composition from 0.184 (national average) to 0.132. 5,330 buurten had
 incomplete covariates (filled with the municipal or national mean) and
 3,614 were clipped to the fitted range.
+
+### Establishments per buurt (KWB)
+
+The KWB gpkg only has the total number of establishments; the split by
+SBI group is in the StatLine KWB tables (85318NED = 2022) in eight
+groups: A, B-F, G+I, H+J, K-L, M-N, O-Q, R-U (`cli.segments fetch`
+stores a snapshot). They are rounded, and the group cells of about 14% of
+buurten are suppressed while the total is known; those cells are filled
+from the municipality's composition (`establishments.complete_group_counts`).
+
+*Compatibility.* National KWB/LISA establishment ratios for the groups
+that map cleanly are 0.97 (A), 1.05 (B-F), 1.09 (G+I), 1.01 (H+J), 1.08
+(O-Q) and 1.02 (R-U); KWB M-N against LISA L10 is 1.03. KWB's K-L group
+is 182k establishments but LISA's finance (L09) only 17.7k: real estate
+(L) is essentially absent from LISA, so K-L is a weak proxy for L09 jobs,
+and L10 is taken to be M+N only (`lisa.SECTOR_TO_SBI`).
+
+*Validation of the buurt totals.* LISA 2016 jobs per buurt exist (the
+education file, 2016 codes; 10,137 buurten in 304 municipalities in
+common with the 2016 KWB and the legacy table). Job-weighted total
+variation distance between predicted and true buurt job shares within
+municipalities (`jobs_impute.within_municipality_tv`, lower is better):
+
+| Predictor of buurt job share | distance |
+|---|---|
+| uniform | 0.454 |
+| legacy 2018 (NRM) | 0.301 |
+| KWB 2016 establishments, total | 0.338 |
+| establishments weighted by job size per group | 0.365 |
+| 75% legacy + 25% establishments (total) | **0.277** |
+| 50% / 50% | 0.280 |
+| 25% legacy + 75% establishments | 0.301 |
+
+The table comes from a one-off analysis (KWB 2016 establishments via
+`fetch --kwb-table 83487NED`, which lacks the O-Q group; it was derived as
+total minus the other groups), not from a script in the repository.
+
+So the legacy shares are better within municipalities than raw
+establishment counts, but the blend beats both (8% lower distance than
+legacy alone). Weighting establishments by a job size per group made it
+worse (the O-Q group, with about 65 jobs per establishment, dominates),
+so it is not used. The weight 0.25 is the default (`--establishment-
+weight`); the flat optimum lies between 0.25 and 0.5. Caveat: the
+validation compares 2016 truth with 2018 legacy shares and 2016
+establishments, and 17% of buurten had suppressed group cells (filled with
+zero in the test).
+
+*Not validated:* the sector placement. No buurt-level sector truth exists;
+the establishment-weighted seed is plausible (it moves, for example, a
+sector's jobs to the buurten that have its establishments) but unchecked.
+On the 2022 run the buurt totals shift on average by 138 jobs (95th
+percentile 447) relative to the covariate-only seed, and all marginals stay
+exact.
 
 **Assumptions and limits (read before using the result):**
 * Only the municipal marginals are data. The split of sectors over
@@ -115,7 +172,8 @@ incomplete covariates (filled with the municipal or national mean) and
 Wage per LISA sector comes from CBS 81431NED (employee jobs and mean
 hourly wage by SBI2008 section, 2022), the job-weighted mean over the
 SBI sections of each sector (`lisa.SECTOR_TO_SBI`; **assumed** to match
-LISA's sector definitions, verify against LISA documentation). Sectors
+LISA's sector definitions, verify against LISA documentation; L10 is
+M+N, see above). Sectors
 are ranked by wage and laid along the income-rank axis in proportion to
 their national jobs; decile Dk covers [(k-1)/10, k/10]; each sector's
 jobs are spread over the deciles it overlaps in proportion to the

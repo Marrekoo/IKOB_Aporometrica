@@ -93,8 +93,9 @@ def _wage_raw(overrides=None):
 def test_sector_wages_are_job_weighted_over_sbi_sections():
     w = sector_wages(_wage_raw())
     assert list(w.index) == list(SECTORS)
-    # L10 = L,M,N with jobs 100/200/300 and wages 20/21/22
-    assert w["L10"] == pytest.approx((100 * 20 + 200 * 21 + 300 * 22) / 600)
+    # L10 = M,N (real estate is not part of LISA's sector) with jobs
+    # 100/200 and wages 20/21
+    assert w["L10"] == pytest.approx((100 * 20 + 200 * 21) / 300)
     assert w["L01"] == 20.0
 
 

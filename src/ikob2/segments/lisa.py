@@ -11,7 +11,8 @@ The sector -> wage link uses CBS 81431NED (employee jobs and mean hourly
 wage per SBI2008 section): each LISA sector is a set of SBI sections,
 its wage the job-weighted mean of theirs. The correspondence below is
 an ASSUMPTION about the LISA sector definitions (the file does not
-spell it out); verify it against LISA's documentation.
+spell it out); verify it against LISA's documentation. The L10 entry
+(M+N, without real estate) follows from comparing establishment counts.
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ SECTOR_TO_SBI: dict[str, tuple[str, ...]] = {
     "L07": ("389100",),               # I  Horeca
     "L08": ("391600",),               # J  Informatie en communicatie
     "L09": ("396300",),               # K  Financiele dienstverlening
-    "L10": ("402000", "403300", "410200"),   # L+M+N Zakelijke diensten
+    "L10": ("403300", "410200"),      # M+N Zakelijke diensten (see below)
     "L11": ("417400",),               # O  Openbaar bestuur
     "L12": ("419000",),               # P  Onderwijs
     "L13": ("422400",),               # Q  Zorg
@@ -44,6 +45,25 @@ SECTOR_TO_SBI: dict[str, tuple[str, ...]] = {
     "L15": ("435500",),               # S  Overige diensten
 }
 SECTORS = tuple(SECTOR_TO_SBI)
+
+# LISA sector -> KWB establishment group (CBS Kerncijfers wijken en
+# buurten reports establishments in these SBI groups). Cross-checked
+# against LISA's own establishment counts (2022): KWB/LISA is 0.97-1.09
+# for A, B-F, G+I, H+J, O-Q, R-U and 1.03 for M-N against L10, which is
+# why L10 is M+N only: real estate (L), most of KWB's K-L group, is
+# essentially absent from LISA. L09 (finance, 17.7k LISA establishments)
+# is therefore only a small part of KWB's K-L (182k) and that group is a
+# weak proxy for L09 jobs.
+SECTOR_TO_KWB_GROUP: dict[str, str] = {
+    "L01": "A",
+    "L02": "B-F", "L03": "B-F", "L04": "B-F",
+    "L05": "G+I", "L07": "G+I",
+    "L06": "H+J", "L08": "H+J",
+    "L09": "K-L",
+    "L10": "M-N",
+    "L11": "O-Q", "L12": "O-Q", "L13": "O-Q",
+    "L14": "R-U", "L15": "R-U",
+}
 
 # KWB 2022 municipality name -> LISA 2025 name where they differ
 # (disambiguating suffixes, truncation, and mergers since 2022).

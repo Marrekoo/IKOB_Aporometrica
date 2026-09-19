@@ -54,8 +54,12 @@ def cmd_fetch(args) -> None:
     p3 = statline.snapshot_path(out, statline.WAGE_SNAPSHOT,
                                 statline.WAGE_TABLE, args.wage_period)
     wages.to_csv(p3, index=False)
-    print(f"Wrote {p1} ({len(income)} rows), {p2} ({len(children)} rows) "
-          f"and {p3} ({len(wages)} rows).")
+    est = statline.fetch_kwb_establishments(args.kwb_table)
+    p4 = statline.snapshot_path(out, statline.KWB_ESTABLISHMENTS_SNAPSHOT,
+                                args.kwb_table, "")
+    est.to_csv(p4, index=False)
+    print(f"Wrote {p1} ({len(income)} rows), {p2} ({len(children)} rows), "
+          f"{p3} ({len(wages)} rows) and {p4} ({len(est)} rows).")
 
 
 def cmd_run(args) -> None:
@@ -92,7 +96,13 @@ def cmd_jobs(args) -> None:
     cov = ji.buurt_covariates(kwb, edu)
     model = ji.fit_sector_model(
         train, ji.municipal_covariates(cov, jobs, gem))
-    result = ji.impute_sector_jobs(jobs, gem, target, model, cov)
+    est = None
+    if args.establishments:
+        from ikob2.segments.establishments import read_establishments
+        est = read_establishments(args.establishments)
+    result = ji.impute_sector_jobs(
+        jobs, gem, target, model, cov, establishments=est,
+        establishment_weight=args.establishment_weight)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     result.jobs.rename_axis("buurtcode").to_csv(args.out)
     print(f"Wrote {len(result.jobs)} buurten x {result.jobs.shape[1]} "
@@ -115,6 +125,9 @@ def main(argv=None) -> None:
     f = sub.add_parser("fetch", help="download StatLine snapshots")
     f.add_argument("--out", default="data/statline")
     f.add_argument("--wage-period", default="2022JJ00")
+    f.add_argument("--kwb-table", default="85318NED",
+                   help="KWB StatLine table for establishments per buurt "
+                        "(85318NED = 2022)")
     f.set_defaults(func=cmd_fetch)
 
     r = sub.add_parser("run", help="compute segments")
@@ -132,6 +145,12 @@ def main(argv=None) -> None:
     j.add_argument("--education", required=True,
                    help="Ralph_Sahar_CBS_buurten_met_banen_naar_"
                         "opleidingsniveau.xlsx (2016 education shares)")
+    j.add_argument("--establishments",
+                   default="data/statline/kwb_establishments_85318NED.csv",
+                   help="KWB establishment snapshot ('' to ignore)")
+    j.add_argument("--establishment-weight", type=float, default=0.25,
+                   help="weight of establishment shares in the buurt job "
+                        "totals (0 = legacy totals only)")
     j.add_argument("--year", type=int, default=2022)
     j.add_argument("--train-year", type=int, default=2016,
                    help="LISA year matching the education shares")

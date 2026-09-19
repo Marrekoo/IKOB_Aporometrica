@@ -34,7 +34,7 @@ import numpy as np
 import pandas as pd
 
 from ikob2.segments.ipf import ipf_batch
-from ikob2.segments.lisa import SECTORS
+from ikob2.segments.lisa import SECTOR_TO_KWB_GROUP, SECTORS
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +170,8 @@ def impute_sector_jobs(
     model: SectorModel,
     cov: pd.DataFrame,
     *,
+    establishments: pd.DataFrame | None = None,
+    establishment_weight: float = 0.25,
     tol: float = 1e-8,
     max_iter: int = 500,
 ) -> SectorJobs:
@@ -184,6 +186,17 @@ def impute_sector_jobs(
     cov : covariates per buurt (buurt_covariates output); missing
         values are replaced by the municipality's mean, then the
         national mean.
+    establishments : optional KWB establishments per buurt (total + the
+        eight SBI groups, establishments.read_establishments output).
+        They enter twice: (a) the buurt job shares within a
+        municipality become a blend of the legacy job shares and the
+        establishment shares, with weight `establishment_weight` on the
+        latter (0.25 minimised the error against LISA 2016 buurt jobs;
+        0 ignores establishments for the totals); (b) the seed of each
+        LISA sector is weighted by its KWB group's establishment count
+        in the buurt, the covariate model only splitting a group over
+        its LISA sectors. Without them the seed is the covariate model
+        alone.
     """
     codes = buurt_gemeente.dropna().index
     codes = codes.intersection(buurt_jobs.index.union(cov.index))
@@ -207,6 +220,14 @@ def impute_sector_jobs(
     seed_share = pd.DataFrame(seed_share, index=codes,
                               columns=list(model.sectors))
 
+    group_counts = None
+    if establishments is not None:
+        if not (0.0 <= establishment_weight <= 1.0):
+            raise ValueError("establishment_weight must be in [0, 1].")
+        from ikob2.segments.establishments import complete_group_counts
+        group_counts = complete_group_counts(establishments, gem, rows)
+        seed_share = _establishment_seed(seed_share, group_counts)
+
     out = pd.DataFrame(0.0, index=codes, columns=list(model.sectors))
     stats = {"municipalities": 0, "not_converged": 0,
              "no_buurt_jobs_equal_split": 0, "lisa_without_buurten": [],
@@ -224,6 +245,11 @@ def impute_sector_jobs(
         if r.sum() <= 0:
             r = np.ones(len(members))
             stats["no_buurt_jobs_equal_split"] += 1
+        elif group_counts is not None and establishment_weight > 0:
+            e = group_counts.loc[members].sum(axis=1).to_numpy(float)
+            if e.sum() > 0:
+                r = ((1 - establishment_weight) * r / r.sum()
+                     + establishment_weight * e / e.sum())
         row_t = r / r.sum() * col_t.sum()
         seed = seed_share.loc[members].to_numpy(float)
         res = ipf_batch(seed[None], row_t[None], col_t[None],
@@ -245,3 +271,51 @@ def impute_sector_jobs(
     logger.info("Sector-job imputation: %s", {
         k: v for k, v in stats.items() if k != "lisa_without_buurten"})
     return SectorJobs(out, model, stats)
+
+
+def _establishment_seed(model_share: pd.DataFrame,
+                        group_counts: pd.DataFrame) -> pd.DataFrame:
+    """Seed weighted by the buurt's establishments in each KWB group.
+
+    seed[b, s] = E[b, group(s)] * model_share[b, s] / sum of model
+    shares over the sectors of group(s): the establishments say how much
+    of the group sits in the buurt, the covariate model how the group
+    divides over its LISA sectors. A buurt with no establishments at all
+    keeps the plain model seed (scaled to the municipal mean count) so
+    it is not silently emptied by the seed.
+    """
+    out = model_share.copy()
+    for group in sorted(set(SECTOR_TO_KWB_GROUP.values())):
+        sectors = [s for s in model_share.columns
+                   if SECTOR_TO_KWB_GROUP[s] == group]
+        within = model_share[sectors].div(
+            model_share[sectors].sum(axis=1), axis=0)
+        out[sectors] = within.mul(group_counts[group], axis=0)
+    empty = out.sum(axis=1) <= 0
+    if empty.any():
+        out.loc[empty] = model_share.loc[empty] * max(
+            float(out.sum(axis=1)[~empty].mean()), 1.0)
+    return out
+
+
+def within_municipality_tv(pred: pd.Series, truth: pd.Series,
+                           gemeente: pd.Series, min_buurten: int = 3) -> float:
+    """Job-weighted mean total-variation distance between predicted and
+    true buurt job shares WITHIN municipalities (0 = identical shares,
+    the uniform allocation is the usual baseline). Municipalities with
+    fewer than `min_buurten` common buurten are skipped. Used to choose
+    the establishment weight against LISA 2016 buurt jobs."""
+    idx = pred.index.intersection(truth.index).intersection(gemeente.index)
+    df = pd.DataFrame({"p": pred[idx].astype(float),
+                       "t": truth[idx].astype(float),
+                       "g": gemeente[idx]}).dropna()
+    dist, weight = [], []
+    for _, d in df.groupby("g"):
+        if len(d) < min_buurten or d["p"].sum() <= 0 or d["t"].sum() <= 0:
+            continue
+        dist.append(0.5 * (d["p"] / d["p"].sum()
+                           - d["t"] / d["t"].sum()).abs().sum())
+        weight.append(d["t"].sum())
+    if not dist:
+        raise ValueError("No municipality with enough buurten.")
+    return float(np.average(dist, weights=weight))
