@@ -99,3 +99,45 @@ def test_otp_build_and_start_need_their_files(layout):
         otp_server.start(layout, port=59997)
     assert otp_server.status(port=59997) is False
     assert otp_server.stop(layout) is False
+
+
+def test_otp_plan_client_and_journey_summary(monkeypatch):
+    seen = {}
+
+    def fake(req, timeout=None):
+        seen["url"] = req.full_url
+        seen["query"] = json.loads(req.data)["query"]
+        data = {"data": {"plan": {"itineraries": [{
+            "duration": 2010, "legs": [
+                {"mode": "WALK", "distance": 400.0, "duration": 400,
+                 "route": None},
+                {"mode": "RAIL", "distance": 35200.0, "duration": 1560,
+                 "route": {"type": 2}},
+                {"mode": "BUS", "distance": 4200.0, "duration": 700,
+                 "route": {"type": 3}},
+                {"mode": "TRAM", "distance": 1000.0, "duration": 200,
+                 "route": {"type": 0}}]}]}}}
+        return _Resp(json.dumps(data).encode())
+
+    monkeypatch.setattr("urllib.request.urlopen", fake)
+    it = otp_server.plan((5.1104, 52.0894), (4.9003, 52.3791), "2026-09-15",
+                         "08:00", url="http://h:9")
+    assert seen["url"] == "http://h:9/otp/gtfs/v1"
+    assert 'date: "2026-09-15"' in seen["query"] and "lat: 52.0894" in seen["query"]
+    assert it["minutes"] == pytest.approx(33.5)
+    s = otp_server.journey_summary(it)
+    assert s["rail_km"] == pytest.approx(35.2)
+    assert s["other_km"] == pytest.approx(5.2) and s["other_boardings"] == 2
+    assert s["walk_km"] == pytest.approx(0.4)
+
+
+def test_otp_plan_no_itinerary_and_errors(monkeypatch):
+    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout=None:
+                        _Resp(json.dumps({"data": {"plan": {
+                            "itineraries": []}}}).encode()))
+    assert otp_server.plan((5, 52), (5.1, 52.1), "2026-09-15", "08:00") is None
+    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout=None:
+                        _Resp(json.dumps({"errors": [{"message": "boom"}]}
+                                         ).encode()))
+    with pytest.raises(RuntimeError, match="boom"):
+        otp_server.plan((5, 52), (5.1, 52.1), "2026-09-15", "08:00")

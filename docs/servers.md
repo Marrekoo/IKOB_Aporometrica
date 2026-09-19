@@ -48,6 +48,24 @@ modes, distances, times), which is what fares by distance need. It has no
 origin-destination matrix service, so bulk PT travel times stay with R5
 (r5py).
 
+The national graph does not fit in 15 GB (the build was OOM-killed at
+10.5 GB), so the graph is regional: `otp prepare --osm <pbf> [<pbf> ...]
+--gtfs <zip> --bbox 3.3 51.6 5.95 53.3 --service-start 2026-09-14
+--service-end 2026-09-18` merges the province extracts and cuts the GTFS
+feed (`skims/gtfs_subset.py`) to the box and dates. The build takes about
+10 minutes at a 9G heap; `graph.obj` is ~400 MB. The REST plan endpoint is
+not in 2.8.1; use GraphQL (`POST /otp/gtfs/v1`), wrapped by
+`otp_server.plan()` and `journey_summary()` (rail km, other km,
+boardings, walk km).
+
+Validation of the frequency-model PT router (`skims/gtfs_pt.py`) against OTP:
+124 Utrecht-origin to regional-destination pairs, OTP itineraries
+departing 07:00-09:00 every 30 min (mean). Travel time correlation 0.97;
+frequency model minus OTP mean -2.0 min (median -1.3, mean absolute 5.6);
+bias is +2 min for 30-60 min trips and -4 min beyond 90 min. Rail km
+correlation 0.92 (frequency model 7.6 km longer), other-transit km
+correlation 0.80.
+
 Memory: only one of the two servers (or an R5 skim run) fits next to the
 other on a 15 GB machine while a graph is being built; stop Valhalla
 before building the OTP graph.

@@ -43,14 +43,20 @@ def jar_path(layout: DataLayout, version: str = JAR_VERSION) -> Path:
     return layout.otp_dir() / f"otp-{version}-shaded.jar"
 
 
-def prepare(layout: DataLayout, osm_pbf: str | Path, gtfs_zip: str | Path,
+def prepare(layout: DataLayout, osm_pbf, gtfs_zip: str | Path,
             *, service_start: str, service_end: str) -> Path:
     """Graph directory with links to the inputs and the two config files.
-    service_start / service_end (ISO dates) bound the GTFS service days
-    loaded into the graph."""
+    osm_pbf: one path or several (OTP merges them). service_start /
+    service_end (ISO dates) bound the GTFS service days loaded into the
+    graph. Links and archives from a previous prepare are replaced; a
+    saved graph.obj is removed because it no longer matches."""
     graph = layout.otp_dir() / "graph"
     graph.mkdir(parents=True, exist_ok=True)
-    for src in (osm_pbf, gtfs_zip):
+    for old in list(graph.glob("*.pbf")) + list(graph.glob("*.zip")) \
+            + list(graph.glob("graph.obj")):
+        old.unlink()
+    pbfs = [osm_pbf] if isinstance(osm_pbf, (str, Path)) else list(osm_pbf)
+    for src in (*pbfs, gtfs_zip):
         src = Path(src).resolve()
         dest = graph / src.name
         if dest.is_symlink() or dest.exists():
@@ -130,3 +136,60 @@ def stop(layout: DataLayout) -> bool:
         pass
     pf.unlink()
     return True
+
+
+# ── client ───────────────────────────────────────────────────────────
+
+_PLAN_QUERY = """
+{ plan(date: "%(date)s", time: "%(time)s",
+       from: {lat: %(flat)s, lon: %(flon)s}, to: {lat: %(tlat)s, lon: %(tlon)s},
+       transportModes: [{mode: TRANSIT}, {mode: WALK}], numItineraries: 1) {
+    itineraries { duration
+      legs { mode distance duration route { type } } } } }
+"""
+RAIL_MODES = {"RAIL"}
+
+
+def plan(from_lonlat, to_lonlat, date: str, time_hhmm: str, *,
+         url: str = f"http://localhost:{PORT}", timeout: float = 120.0):
+    """Best itinerary between two points at a departure time, or None:
+    {'minutes': ..., 'legs': [{'mode', 'km', 'minutes'}, ...]}."""
+    import urllib.request
+
+    body = json.dumps({"query": _PLAN_QUERY % {
+        "date": date, "time": time_hhmm, "flon": from_lonlat[0],
+        "flat": from_lonlat[1], "tlon": to_lonlat[0],
+        "tlat": to_lonlat[1]}}).encode()
+    req = urllib.request.Request(f"{url.rstrip('/')}/otp/gtfs/v1", data=body,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        payload = json.load(resp)
+    if payload.get("errors"):
+        raise RuntimeError(f"OTP: {payload['errors'][0].get('message')}")
+    its = payload["data"]["plan"]["itineraries"]
+    if not its:
+        return None
+    it = its[0]
+    return {"minutes": it["duration"] / 60.0,
+            "legs": [{"mode": leg["mode"], "km": leg["distance"] / 1000.0,
+                      "minutes": leg["duration"] / 60.0}
+                     for leg in it["legs"]]}
+
+
+def journey_summary(itinerary: dict) -> dict:
+    """Fare inputs of an itinerary, comparable with PtRouter.journeys:
+    rail km, km on other transit (bus, tram, metro, ferry), the number of
+    boardings onto them, and the walking km."""
+    rail = other = walk = 0.0
+    boardings = 0
+    for leg in itinerary["legs"]:
+        mode = leg["mode"]
+        if mode == "WALK":
+            walk += leg["km"]
+        elif mode in RAIL_MODES:
+            rail += leg["km"]
+        else:
+            other += leg["km"]
+            boardings += 1
+    return {"minutes": itinerary["minutes"], "rail_km": rail,
+            "other_km": other, "other_boardings": boardings, "walk_km": walk}
