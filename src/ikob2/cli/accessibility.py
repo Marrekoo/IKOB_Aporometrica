@@ -46,6 +46,7 @@ from ikob2.skims.car import (
     crowfly_km,
 )
 from ikob2.skims.store import SkimStore
+from ikob2.utils.paths import DataLayout
 
 logger = logging.getLogger("ikob2.cli.accessibility")
 
@@ -100,8 +101,34 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
     return out, codes
 
 
+def resolve_paths(args) -> None:
+    """Fill unset paths from the data folder layout (--data-root)."""
+    if args.data_root:
+        lay = DataLayout(Path(args.data_root))
+        args.kwb = args.kwb or str(lay.kwb(args.kwb_year))
+        args.skims = args.skims or str(lay.skim_dir(args.study))
+        args.sector_jobs = args.sector_jobs or str(
+            lay.sector_jobs(args.jobs_year))
+        args.out = args.out or str(lay.run_dir(args.run))
+        args.statline = args.statline or str(lay.statline())
+        if not args.detour and lay.detour_model().exists():
+            args.detour = str(lay.detour_model())
+        survey = lay.inputs / "survey" / "S_T_work.csv"
+        if not args.margins and survey.exists():
+            args.margins = str(survey)
+    args.statline = args.statline or "data/statline"
+    args.margins = args.margins or "data/margins/S_T_work.csv"
+    missing = [n for n in ("kwb", "skims", "sector_jobs", "out")
+               if not getattr(args, n)]
+    if missing:
+        raise SystemExit(f"Give --{', --'.join(m.replace('_', '-') for m in missing)}"
+                         f" or --data-root (with --study and --run).")
+
+
 def cmd_run(args) -> None:
     from ikob2.data.geopackage import load_cbs_buurten
+
+    resolve_paths(args)
 
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     out_dir = Path(args.out)
@@ -158,14 +185,23 @@ def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--log-level", default="INFO")
-    p.add_argument("--kwb", required=True)
-    p.add_argument("--skims", required=True, help="skim store directory")
-    p.add_argument("--sector-jobs", required=True,
+    p.add_argument("--data-root", default=None,
+                   help="data folder (utils.paths.DataLayout); fills the "
+                        "paths below from --study, --run and the years")
+    p.add_argument("--study", default="utrecht_nl",
+                   help="skim store name under intermediate/skims")
+    p.add_argument("--run", default="run",
+                   help="output folder name under outputs/runs")
+    p.add_argument("--kwb-year", type=int, default=2022)
+    p.add_argument("--jobs-year", type=int, default=2022)
+    p.add_argument("--kwb", default=None)
+    p.add_argument("--skims", default=None, help="skim store directory")
+    p.add_argument("--sector-jobs", default=None,
                    help="CSV from `cli.segments jobs`")
-    p.add_argument("--out", required=True)
-    p.add_argument("--statline", default="data/statline")
+    p.add_argument("--out", default=None)
+    p.add_argument("--statline", default=None)
     p.add_argument("--budgets", default="data/envelope/reference_budgets.csv")
-    p.add_argument("--margins", default="data/margins/S_T_work.csv")
+    p.add_argument("--margins", default=None)
     p.add_argument("--modes", nargs="+", default=["car", "bike"])
     p.add_argument("--legs-per-tour", type=float, default=1.0)
     p.add_argument("--censored", choices=["atom", "drop"], default="atom")

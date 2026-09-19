@@ -110,6 +110,30 @@ def cmd_build(args) -> None:
           f"layers {store.layer_names}, matrices {store.arrays()}")
 
 
+def cmd_calibrate_detour(args) -> None:
+    from ikob2.data.geopackage import load_cbs_buurten
+    from ikob2.skims import osrm
+
+    logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
+    zones, _ = load_cbs_buurten(args.kwb)
+    codes = np.asarray(zones.codes, dtype=str)
+    pts = zone_points(codes, zones.centroid_x, zones.centroid_y, zones.crs)
+    study = np.isin(np.asarray(zones.municipality_code, dtype=str),
+                    args.study)
+    o, d = osrm.sample_pairs(pts, codes[study], n_origins=args.origins,
+                             n_far=args.far, n_near=args.near,
+                             seed=args.seed)
+    logger.info("routing %d origins x %d destinations on %s", len(o), len(d),
+                args.osrm_url)
+    routes = osrm.routed_pairs(args.osrm_url, o, d)
+    model = osrm.calibrate_from_routes(pts, routes)
+    model.save(args.out)
+    routes.to_csv(Path(args.out).with_suffix(".routes.csv"), index=False)
+    print(f"{len(routes)} routed pairs -> {args.out}")
+    print(f"bands (crow-fly km -> detour): "
+          f"{list(zip(np.round(model.km, 1), np.round(model.factor, 3)))}")
+
+
 def cmd_inspect(args) -> None:
     store = SkimStore.open(args.store)
     print(f"origins: {len(store.origins)}")
@@ -151,6 +175,19 @@ def main(argv=None) -> None:
     b.add_argument("--max-memory", default=None, help="JVM heap, e.g. 11G")
     b.add_argument("--block-size", type=int, default=25)
     b.set_defaults(func=cmd_build)
+
+    c = sub.add_parser("calibrate-detour",
+                       help="fit crow-fly -> route distance factors via OSRM")
+    c.add_argument("--kwb", required=True)
+    c.add_argument("--study", nargs="+", required=True, metavar="GMxxxx")
+    c.add_argument("--out", default="data/calibration/car_detour.json")
+    c.add_argument("--osrm-url", default="https://router.project-osrm.org",
+                   help="demo server: light use only; self-host for more")
+    c.add_argument("--origins", type=int, default=20)
+    c.add_argument("--far", type=int, default=80)
+    c.add_argument("--near", type=int, default=80)
+    c.add_argument("--seed", type=int, default=0)
+    c.set_defaults(func=cmd_calibrate_detour)
 
     i = sub.add_parser("inspect", help="describe a skim store")
     i.add_argument("store")

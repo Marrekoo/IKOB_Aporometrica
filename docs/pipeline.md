@@ -21,6 +21,19 @@
 | Car time and cost | `skims.car` | legacy IKOB rates, crow-fly distance x detour |
 | Glue | `run.accessibility`, `cli.accessibility` | |
 
+## Data folder
+
+`/home/marco/IKOB data/` is laid out by `ikob2.utils.paths.DataLayout`
+(`python -m ikob2.cli.layout create`): `inputs/` (kwb, lisa, osm, gtfs,
+legacy_ikob, survey, odin; read only), `cache/statline/` (StatLine
+snapshots), `intermediate/` (segments, jobs, `skims/<study>`,
+calibration) and `outputs/runs/<run>/`. Files that were already in the
+root stay there; `inputs/` links to them. With `--data-root` the run
+command fills its paths from the layout:
+
+    python -m ikob2.cli.accessibility --data-root "/home/marco/IKOB data" \
+        --study utrecht_nl --run s0_prelim --modes car bike
+
 ## What is computed
 
 For every origin buurt, segment (household type x income decile) and mode:
@@ -54,6 +67,17 @@ detour factor, since r5py's matrices carry no distance
 Parking costs per zone and road charges are supported but no data is
 wired in.
 
+### Car distance calibration (OSRM)
+
+`python -m ikob2.cli.skims calibrate-detour` routes a sample of origin x
+destination pairs with the OSRM table service (public demo server, a
+handful of requests; self-host OSRM for more) and fits the median
+route/crow-fly ratio per distance band. First calibration (Utrecht
+origins, 10,840 pairs): detour 2.05 below 1.5 km, 1.6 at 2 to 6 km, 1.5
+at 11 km, 1.33 at 37 km and 1.23 at 90 km and beyond, so short urban
+trips are far more circuitous than the placeholder 1.3.
+Result: `data/calibration/car_detour.json` (also in the data folder).
+
 ## Home working
 
 The two Weibull fits differ by whether the JOB admits working from home.
@@ -64,6 +88,21 @@ year published), averaged over each sector's sections. It compresses the
 range (33% for agriculture and hospitality to 68% for education; 45%
 overall against 52% of workers who at least sometimes work from home),
 ignores occupation, and reads "at least sometimes" as "admits".
+
+## First national run (preliminary)
+
+`s0_prelim`: 111 Utrecht origins, all 14,318 buurten as destinations,
+car and bike, independent gates, one-way budgets, first decile censored
+(atom 1). Population-weighted mean acceptable jobs by car about 200,000
+for couples and about 146,000 for single households (single households
+sit in lower budget deciles); by bike 21,000 to 28,000. The censored
+first decile reaches almost nothing by car (only free intrazonal
+trips). It runs in 12 seconds once the skims exist.
+
+Read as a smoke test of the chain, not as results: the skim is free-flow,
+car distances come from a crow-fly detour model, the sector jobs are
+imputed, walking and public transport are missing, and the time margin
+is a survey fit not yet checked against these skims.
 
 ## Not covered yet
 
