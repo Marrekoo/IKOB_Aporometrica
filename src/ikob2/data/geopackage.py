@@ -116,6 +116,7 @@ def load_cbs_buurten(
     load errors to abort instead of being merely logged.
     """
     import geopandas as gpd
+    import pandas as pd
 
     path = Path(path)
     report = ValidationReport()
@@ -203,9 +204,15 @@ def load_cbs_buurten(
     reserved.discard(None)
 
     if attribute_columns is None:
+        # pandas/pyogrio nullable dtypes (Int64, Float64, boolean — the
+        # ones CBS integer columns get promoted to as soon as one row is
+        # NULL) and the geometry dtype all crash np.issubdtype, which
+        # expects a plain numpy dtype. is_numeric_dtype handles the
+        # extension-array cases directly and returns False (not an
+        # exception) for geometry.
         candidate_cols = [
             c for c in gdf.columns
-            if c not in reserved and np.issubdtype(gdf[c].dtype, np.number)
+            if c not in reserved and pd.api.types.is_numeric_dtype(gdf[c])
         ]
     else:
         missing = [c for c in attribute_columns if c not in gdf.columns]

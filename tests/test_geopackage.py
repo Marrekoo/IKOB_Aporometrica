@@ -130,3 +130,38 @@ def test_unknown_requested_attribute_column_raises(tmp_path):
 
     with pytest.raises(KeyError):
         load_cbs_buurten(gpkg, attribute_columns=("does_not_exist",))
+
+
+def test_nullable_extension_dtype_columns_do_not_crash(tmp_path, monkeypatch):
+    """Regression test: pandas/pyogrio nullable dtypes (Int64, boolean,
+    ...) — which real CBS GeoPackages produce for any integer column
+    that has a NULL/suppressed row somewhere — crash plain
+    np.issubdtype(dtype, np.number) with a bare TypeError, even though
+    they ARE numeric. geopandas.read_file is monkeypatched here to force
+    the dtype regardless of the local GDAL/pyogrio version's own
+    round-trip behaviour, so the regression is deterministic in CI.
+    """
+    import pandas as pd
+    import geopandas
+
+    gpkg = tmp_path / "cbs.gpkg"
+    make_buurten_gpkg(gpkg, with_water=False)  # only to give pyogrio a real layer to list
+
+    forced = geopandas.GeoDataFrame(
+        {
+            "buurtcode": ["BU00010001", "BU00010002"],
+            "buurtnaam": ["Centrum", "Noord"],
+            "aantal_inwoners": pd.array([1200, None], dtype="Int64"),
+            "geometry": [_square(0, 0), _square(200, 0)],
+        },
+        crs="EPSG:28992",
+    )
+    monkeypatch.setattr(geopandas, "read_file", lambda *a, **kw: forced)
+
+    zones, report = load_cbs_buurten(gpkg)
+
+    assert zones.n_zones == 2
+    assert "aantal_inwoners" in zones.attributes
+    values = zones.attributes["aantal_inwoners"]
+    assert values[0] == 1200.0
+    assert np.isnan(values[1])
