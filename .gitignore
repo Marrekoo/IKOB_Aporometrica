@@ -3,3 +3,5 @@ examples/
 exportToHTML/
 !docs/examples
 __init__.py
+__pycache__/
+*.egg-info/
