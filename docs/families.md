@@ -41,6 +41,14 @@ closer to the truth than linear interpolation.
 Every curve also takes an optional `"atom"` (share for whom no positive
 impedance is acceptable).
 
+**Which shape is used where.** The cost envelopes use `uniform`: the
+survival function of a threshold with a uniform density on
+[low, high]. The time margin of the non-exponential specifications is
+the Weibull (paper, Section 3.2); the exponential is the benchmark.
+`quadratic_ramp` is the survival function of the symmetric TRIANGULAR
+density on [low, high] (mode at the midpoint): f = 1 - 2u^2 up to the
+midpoint and 2(1-u)^2 after it.
+
 **Two things that differ from the usual friction-function names.** The
 plain power law `z^-beta` and the raw gamma friction factor `z^-rho
 e^-chi z` diverge at zero impedance, so they are not survival functions;
