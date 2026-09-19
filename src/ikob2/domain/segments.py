@@ -154,7 +154,7 @@ class Segment:
     preference: Preference
     class_filter: ClassFilter
     has_free_pt: bool = False
-    time_cost_id: str = "default"
+    time_cost_id: str = "time"
     money_cost_id: str | None = None
     pool: str = "default"
 

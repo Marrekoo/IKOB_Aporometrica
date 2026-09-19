@@ -56,16 +56,7 @@ class SetDecayBeta(Variant):
         self.beta = float(beta)
 
     def apply(self, state: ModelState) -> ModelState:
-        return state.with_updates(decay_beta=self.beta)
-
-
-class SetDecayCutoff(Variant):
-    def __init__(self, cutoff: float):
-        super().__init__(name=f"SetDecayCutoff({cutoff})")
-        self.cutoff = float(cutoff)
-
-    def apply(self, state: ModelState) -> ModelState:
-        return state.with_updates(decay_cutoff=self.cutoff)
+        return state.with_updates(decay_params=self.beta)
 
 
 # ── Cost variants ────────────────────────────────────────────────────

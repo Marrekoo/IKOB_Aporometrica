@@ -17,6 +17,7 @@ def make_state(n=2, beta=1.0):
         opportunities=np.array([10.0, 20.0]),
         decay_type="exponential",
         decay_beta=beta,
+        decay_epsilon=0.0,
     )
 
 
@@ -35,9 +36,10 @@ def test_accessibility_accepts_prebuilt_decay_matrix():
                        compute_accessibility(state))
 
 
-def test_cutoff_zeroes_far_weights():
-    state = make_state().with_updates(decay_cutoff=0.5)
-    # only intra-zonal (cost 0) survives the cutoff
+def test_epsilon_zeroes_far_weights():
+    # off-diagonal weight is exp(-1) ~ 0.37, below epsilon; only
+    # intra-zonal (cost 0, weight 1) survives sparsification
+    state = make_state().with_updates(decay_epsilon=0.5)
     A = compute_naive_accessibility(state)
     assert np.allclose(A, state.opportunities, rtol=1e-5)
 

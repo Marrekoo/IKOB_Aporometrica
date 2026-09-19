@@ -18,6 +18,7 @@ def make_state(n=2):
         opportunities=np.ones(n),
         decay_type="exponential",
         decay_beta=0.1,
+        decay_epsilon=0.0,
     )
 
 
@@ -27,8 +28,8 @@ def test_decay_variant_changes_beta():
     variant = SetDecayBeta(0.5)
     new_state = variant(state)
 
-    assert new_state.decay_beta == 0.5
-    assert state.decay_beta == 0.1  # original unchanged
+    assert new_state.decay_params == 0.5
+    assert state.decay_params == 0.1  # original unchanged
 
 
 def test_multiply_cost():
@@ -51,7 +52,7 @@ def test_composite_applies_in_order():
     composite = CompositeVariant([SetDecayBeta(0.3), MultiplyGeneralizedCost(3.0)])
     new_state = composite(state)
 
-    assert new_state.decay_beta == 0.3
+    assert new_state.decay_params == 0.3
     assert np.allclose(new_state.generalized_cost, 3.0)
 
 

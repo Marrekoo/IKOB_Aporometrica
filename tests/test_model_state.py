@@ -12,6 +12,7 @@ def make_state(n=3, **overrides):
         opportunities=np.ones(n),
         decay_type="exponential",
         decay_beta=0.1,
+        decay_epsilon=0.0,
     )
     kwargs.update(overrides)
     return ModelState.create(**kwargs)
@@ -39,7 +40,8 @@ def test_direct_construction_with_wrong_dtype_fails():
         population=np.ones(n, dtype=DTYPE),
         opportunities=np.ones(n, dtype=DTYPE),
         decay_type="exponential",
-        decay_beta=0.1,
+        decay_params=0.1,
+        decay_epsilon=0.0,
     )
     with pytest.raises(TypeError):
         state.validate()

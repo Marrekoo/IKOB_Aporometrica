@@ -154,3 +154,28 @@ class ModelState:
         new_state = replace(self, **changes)
         new_state.validate()
         return new_state
+
+    def with_recomputed_cost(
+        self,
+        *,
+        tvom: float | None = None,
+        time_component=None,
+        money_component=None,
+    ) -> "ModelState":
+        """Rebuild generalized_cost = time + tvom * money, optionally
+        swapping tvom or either component first."""
+        if self.time_component is None or self.money_component is None:
+            raise ValueError(
+                "with_recomputed_cost requires time/money components"
+            )
+        tvom = self.tvom if tvom is None else float(tvom)
+        time = self.time_component if time_component is None else time_component
+        money = (self.money_component if money_component is None
+                 else money_component)
+        cost = (time + DTYPE(tvom) * money).astype(DTYPE)
+        return self.with_updates(
+            generalized_cost=cost,
+            time_component=time,
+            money_component=money,
+            tvom=tvom,
+        )

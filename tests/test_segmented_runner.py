@@ -1,9 +1,16 @@
 import numpy as np
 
 from ikob2.core.numerics import DTYPE, safe_divide
-from ikob2.domain.segments import CarAccess, DecayParams, Income, Preference, Segment
+from ikob2.domain.filter_config import INDEPENDENCE, ClassFilter, CurveSpec
+from ikob2.domain.segments import CarAccess, Income, Preference, Segment
 from ikob2.domain.state import ModelState
 from ikob2.engine.runner import SegmentedRunner
+
+
+def _filter(curve, *params, scaling=1.0):
+    """Time-only, independence-copula filter (the reference filter)."""
+    return ClassFilter(CurveSpec(curve, tuple(float(p) for p in params)),
+                       None, INDEPENDENCE, scaling)
 
 
 def make_problem(n=40, seed=0):
@@ -16,13 +23,17 @@ def make_problem(n=40, seed=0):
         opportunities=rng.uniform(1, 100, n),
         decay_type="exponential",
         decay_beta=0.1,
+        decay_epsilon=0.0,
     )
-    fast = DecayParams("exponential", beta=0.05)
-    slow = DecayParams("exponential", beta=0.15)
+    fast = _filter("exponential", 0.05)
+    slow = _filter("exponential", 0.15)
     segments = [
-        Segment("car_high", Income.HIGH, CarAccess.WITH_CAR, Preference.CAR, fast),
-        Segment("car_low", Income.LOW, CarAccess.WITH_CAR, Preference.CAR, fast),
-        Segment("pt_low", Income.LOW, CarAccess.NO_CAR, Preference.PT, slow),
+        Segment("car_high", Income.HIGH, CarAccess.WITH_CAR, Preference.CAR, fast,
+                time_cost_id="time"),
+        Segment("car_low", Income.LOW, CarAccess.WITH_CAR, Preference.CAR, fast,
+                time_cost_id="time"),
+        Segment("pt_low", Income.LOW, CarAccess.NO_CAR, Preference.PT, slow,
+                time_cost_id="time"),
     ]
     populations = {
         s.name: rng.uniform(1, 50, n).astype(DTYPE) for s in segments
@@ -32,7 +43,7 @@ def make_problem(n=40, seed=0):
 
 def test_segments_sharing_weight_key_share_result():
     state, segments, populations = make_problem()
-    result = SegmentedRunner().run(state, segments, populations)
+    result = SegmentedRunner(decay_epsilon=None).run(state, segments, populations)
 
     # car_high and car_low share a weight_key -> identical accessibility
     assert np.array_equal(result.per_segment["car_high"],
@@ -44,7 +55,7 @@ def test_segments_sharing_weight_key_share_result():
 
 def test_batched_matches_unbatched_reference():
     state, segments, populations = make_problem()
-    result = SegmentedRunner().run(state, segments, populations)
+    result = SegmentedRunner(decay_epsilon=None).run(state, segments, populations)
 
     # Unbatched reference: run each segment's decay against summed
     # competition computed per-segment (no population pre-summing).
@@ -56,16 +67,15 @@ def test_batched_matches_unbatched_reference():
     decays = {}
     for seg in segments:
         d = ensure_dense(apply_decay(
-            state.generalized_cost, seg.decay.decay_type, seg.decay.beta,
-            cutoff=seg.decay.cutoff, epsilon=seg.decay.epsilon,
+            state.generalized_cost, seg.class_filter.time.curve,
+            seg.class_filter.time.params, epsilon=None,
         ))
         decays[seg.name] = d
         competition += d.T @ populations[seg.name].astype(np.float64)
-    competition = np.maximum(competition, 1e-6)
 
     adjusted = state.opportunities / competition
     # float32 batching only changes summation order -> allclose, not equal
-    assert np.allclose(result.competition, competition, rtol=1e-4)
+    assert np.allclose(result.competition["default"], competition, rtol=1e-4)
     for seg in segments:
         expected = decays[seg.name] @ adjusted
         assert np.allclose(result.per_segment[seg.name], expected, rtol=1e-4)
@@ -73,7 +83,7 @@ def test_batched_matches_unbatched_reference():
 
 def test_total_is_population_weighted_mean():
     state, segments, populations = make_problem()
-    result = SegmentedRunner().run(state, segments, populations)
+    result = SegmentedRunner(decay_epsilon=None).run(state, segments, populations)
 
     num = np.zeros(state.n_zones, dtype=DTYPE)
     den = np.zeros(state.n_zones, dtype=DTYPE)
@@ -85,7 +95,7 @@ def test_total_is_population_weighted_mean():
 
 def test_pin_decay_gives_same_answer():
     state, segments, populations = make_problem()
-    r1 = SegmentedRunner(pin_decay=False).run(state, segments, populations)
-    r2 = SegmentedRunner(pin_decay=True).run(state, segments, populations)
+    r1 = SegmentedRunner(decay_epsilon=None, pin_decay=False).run(state, segments, populations)
+    r2 = SegmentedRunner(decay_epsilon=None, pin_decay=True).run(state, segments, populations)
     for seg in segments:
         assert np.array_equal(r1.per_segment[seg.name], r2.per_segment[seg.name])

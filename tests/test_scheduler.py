@@ -24,7 +24,6 @@ from ikob2.variants.base import (
     ScaleMonetaryCost,
     ScalePopulation,
     SetDecayBeta,
-    SetDecayCutoff,
     SetTvom,
     Variant,
 )
@@ -42,6 +41,7 @@ def make_state(seed: int = 7) -> ModelState:
         opportunities=rng.integers(10, 300, N_ZONES).astype(float),
         decay_type="exponential",
         decay_beta=0.05,
+        decay_epsilon=0.0,
     )
 
 
@@ -93,7 +93,6 @@ def test_one_failing_run_does_not_discard_the_batch():
 
 VARIANT_CASES = [
     SetDecayBeta(0.07),
-    SetDecayCutoff(120.0),
     MultiplyGeneralizedCost(1.1),
     SetTvom(9.5),
     ScaleMonetaryCost(2.0),
@@ -132,8 +131,8 @@ def test_pickled_variant_produces_identical_state(variant):
     )
     np.testing.assert_array_equal(a.population, b.population)
     np.testing.assert_array_equal(a.opportunities, b.opportunities)
-    assert a.decay_beta == b.decay_beta
-    assert a.decay_cutoff == b.decay_cutoff
+    assert a.decay_params == b.decay_params
+    assert a.decay_epsilon == b.decay_epsilon
 
 
 def test_composite_variant_is_picklable_and_ordered():
