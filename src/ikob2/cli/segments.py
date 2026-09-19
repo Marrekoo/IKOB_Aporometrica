@@ -26,7 +26,6 @@ def _cfg(args) -> SegmentConfig:
         income_period=args.income_period,
         children_period=args.children_period,
         gemeente_codes=(tuple(args.gemeenten) if args.gemeenten else None),
-        covariate_sentinels=args.covariate_sentinels,
     )
     if args.low_income_col:
         cfg = replace(cfg, kwb_vars={**cfg.kwb_vars,
@@ -74,8 +73,6 @@ def main(argv=None) -> None:
     p.add_argument("--gemeenten", nargs="*", metavar="GMxxxx",
                    help="restrict the study area (default: all)")
     p.add_argument("--low-income-col", help="KWB low-income column override")
-    p.add_argument("--covariate-sentinels", choices=["na", "keep"],
-                   default="na")
     p.add_argument("--log-level", default="INFO")
     sub = p.add_subparsers(dest="command", required=True)
 

@@ -1,6 +1,5 @@
 """Segment pipeline (GSPREE port): unit tests on synthetic data."""
 
-import os
 from dataclasses import replace
 
 import numpy as np
@@ -426,11 +425,9 @@ def test_read_kwb_filters_and_cleans(tmp_path):
     assert np.isnan(kwb.inwoners[1]) and np.isnan(kwb.huishoudens[2])
     assert kwb.hh_eenpersoons[0] == pytest.approx(40 * 30 / 100)
     assert np.isnan(kwb.p_laag40[2])           # 101 invalid
-    # covariate sentinels: NA by default, kept for R parity
+    # CBS suppression codes in the covariates become missing
     assert np.isnan(kwb.stedelijkheid[1])
     assert kwb.stedelijkheid[[0, 2]].tolist() == [2, 4]
-    kept = read_kwb(p, replace(CFG, covariate_sentinels="keep"))
-    assert kept.stedelijkheid[1] == -99999999
 
 
 def test_read_kwb_study_area_and_missing_columns(tmp_path):
@@ -443,29 +440,3 @@ def test_read_kwb_study_area_and_missing_columns(tmp_path):
     bad = replace(CFG, kwb_vars={**CFG.kwb_vars, "p_hh_low_income": "nope"})
     with pytest.raises(KeyError, match="nope"):
         read_kwb(p, bad)
-
-
-# ── Parity with the R script (optional) ──────────────────────────────
-
-# Set IKOB_R_SEGMENTS_GPKG (the R output) and IKOB_R_KWB_GPKG (the KWB
-# file it was built from) to run the parity check; skipped otherwise.
-R_GPKG = os.environ.get("IKOB_R_SEGMENTS_GPKG",
-                        "data/r_reference/nl_segments.gpkg")
-R_KWB = os.environ.get("IKOB_R_KWB_GPKG", "data/wijkenbuurten_2022_v3.gpkg")
-
-
-@pytest.mark.skipif(not (os.path.exists(R_GPKG) and os.path.exists(R_KWB)
-                         and os.path.exists("data/statline")),
-                    reason="R reference output / inputs not available")
-def test_parity_with_r_household_based():
-    import geopandas as gpd
-    from ikob2.segments.pipeline import run_pipeline
-
-    cfg = replace(CFG, covariate_sentinels="keep")
-    res = run_pipeline(R_KWB, "data/statline", cfg)
-    ref = gpd.read_file(R_GPKG, layer="buurt_segments_household_based",
-                        ignore_geometry=True).set_index("buurtcode")
-    got = res.household_based.set_index("buurtcode").loc[ref.index]
-    seg = cfg.segment_columns
-    np.testing.assert_allclose(got[seg].to_numpy(), ref[seg].to_numpy(),
-                               rtol=1e-4, atol=1e-4)

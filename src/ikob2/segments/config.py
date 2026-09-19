@@ -74,12 +74,6 @@ class SegmentConfig:
     })
     local_income_calibration: Literal["laagste40", "none"] = "laagste40"
 
-    # The R script leaves the CBS suppression sentinel (-99999999) in
-    # the covariates (stedelijkheid, woningwaarde), so it enters the
-    # municipality means and z-scores. "na" (default) treats negatives
-    # as missing; "keep" reproduces the R behaviour for parity checks.
-    covariate_sentinels: Literal["na", "keep"] = "na"
-
     ipf_tol: float = 1e-8
     ipf_max_iter: int = 200
 

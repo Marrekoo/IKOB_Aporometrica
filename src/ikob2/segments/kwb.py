@@ -82,8 +82,9 @@ def read_kwb(path: str | Path, cfg: SegmentConfig) -> pd.DataFrame:
 
     for name, role in (("stedelijkheid", "stedelijkheid"),
                        ("gem_woz", "avg_house_value")):
-        col = pd.to_numeric(raw[v[role]], errors="coerce").astype(float)
-        out[name] = _nonneg(col) if cfg.covariate_sentinels == "na" else col
+        # CBS suppression codes are negative sentinels (-99999999);
+        # left in, they would enter the municipal means and z-scores.
+        out[name] = _nonneg(raw[v[role]])
 
     keep = (out["buurtcode"].str.match(r"^BU")
             & out["gemeentecode"].str.match(r"^GM[0-9]{4}$"))

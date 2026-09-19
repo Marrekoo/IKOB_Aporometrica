@@ -31,39 +31,33 @@ Python port of `gspree_segments.R`. Produces, per CBS buurt, persons in
         --statline data/statline --out output/nl_segments.gpkg
 
 `fetch` stores CSV snapshots of the two StatLine tables, so runs are
-offline and reproducible. `--covariate-sentinels keep` reproduces the R
-behaviour exactly (see below); the default treats CBS suppression codes
-as missing.
+offline and reproducible. CBS suppression codes (`-99999999`) in the
+KWB inputs are treated as missing.
 
-## Differences from the R script
+## Provenance and baseline
 
-* **Sentinel in covariates (deliberate).** R keeps the CBS suppression
-  code `-99999999` in `stedelijkheid` and `gem_woz`, so it enters the
-  municipal means and z-scores (2022 file: 181 and 1,890 buurten).
-  Default here: missing. `keep` restores R for parity.
+The method is a port of the earlier R script (`gspree_segments.R`). Before
+its sentinel handling was removed, the port reproduced that script's
+output for the 2022 KWB file (14,412 buurten) to 8e-7 persons in any
+segment cell, so the algorithm itself is unchanged. The R script left the
+CBS suppression code `-99999999` in `stedelijkheid` and `gem_woz`
+(181 and 1,890 buurten in the 2022 file), which entered the municipal
+means and z-scores and pushed them as far as -15 sd, so the fitted slopes
+were extrapolated far outside the data. This is removed: those values are
+missing. Relative to the R output the within-buurt segment distribution
+shifted by a mean total variation distance of 0.031 (95th percentile
+0.155), national segment totals by up to 16%.
+
+**The output of this pipeline is the baseline.** The R output is not kept
+and there is no parity test against it.
+
+## Implementation notes
+
 * **Vectorised.** All buurten are raked in one batched IPF (each table
   stops at its own convergence iteration) instead of a per-buurt loop.
 * **StatLine keys** are fetched from the OData `TypedDataSet` endpoint
   (keys, not titles) and stored as snapshots.
 * Non-finite structure-model predictions are floored like NA (1e-8).
-
-## Parity with the R script
-
-Run against the R output for the 2022 KWB file (14,412 buurten), the
-`--covariate-sentinels keep` mode reproduces both R layers
-(`household_based`, `population_scaled`) to float noise: max absolute
-difference 8e-7 persons in any segment cell. The check is
-`test_parity_with_r_household_based`; enable it with
-`IKOB_R_SEGMENTS_GPKG` and `IKOB_R_KWB_GPKG`.
-
-With the default (`na`) the results differ from R. In `keep` mode the
-sentinel drags the municipal covariate z-scores to as low as -15.3
-(stedelijkheid) and -7.6 (woningwaarde), so the fitted slopes are
-extrapolated far outside the data. Effect of the fix on the
-within-buurt segment distribution (total variation distance): mean
-0.031, median 0.021, 95th percentile 0.155, max 0.224; national segment
-totals move by up to 16%. Marginals are unchanged (IPF fixes them);
-only the household-type x income association shifts.
 
 ## Known limitations (inherited from the R design, not changed)
 
