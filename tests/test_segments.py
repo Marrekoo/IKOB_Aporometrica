@@ -447,6 +447,8 @@ def test_read_kwb_study_area_and_missing_columns(tmp_path):
 
 # ── Parity with the R script (optional) ──────────────────────────────
 
+# Set IKOB_R_SEGMENTS_GPKG (the R output) and IKOB_R_KWB_GPKG (the KWB
+# file it was built from) to run the parity check; skipped otherwise.
 R_GPKG = os.environ.get("IKOB_R_SEGMENTS_GPKG",
                         "data/r_reference/nl_segments.gpkg")
 R_KWB = os.environ.get("IKOB_R_KWB_GPKG", "data/wijkenbuurten_2022_v3.gpkg")
@@ -466,4 +468,4 @@ def test_parity_with_r_household_based():
     got = res.household_based.set_index("buurtcode").loc[ref.index]
     seg = cfg.segment_columns
     np.testing.assert_allclose(got[seg].to_numpy(), ref[seg].to_numpy(),
-                               rtol=1e-3, atol=1e-3)
+                               rtol=1e-4, atol=1e-4)

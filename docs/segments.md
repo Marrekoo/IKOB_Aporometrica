@@ -47,6 +47,24 @@ as missing.
   (keys, not titles) and stored as snapshots.
 * Non-finite structure-model predictions are floored like NA (1e-8).
 
+## Parity with the R script
+
+Run against the R output for the 2022 KWB file (14,412 buurten), the
+`--covariate-sentinels keep` mode reproduces both R layers
+(`household_based`, `population_scaled`) to float noise: max absolute
+difference 8e-7 persons in any segment cell. The check is
+`test_parity_with_r_household_based`; enable it with
+`IKOB_R_SEGMENTS_GPKG` and `IKOB_R_KWB_GPKG`.
+
+With the default (`na`) the results differ from R. In `keep` mode the
+sentinel drags the municipal covariate z-scores to as low as -15.3
+(stedelijkheid) and -7.6 (woningwaarde), so the fitted slopes are
+extrapolated far outside the data. Effect of the fix on the
+within-buurt segment distribution (total variation distance): mean
+0.031, median 0.021, 95th percentile 0.155, max 0.224; national segment
+totals move by up to 16%. Marginals are unchanged (IPF fixes them);
+only the household-type x income association shifts.
+
 ## Known limitations (inherited from the R design, not changed)
 
 * The model is fitted on municipality-level covariates standardised
