@@ -61,6 +61,39 @@ def weibull(cost: np.ndarray, shape: float, scale: float) -> np.ndarray:
     return np.exp(-hazard).astype(DTYPE, copy=False)
 
 
+def uniform(cost: np.ndarray, low: float, high: float) -> np.ndarray:
+    """
+    Survival function of a threshold uniform on [low, high].
+
+    S(c) = Pr(X >= c) = 1                    for c <= low
+                      = (high - c)/(high - low)  for low < c < high
+                      = 0                    for c >= high
+
+    This is the paper's cost margin within one segment: the reference-
+    budget envelope gives an interval [low, high] of plausible per-trip
+    budgets, taken uniform, so S_M is piecewise linear. It expresses
+    identification uncertainty over budget assumptions, not observed
+    dispersion across households. high == low is the degenerate
+    (isochrone-like) step: 1 up to and including low, 0 above.
+
+    Left-continuous like every survival function here, so a trip costing
+    exactly `low` still clears the gate, and free travel (c = 0) always
+    gives S = 1 when low >= 0. No atom at zero is modelled.
+    """
+    if not (np.isfinite(low) and np.isfinite(high)):
+        raise ValueError(f"uniform bounds must be finite, got ({low}, {high})")
+    if low < 0 or high < low:
+        raise ValueError(
+            f"uniform requires 0 <= low <= high, got low={low}, high={high}"
+        )
+    c = cost.astype(np.float64, copy=False)
+    if high == low:
+        out = (c <= low).astype(np.float64)
+    else:
+        out = np.clip((high - c) / (high - low), 0.0, 1.0)
+    return out.astype(DTYPE, copy=False)
+
+
 def logistic(cost: np.ndarray, alpha: float, omega: float,
              scaling: float = 1.0) -> np.ndarray:
     """
@@ -99,6 +132,7 @@ _CURVES = {
     "power": power,
     "logistic": logistic,
     "weibull": weibull,
+    "uniform": uniform,
 }
 
 

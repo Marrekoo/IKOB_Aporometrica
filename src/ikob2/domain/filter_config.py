@@ -57,6 +57,7 @@ _CURVE_ARITY = {
     "exponential": ("beta",),
     "power": ("beta",),
     "weibull": ("shape", "scale"),
+    "uniform": ("low", "high"),
 }
 
 
