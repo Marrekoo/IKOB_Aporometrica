@@ -180,18 +180,25 @@ detour (rail 1.15, other 1.25; `--rail-detour`, `--other-detour`),
 accumulated along the shortest-path tree. The fare is computed when a run
 is set up, so fare assumptions change without new routing:
 
-* **Rail**: the paper's anchors, average fare per km 2.60 EUR over 1 km and
-  0.20 EUR over 100 km, joined by a power law (fare(1 km) = 2.60, fare(100
-  km) = 20, minimum 2.60). The shape between the anchors is an assumption
-  and is not validated against a tariff table: supply one with
-  `--pt-rail-table km,eur.csv`.
+* **Rail**: the official NS single fare, second class, full tariff incl.
+  VAT, valid from 1 January 2026 (`src/ikob2/skims/ns_2026_2e_klas.csv`,
+  from the price list "NS Tarieven Consumenten"): 3.00 EUR up to 8 tariff
+  units, 4.60 at 15, 8.00 at 30, 12.40 at 50, 19.10 at 80, 22.70 at 100,
+  28.80 at 150 and 33.30 at 200, held there beyond; one tariff unit is one
+  tariff kilometre, read linearly between whole units. `--pt-rail-discount
+  0.2` / `0.4` applies NS's discounts, `--pt-rail-table km,eur.csv` a
+  different table, `--pt-rail-anchors` the tapering power law through the
+  paper's anchors. (Fares you had noted earlier, 2.70 up to 8 km, 4.40 at
+  15, 21.30 at 100 and 29.40 at 200, correspond to an earlier year: the
+  2026 list is about 5 to 13% higher.) Other rail operators are priced
+  with the same table.
 * **Bus, tram, metro, ferry**: 1.08 EUR boarding + 0.18 EUR per km, the
   boarding charged once per journey (`--pt-boardings count` charges every
   boarding).
 
-Example fares from Leidsche Rijn: Amsterdam (36 km rail + 8 km bus) 15.2
-EUR, Amersfoort 13.4, Rotterdam 17.2, Arnhem (73 km rail) 17.4, Groningen
-(199 km rail) 27.1; median over reachable pairs 20 EUR. The fare goes to the
+Example fares from Leidsche Rijn: Amsterdam (36 km rail + 8 km bus) 11.8
+EUR, Amersfoort 9.5, Rotterdam 15.7, Arnhem 17.5, Groningen 33.2 (rail
+only, 199 km); median over reachable pairs 19.8 EUR. The fare goes to the
 run as the PT cost matrix, gated by the segments' cost margins like the
 car cost.
 

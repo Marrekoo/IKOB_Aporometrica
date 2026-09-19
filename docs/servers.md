@@ -39,7 +39,7 @@ transport is not served here.
 
 ## OpenTripPlanner (OSM + GTFS: public transport itineraries)
 
-OTP 2.10 is a jar (`otp-2.10.0-shaded.jar`, Java 21). `otp prepare` links
+OTP 2.8.1 is a jar (`otp-2.8.1-shaded.jar`, Java 21; 2.9 and later need Java 25). `otp prepare` links
 the OSM extract and the GTFS zip into the graph folder and writes a
 build config that limits the transit service window (default September
 2026) to keep memory down; `otp build` builds and saves `graph.obj`;

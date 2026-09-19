@@ -299,24 +299,64 @@ def test_journeys_over_several_origins_and_chunks(tmp_path):
 
 # ── fare model ───────────────────────────────────────────────────────
 
-def test_rail_fare_anchors_taper_and_minimum():
+def test_official_ns_2026_table_is_the_default():
+    from ikob2.skims.pt_fare import NS_RAIL_TABLE, parse_ns_tariff  # noqa: F401
+
     m = PtFareModel()
-    f = m.rail_fare([0.0, 0.4, 1.0, 10.0, 100.0, 200.0])
-    assert f[0] == 0.0
-    assert f[1] == pytest.approx(2.60)                  # minimum fare
-    assert f[2] == pytest.approx(2.60)
-    assert f[4] == pytest.approx(20.0, rel=1e-9)        # 0.20 EUR/km x 100 km
-    assert f[3] < f[4] < f[5]                           # increasing ...
-    per_km = m.rail_fare([1.0, 10.0, 100.0]) / np.array([1.0, 10.0, 100.0])
-    assert per_km[0] > per_km[1] > per_km[2]            # ... and tapering
+    assert len(NS_RAIL_TABLE) == 193 and NS_RAIL_TABLE[0] == (8.0, 3.00)
+    km = [0.0, 0.5, 3.0, 8.0, 15.0, 30.0, 50.0, 80.0, 100.0, 150.0, 200.0,
+          260.0, 1000.0]
+    np.testing.assert_allclose(
+        m.rail_fare(km),
+        [0.0, 3.0, 3.0, 3.0, 4.60, 8.00, 12.40, 19.10, 22.70, 28.80, 33.30,
+         33.30, 33.30])
+    # linear between whole tariff units: 11.5 is halfway 3.70 and 4.00
+    assert m.rail_fare([11.5])[0] == pytest.approx(3.85)
     assert np.isnan(m.rail_fare([np.nan])[0])
+    assert (np.diff([e for _, e in NS_RAIL_TABLE]) >= 0).all()
 
 
-def test_rail_table_overrides_and_extrapolates():
-    m = PtFareModel(rail_table=((1, 3.0), (10, 5.0), (50, 12.0)))
+def test_parse_ns_tariff_from_price_list_text():
+    from ikob2.skims.pt_fare import parse_ns_tariff
+
+    text = """
+ 0 t/m 8           € 3,00             € 2,40             € 1,80             € 2,75
+ 9                 € 3,30             € 2,64             € 1,98             € 3,03
+ 10                € 3,50             € 2,80             € 2,10             € 3,21
+ Abonnement        Dal Voordeel   per jaar    € 76,20   € 76,20
+ 200               € 1.234,50         € 1,00
+"""
+    rows = parse_ns_tariff(text)
+    assert rows[:3] == ((8.0, 3.0), (9.0, 3.3), (10.0, 3.5))
+    assert rows[-1] == (200.0, 1234.5) and len(rows) == 4   # thousands separator
+
+
+def test_rail_discount_scales_the_rail_fare_only():
+    m = PtFareModel(rail_discount=0.2)
+    assert m.rail_fare([50.0])[0] == pytest.approx(12.40 * 0.8)
+    assert m.fare(50.0, 10.0, 1) == pytest.approx(12.40 * 0.8 + 1.08 + 1.8)
+    assert "-0.2" in m.matrix_id and "-0.2" not in PtFareModel().matrix_id
+    with pytest.raises(ValueError, match="rail_discount"):
+        PtFareModel(rail_discount=1.0)
+
+
+def test_rail_anchor_power_law_when_no_table():
+    m = PtFareModel(rail_table=None)
+    f = m.rail_fare([0.0, 0.4, 1.0, 10.0, 100.0, 200.0])
+    assert f[0] == 0.0 and f[1] == pytest.approx(2.60) and f[2] == pytest.approx(2.60)
+    assert f[4] == pytest.approx(20.0, rel=1e-9)
+    per_km = m.rail_fare([1.0, 10.0, 100.0]) / np.array([1.0, 10.0, 100.0])
+    assert per_km[0] > per_km[1] > per_km[2]
+
+
+def test_rail_table_overrides_and_can_extrapolate():
+    m = PtFareModel(rail_table=((1, 3.0), (10, 5.0), (50, 12.0)),
+                    rail_beyond_table="linear")
     np.testing.assert_allclose(m.rail_fare([0, 1, 5.5, 50, 60]),
                                [0, 3.0, 4.0, 12.0, 12.0 + 0.175 * 10])
-    assert m.rail_fare([0.2])[0] == pytest.approx(3.0)      # floor at 1 km fare
+    capped = PtFareModel(rail_table=((1, 3.0), (10, 5.0), (50, 12.0)))
+    assert capped.rail_fare([60.0])[0] == 12.0
+    assert m.rail_fare([0.2])[0] == pytest.approx(3.0)      # floor at first fare
 
 
 def test_regional_fare_single_versus_count_and_total():
@@ -328,17 +368,22 @@ def test_regional_fare_single_versus_count_and_total():
     assert count.fare(0, 10.0, 3) == pytest.approx(3 * 1.08 + 0.18 * 10)
     both = single.fare(10.0, 5.0, 1)
     assert both == pytest.approx(single.rail_fare([10.0])[0] + 1.08 + 0.9)
+    assert single.rail_fare([10.0])[0] == pytest.approx(3.50)
     assert np.isnan(single.fare(np.nan, 5.0, 1))
 
 
 def test_fare_model_validation_and_id():
     with pytest.raises(ValueError, match="taper"):
         PtFareModel(rail_eur_per_km_at_1km=0.2, rail_eur_per_km_at_100km=0.2)
+    with pytest.raises(ValueError, match="cap"):
+        PtFareModel(rail_beyond_table="wrap")
     with pytest.raises(ValueError, match="boardings"):
         PtFareModel(boardings="many")
     with pytest.raises(ValueError, match="increasing km"):
         PtFareModel(rail_table=((5, 1.0), (1, 2.0)))
     assert PtFareModel().matrix_id != PtFareModel(boardings="count").matrix_id
+    assert "rail=ns" in PtFareModel().matrix_id
+    assert "rail=2.6-0.2" in PtFareModel(rail_table=None).matrix_id
 
 
 def test_fare_of_a_routed_journey(tmp_path):

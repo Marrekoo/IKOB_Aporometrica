@@ -33,7 +33,8 @@ from ikob2.utils.paths import DataLayout
 logger = logging.getLogger(__name__)
 
 PORT = 8080
-JAR_VERSION = "2.10.0"
+# 2.9 and later are compiled for Java 25; 2.8.x runs on Java 21
+JAR_VERSION = "2.8.1"
 JAR_URL = ("https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/"
            "{v}/otp-shaded-{v}.jar")
 

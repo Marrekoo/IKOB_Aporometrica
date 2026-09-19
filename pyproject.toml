@@ -24,3 +24,6 @@ legacy = ["openpyxl>=3.1"]   # read the legacy IKOB Excel inputs
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"ikob2.skims" = ["*.csv"]

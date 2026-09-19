@@ -149,11 +149,12 @@ mean agreement on the distribution across groups.
   Time-only run of all three modes (`s0_modes_timeonly`, population-
   weighted mean acceptable jobs): car 215,000, public transport 52,000,
   bike 25,000.
-* **PT fares** (rail: power law through the paper's anchors; bus/tram/
-  metro: 1.08 + 0.18 per km, one boarding charge) and the cost gate:
-  `s0_modes_gated` (car, bike, public transport, all cost-gated): mean
-  acceptable jobs car 186,000 (0.87 of time-only), public transport 46,000
-  (0.88), bike unchanged. For public transport the gate removes decile 1
+* **PT fares** (rail: the official NS 2026 price list; bus/tram/metro: 1.08 +
+  0.18 per km, one boarding charge) and the cost gate:
+  `s0_modes_gated_ns2026` (car, bike, public transport, all cost-gated):
+  mean acceptable jobs car 186,000 (0.87 of time-only), public transport
+  46,000 (0.89), bike unchanged. The earlier power-law fares gave nearly the
+  same result (45,900). For public transport the gate removes decile 1
   (atom) and about a fifth of decile 2 (budget 5 to 24 EUR against median
   fares of 20 EUR); deciles 4 to 10 are hardly affected.
 

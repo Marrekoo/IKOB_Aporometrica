@@ -142,14 +142,19 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
 def pt_fare_model(args) -> PtFareModel:
     """Fare model from the command line (rail anchors, regional charge,
     optional rail tariff table CSV with columns km, eur)."""
-    table = None
-    if args.pt_rail_table:
+    from ikob2.skims.pt_fare import NS_RAIL_TABLE
+
+    table = NS_RAIL_TABLE
+    if args.pt_rail_anchors:
+        table = None
+    elif args.pt_rail_table:
         df = pd.read_csv(args.pt_rail_table)
         table = tuple(zip(df["km"].astype(float), df["eur"].astype(float)))
     return PtFareModel(
         rail_eur_per_km_at_1km=args.pt_rail_1km,
         rail_eur_per_km_at_100km=args.pt_rail_100km,
         rail_table=table,
+        rail_discount=args.pt_rail_discount,
         regional_boarding_eur=args.pt_regional_boarding,
         regional_eur_per_km=args.pt_regional_km, boardings=args.pt_boardings)
 
@@ -309,12 +314,18 @@ def main(argv=None) -> None:
     p.add_argument("--theta", type=float, default=1.5)
     p.add_argument("--car-model", choices=list(CAR_MODELS), default="fossil")
     p.add_argument("--no-parking-search", action="store_true")
-    p.add_argument("--pt-rail-1km", type=float, default=2.60,
-                   help="rail fare per km over 1 km (EUR)")
-    p.add_argument("--pt-rail-100km", type=float, default=0.20,
-                   help="rail fare per km over 100 km (EUR)")
     p.add_argument("--pt-rail-table", default=None,
-                   help="CSV km,eur of a rail tariff (overrides the anchors)")
+                   help="CSV km,eur of a rail tariff (default: the NS "
+                        "official NS 2026 price list, capped beyond 200 km)")
+    p.add_argument("--pt-rail-discount", type=float, default=0.0,
+                   help="share off the rail fare (NS 20%% / 40%% discount)")
+    p.add_argument("--pt-rail-anchors", action="store_true",
+                   help="use the tapering power law through the paper's "
+                        "anchors instead of a tariff table")
+    p.add_argument("--pt-rail-1km", type=float, default=2.60,
+                   help="anchors: rail fare per km over 1 km (EUR)")
+    p.add_argument("--pt-rail-100km", type=float, default=0.20,
+                   help="anchors: rail fare per km over 100 km (EUR)")
     p.add_argument("--pt-regional-boarding", type=float, default=1.08)
     p.add_argument("--pt-regional-km", type=float, default=0.18)
     p.add_argument("--pt-boardings", choices=["single", "count"],
