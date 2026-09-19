@@ -262,3 +262,112 @@ def test_uniform_cost_margin_in_config_and_composition(tmp_path):
     joint = ensure_dense(compose_filters(
         weibull(t, 2.0, 45.0), uniform(m, 5.0, 15.0), epsilon=None))
     np.testing.assert_allclose(joint, np.exp(-(30 / 45) ** 2) * 0.5, rtol=1e-5)
+
+
+# ── Atom at zero ─────────────────────────────────────────────────────
+
+from ikob2.core.decay_curves import with_atom  # noqa: E402
+from ikob2.domain.filter_config import CurveSpec, INDEPENDENCE, ClassFilter  # noqa: E402
+from ikob2.domain.segments import CarAccess, Income, Preference, Segment  # noqa: E402
+from ikob2.engine.runner import SegmentedRunner, evaluate_marginal  # noqa: E402
+
+
+def test_atom_scales_positive_values_and_spares_zero():
+    c = np.array([0.0, 1.0, 10.0, 100.0], dtype=DTYPE)
+    base = uniform(c, 5.0, 15.0)
+    out = with_atom(base, c, 0.25)
+    np.testing.assert_allclose(out, [1.0, 0.75, 0.75 * 0.5, 0.0], atol=1e-7)
+
+
+def test_atom_zero_is_identity_and_one_excludes_all_priced_trips():
+    c = np.array([0.0, 3.0], dtype=DTYPE)
+    base = uniform(c, 5.0, 15.0)
+    assert with_atom(base, c, 0.0) is base
+    np.testing.assert_array_equal(with_atom(base, c, 1.0), [1.0, 0.0])
+
+
+def test_atom_result_is_still_a_survival_function():
+    c = np.linspace(0, 100, 500, dtype=DTYPE)
+    s = with_atom(weibull(c, 2.0, 40.0), c, 0.3)
+    # non-increasing on the positive axis, S(0+) = 1 - atom
+    pos = s[c > 0]
+    assert np.all(np.diff(pos) <= 0)
+    assert pos[0] == pytest.approx(0.7, abs=1e-3)
+
+
+@pytest.mark.parametrize("atom", [-0.1, 1.1, np.nan])
+def test_atom_rejects_out_of_range(atom):
+    with pytest.raises(ValueError):
+        with_atom(np.ones(2, dtype=DTYPE), np.ones(2, dtype=DTYPE), atom)
+    with pytest.raises(FilterConfigError):
+        CurveSpec("uniform", (1.0, 2.0), atom=atom)
+
+
+def test_curvespec_atom_is_part_of_identity():
+    a = CurveSpec("uniform", (5.0, 15.0))
+    b = CurveSpec("uniform", (5.0, 15.0), atom=0.2)
+    assert a == CurveSpec("uniform", (5.0, 15.0), atom=0.0)
+    assert a != b and hash(a) != hash(b)
+
+
+def test_atom_in_config(tmp_path):
+    cls = {"time": {"curve": "weibull", "shape": 2.0, "scale": 45.0},
+           "cost": {"curve": "uniform", "low": 5.0, "high": 15.0,
+                    "atom": 0.15}}
+    path = tmp_path / "f.json"
+    path.write_text(json.dumps({"modes": {"ov": {"classes": {
+        c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}))
+    assert load_filter_config(path).filters["ov"]["laag"].cost.atom == 0.15
+
+    cls["cost"]["atom"] = 2.0
+    path.write_text(json.dumps({"modes": {"ov": {"classes": {
+        c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}))
+    with pytest.raises(FilterConfigError, match="atom"):
+        load_filter_config(path)
+
+
+def test_runner_applies_atom_to_priced_pairs_only():
+    # Pairs: diagonal is free (cost 0), off-diagonal costs 8 EUR, well
+    # inside the envelope's flat part -> continuous S_M = 1 there, so the
+    # only thing reducing the priced weight is the atom.
+    n = 3
+    time = np.full((n, n), 10.0, dtype=DTYPE)
+    money = np.full((n, n), 8.0, dtype=DTYPE)
+    np.fill_diagonal(money, 0.0)
+    pop = np.array([100.0, 200.0, 300.0], dtype=DTYPE)
+    jobs = np.array([50.0, 60.0, 70.0], dtype=DTYPE)
+    pi = 0.2
+
+    from ikob2.domain.state import ModelState
+    state = ModelState.create(
+        generalized_cost=time, population=pop, opportunities=jobs,
+        decay_type="exponential", decay_beta=0.01, decay_epsilon=0.0)
+
+    def run(atom):
+        cf = ClassFilter(
+            CurveSpec("weibull", (2.0, 60.0)),
+            CurveSpec("uniform", (10.0, 20.0), atom=atom),
+            INDEPENDENCE)
+        seg = Segment("s", Income.LOW, CarAccess.NO_CAR, Preference.PT, cf,
+                      time_cost_id="time", money_cost_id="money")
+        return SegmentedRunner(decay_epsilon=None).run(
+            state, [seg], {"s": pop},
+            cost_matrices={"time": time, "money": money})
+
+    r0, r1 = run(0.0), run(pi)
+
+    # hand-built weights
+    tw = np.exp(-(10.0 / 60.0) ** 2)
+    for res, factor in ((r0, 1.0), (r1, 1.0 - pi)):
+        D = np.full((n, n), tw * factor)
+        np.fill_diagonal(D, tw)
+        V = D.T @ pop
+        expected = D @ (jobs / V)
+        np.testing.assert_allclose(res.per_segment["s"], expected, rtol=1e-4)
+    assert not np.allclose(r0.per_segment["s"], r1.per_segment["s"])
+
+
+def test_evaluate_marginal_applies_atom():
+    c = np.array([[0.0, 8.0], [8.0, 0.0]], dtype=DTYPE)
+    out = evaluate_marginal(c, CurveSpec("uniform", (10.0, 20.0), atom=0.4))
+    np.testing.assert_allclose(out, [[1.0, 0.6], [0.6, 1.0]], rtol=1e-6)

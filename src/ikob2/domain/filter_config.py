@@ -111,13 +111,23 @@ INDEPENDENCE = CopulaSpec()  # module-level default, single instance
 
 @dataclass(frozen=True)
 class CurveSpec:
-    """A marginal survival filter: curve name + ordered params.
+    """A marginal survival filter: curve name + ordered params, plus an
+    optional atom at zero (share for whom no positive value is
+    acceptable; see core.decay_curves.with_atom).
 
     Frozen and fully value-based, so (matrix_id, CurveSpec) is a valid
     dict key — this IS the marginal-cache deduplication key.
     """
     curve: str
     params: tuple[float, ...]
+    atom: float = 0.0
+
+    def __post_init__(self):
+        if not (0.0 <= self.atom <= 1.0):
+            raise FilterConfigError(
+                f"Curve '{self.curve}' atom must be in [0, 1], "
+                f"got {self.atom}."
+            )
 
     @classmethod
     def from_dict(cls, block: dict, where: str) -> "CurveSpec":
@@ -136,13 +146,14 @@ class CurveSpec:
                 f"filter level."
             )
         required = _CURVE_ARITY[curve]
-        _reject_unknown_keys(block, {"curve", *required}, where)
+        _reject_unknown_keys(block, {"curve", "atom", *required}, where)
         missing = [p for p in required if p not in block]
         if missing:
             raise FilterConfigError(
                 f"Curve '{curve}' in {where} missing parameter(s) {missing}."
             )
-        return cls(curve, tuple(float(block[p]) for p in required))
+        return cls(curve, tuple(float(block[p]) for p in required),
+                   atom=float(block.get("atom", 0.0)))
 
 
 @dataclass(frozen=True)

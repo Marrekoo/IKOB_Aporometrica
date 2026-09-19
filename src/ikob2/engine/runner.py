@@ -73,7 +73,7 @@ import numpy as np
 
 from ikob2.core.accessibility import compute_accessibility
 from ikob2.core.compose import compose_filters
-from ikob2.core.decay_curves import get_decay_function
+from ikob2.core.decay_curves import get_decay_function, with_atom
 from ikob2.core.numerics import (
     DTYPE,
     as_dtype,
@@ -106,7 +106,7 @@ class SimulationRunner:
 def evaluate_marginal(cost, spec) -> np.ndarray:
     fn = get_decay_function(spec.curve)
     dense = ensure_dense(cost).astype(DTYPE, copy=False)
-    result = fn(dense, *spec.params)
+    result = with_atom(fn(dense, *spec.params), dense, spec.atom)
     logger.info(
         "Marginal %s%s on matrix[min=%.4g p50=%.4g max=%.4g] "
         "-> filter[mean=%.4g, frac>0.05=%.3f]",

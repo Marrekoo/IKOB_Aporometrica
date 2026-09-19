@@ -127,6 +127,33 @@ def logistic(cost: np.ndarray, alpha: float, omega: float,
     return out.astype(DTYPE, copy=False)
 
 
+def with_atom(survival: np.ndarray, cost: np.ndarray, atom: float) -> np.ndarray:
+    """
+    Add an atom at zero to a survival function.
+
+    `atom` (pi) is the share of the population for whom NO positive
+    value of the margin is acceptable: S(0+) = 1 - pi. Applied as
+
+        S_pi(x) = S(x)            for x <= 0   (zero cost/time always clears)
+                = (1 - pi) * S(x) for x >  0
+
+    so a priced trip is acceptable to at most 1 - pi of the segment,
+    while walking and private cycling (c = 0) are untouched. For the
+    cost margin this is the segment whose protected basket exhausts its
+    income; see the paper's M2 (f(0+, 0+) = 1 - pi_M < 1).
+
+    Multiplying by (1 - pi) keeps S non-increasing, in [0, 1], and
+    tending to zero, so the result is still a survival function.
+    """
+    if not (0.0 <= atom <= 1.0):
+        raise ValueError(f"atom must be in [0, 1], got {atom}")
+    if atom == 0.0:
+        return survival
+    factor = DTYPE(1.0 - atom)
+    return np.where(cost > 0, survival * factor, survival).astype(
+        DTYPE, copy=False)
+
+
 _CURVES = {
     "exponential": exponential,
     "power": power,
