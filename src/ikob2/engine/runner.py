@@ -398,3 +398,82 @@ class SegmentedRunner:
             total=safe_divide(total, total_population),
             total_population=total_population,
         )
+
+    # ── Hansen (no competition) ──────────────────────────────────────
+
+    def run_hansen(
+        self,
+        state: ModelState,
+        segments: Sequence[Segment],
+        variants: Sequence[Variant] = (),
+        cost_matrices: Mapping[str, object] | None = None,
+        opportunities: Mapping[str, np.ndarray] | None = None,
+    ) -> dict[str, np.ndarray]:
+        """
+        Potential accessibility per segment, without competition:
+
+            a_i^s = sum_j D_j^pool(s) * f_s(t_ij, c_ij)
+
+        the measure of the threshold-gate model (the expected number of
+        acceptable opportunities). Each segment reads its own pool's
+        opportunity vector, so income-matched jobs D_{j,s} are pools
+        with one segment group each. No populations are needed.
+
+        Composed filter matrices are deduplicated on weight_key exactly
+        as in run(): segments with equal filters share one matrix.
+        Returns segment name -> (n_zones,) accessibility.
+        """
+        for variant in variants:
+            state = variant(state)
+        state.validate()
+
+        n = state.n_zones
+        if cost_matrices is None:
+            cost_matrices = {"time": state.generalized_cost}
+        if opportunities is None:
+            opportunities = {"default": state.opportunities}
+
+        validate_pools(
+            segments, opportunities,
+            total_opportunities=state.opportunities,
+        ).raise_if_failed()
+        opportunities = {
+            pool: as_dtype(vec) for pool, vec in opportunities.items()
+        }
+        for pool, vec in opportunities.items():
+            if vec.shape != (n,):
+                raise ValueError(
+                    f"Opportunities for pool '{pool}' have shape "
+                    f"{vec.shape}, expected ({n},)"
+                )
+
+        self._register_filter_recipes(cost_matrices, segments)
+
+        by_wk: dict[tuple, list[Segment]] = {}
+        for segment in segments:
+            by_wk.setdefault(segment.weight_key, []).append(segment)
+
+        run_keys = [("decay", wk) for wk in by_wk]
+        for key in run_keys:
+            self.registry.unpin(key)
+        for mkey in self._marginal_keys:
+            self.registry.unpin(mkey)
+
+        per_segment: dict[str, np.ndarray] = {}
+        try:
+            if self.pin_marginals:
+                for mkey in self._marginal_keys:
+                    self.registry.pin(mkey)
+            for wk, members in by_wk.items():
+                D = self.registry.get(("decay", wk))
+                for segment in members:
+                    a = matvec(D, opportunities[segment.pool])
+                    if state.zone_weights is not None:
+                        a = (a * state.zone_weights).astype(DTYPE)
+                    per_segment[segment.name] = a
+        finally:
+            for key in run_keys:
+                self.registry.unpin(key)
+            for mkey in self._marginal_keys:
+                self.registry.unpin(mkey)
+        return per_segment

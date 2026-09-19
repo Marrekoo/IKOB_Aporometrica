@@ -34,6 +34,41 @@ Python port of `gspree_segments.R`. Produces, per CBS buurt, persons in
 offline and reproducible. CBS suppression codes (`-99999999`) in the
 KWB inputs are treated as missing.
 
+## Using the segments in the engine (`ikob2.segments.bridge`)
+
+The 44 segments enter the accessibility engine as ordinary
+`SegmentedRunner` segments:
+
+    from ikob2.segments.bridge import (build_segments,
+        populations_for_zones, load_envelope)
+
+    env = load_envelope("data/envelope.csv")     # cost margin per segment
+    segs = build_segments(CurveSpec("weibull", (k, eta)),
+                          envelope=env, money_cost_id=fare.matrix_id,
+                          copula=CopulaSpec("gumbel", 1.5),
+                          pool_by="income_class")
+    pops = populations_for_zones(result.population_scaled, zone_codes, segs)
+
+    runner = SegmentedRunner(decay_epsilon=1e-9)
+    a = runner.run_hansen(state, segs, cost_matrices={...},
+                          opportunities={...})            # paper's measure
+    shen = runner.run(state, segs, pops, cost_matrices={...})  # competition
+
+* **Envelope table** (CSV): `household_type, income_class, low, high[, atom]`
+  - the per-trip cost threshold is uniform on [low, high] EUR; `atom` is
+  the share for whom no priced trip is acceptable (a censored cell is
+  `atom = 1`). Every requested segment needs a row (`only=` restricts).
+  Free modes pass no envelope and get a time-only filter, so all their
+  segments share one composed matrix.
+* **Hansen vs Shen.** `run_hansen` is `a_i = sum_j D_j f(t_ij, c_ij)` per
+  segment with no competition and no populations: the expected number of
+  acceptable opportunities. `run` is the competition-adjusted measure.
+* **Pools** carry income-matched opportunities: `pool_by="income_class"`
+  needs one opportunity vector per income class.
+* `populations_for_zones` aligns segment persons to the engine's zone
+  order; zones without a row are empty. `aggregate_by` reports
+  population-weighted means by income class or household type.
+
 ## Provenance and baseline
 
 The method is a port of the earlier R script (`gspree_segments.R`). Before

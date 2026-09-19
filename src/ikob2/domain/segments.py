@@ -149,14 +149,19 @@ class Segment:
     opportunities vector for every pool referenced by any segment.
     """
     name: str
-    income: Income
-    car_access: CarAccess
-    preference: Preference
+    income: Income | str | None
+    car_access: CarAccess | None
+    preference: Preference | None
     class_filter: ClassFilter
     has_free_pt: bool = False
     time_cost_id: str = "time"
     money_cost_id: str | None = None
     pool: str = "default"
+    # Household-type x income-decile segments (ikob2.segments) carry
+    # their income class as a plain string ("D3") and have no car
+    # access / preference (the mode is a property of the run, not of
+    # the segment); the legacy fields may then be None.
+    household_type: str | None = None
 
     def __post_init__(self):
         if self.class_filter.cost is not None and self.money_cost_id is None:
