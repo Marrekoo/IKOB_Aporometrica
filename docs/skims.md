@@ -110,6 +110,68 @@ the start of collection). Open questions for NDW: bulk or API access to
 FCD exports, licence terms for publication, and whether historical
 minute data can be requested for many routes.
 
+## Peak load by road class (`skims.peak`)
+
+Free-flow times understate peak travel. As a first correction the OSM
+extract is rewritten so that the routers see peak speeds: `maxspeed` is
+divided by a congestion factor by road class, so travel times on those
+classes are multiplied by it and route choice reacts as well.
+
+| Road class | Factor | Basis |
+|---|---|---|
+| motorway, trunk (and links) | 1.40 | TomTom Traffic Index |
+| primary, secondary (and links) | 1.20 | Monitor Nationale Omgevingsvisie, Indicatoren Bereikbaarheid |
+| tertiary, residential, unclassified, living street | 1.05 | minor extra interactions in the streets |
+
+Enough to mimic a peak load, not a congestion model: uniform in space and
+time, no bottlenecks. Speeds are rounded to whole km/h, so realised
+factors are 1.39 to 1.41, 1.19 to 1.20 and 1.03 to 1.05. Only ways with a
+numeric `maxspeed` are changed; in the Dutch data nearly all are (motorway
+100%, residential 99%, checked on the Utrecht extract). Tested on the
+Utrecht extract, car times from the Dom Tower rise 7% to 19% (Amersfoort 28
+to 32 minutes).
+
+    python -m ikob2.cli.skims make-peak --osm <free-flow.pbf> --out <peak.pbf>
+    python -m ikob2.cli.skims build ... --osm <peak.pbf> --modes car --out <peak store>
+    python -m ikob2.cli.accessibility ... --study utrecht_nl_peak \
+        --distance-study utrecht_nl
+
+`--distance-study` reuses the routed distances of the free-flow store
+(distances barely change with speeds). The national peak extract is built
+in the data folder under `intermediate/osm_peak`.
+
+## Public transport from GTFS: a frequency model (`skims.gtfs_pt`)
+
+Not R5, and no averaging over departure times. One weekday of the GTFS
+feed (default Tuesday 2026-09-15) is reduced to a peak window (default
+07:00-09:00): per line (route x direction) a headway per stop (window /
+departures) and a median in-vehicle time between consecutive stops.
+Rules:
+
+* **Waiting** at every boarding: `min(headway / 2, 7.5)` minutes, i.e.
+  half the headway below 15 minutes and the same 7.5-minute average
+  above it (infrequent services are used by timing the arrival).
+* **Transfers** are not penalised: no extra transfer penalty, only the
+  boarding wait and the walk between stops (`--boarding-penalty-min`
+  exists, default 0).
+* **Walking** (access, egress, transfers): crow-fly distance x detour 1.3
+  at an adjustable speed, default **4 km/h**; access and egress up to 20
+  minutes; transfers between stops within 300 m.
+* A trip always contains at least one boarding (the graph has separate
+  before-boarding, after-alighting, boarded and riding nodes).
+
+Shortest paths over the graph (scipy Dijkstra) give door-to-door minutes
+for the 111 origins to all 14,318 destination buurten; the result is the
+store layer `all` (`pt/time`).
+
+    python -m ikob2.cli.skims build-pt <store> --kwb ... --gtfs ... \
+        [--date 2026-09-15 --window 7 9 --walk-kmh 4]
+
+Limits: headways are per line and stop (parallel lines are not combined
+into a higher frequency), all route types are treated alike, and there is
+no fare yet (the PT run is time-only until distances and fares by
+distance are added).
+
 ## National network (feasibility)
 
 The national OSM extract (`netherlands-260822.osm.pbf`, 1.4 GB) builds

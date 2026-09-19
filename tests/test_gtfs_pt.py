@@ -1,0 +1,248 @@
+"""Frequency-model public transport skims from GTFS."""
+
+import io
+import zipfile
+
+import numpy as np
+import pandas as pd
+import pytest
+from pyproj import Transformer
+
+from ikob2.skims.gtfs_pt import (
+    PtRouter,
+    boarding_wait,
+    load_peak_timetable,
+)
+
+X0, Y0 = 155000.0, 463000.0
+TO_WGS = Transformer.from_crs("EPSG:28992", "EPSG:4326", always_xy=True)
+
+
+def lonlat(dx, dy):
+    lon, lat = TO_WGS.transform(X0 + dx, Y0 + dy)
+    return lon, lat
+
+
+def hms(seconds):
+    return f"{int(seconds // 3600):02d}:{int(seconds % 3600 // 60):02d}:00"
+
+
+def gtfs_zip(tmp_path, *, l1_headway_min=10, l2_headway_min=30,
+             date="20260915", pickup_b=0):
+    """Line R1: A - B - C every l1 minutes (6 min per hop); line R2: C' - D
+    every l2 minutes (10 min); C' is 100 m from C. 07:00-09:00 plus a lone
+    12:00 trip that must not count; service S1 runs on `date` only."""
+    stops = {"A": (0, 0), "B": (5000, 0), "C": (10000, 0),
+             "Cp": (10000, 100), "D": (15000, 0)}
+    stop_rows = [(k, *lonlat(*v)[::-1]) for k, v in stops.items()]
+    trips, times = [], []
+
+    def add_line(route, stop_seq, hops_min, headway_min, tag):
+        t0 = 7 * 3600
+        n = 0
+        starts = list(range(t0, 9 * 3600, int(headway_min * 60))) + [12 * 3600]
+        for s in starts:
+            tid = f"{tag}{n}"
+            n += 1
+            trips.append((route, "S1", tid, "0"))
+            t = s
+            for i, stop in enumerate(stop_seq):
+                pick = pickup_b if (route == "R1" and stop == "B") else 0
+                times.append((tid, i + 1, stop, hms(t), hms(t), pick, 0))
+                if i < len(hops_min):
+                    t += hops_min[i] * 60
+
+    add_line("R1", ["A", "B", "C"], [6, 6], l1_headway_min, "a")
+    add_line("R2", ["Cp", "D"], [10], l2_headway_min, "b")
+    trips.append(("R1", "OTHER", "x0", "0"))
+    times.append(("x0", 1, "A", "07:30:00", "07:30:00", 0, 0))
+    times.append(("x0", 2, "B", "07:36:00", "07:36:00", 0, 0))
+
+    z = tmp_path / "gtfs.zip"
+    with zipfile.ZipFile(z, "w") as zf:
+        def put(name, df):
+            zf.writestr(name, df.to_csv(index=False))
+        put("stops.txt", pd.DataFrame(stop_rows,
+                                      columns=["stop_id", "stop_lat", "stop_lon"]))
+        put("routes.txt", pd.DataFrame([("R1", 2), ("R2", 3)],
+                                       columns=["route_id", "route_type"]))
+        put("trips.txt", pd.DataFrame(
+            trips, columns=["route_id", "service_id", "trip_id",
+                            "direction_id"]))
+        put("stop_times.txt", pd.DataFrame(
+            times, columns=["trip_id", "stop_sequence", "stop_id",
+                            "arrival_time", "departure_time", "pickup_type",
+                            "drop_off_type"]))
+        put("calendar_dates.txt", pd.DataFrame(
+            [("S1", date, 1), ("OTHER", "20260916", 1)],
+            columns=["service_id", "date", "exception_type"]))
+    return z
+
+
+def xy(dx, dy):
+    return [X0 + dx, Y0 + dy]
+
+
+ORIGIN = np.array([xy(0, 200)])
+DESTS = np.array([xy(5000, 100), xy(15000, 150), xy(30000, 0), xy(0, 300)])
+
+
+# ── waiting rule ─────────────────────────────────────────────────────
+
+def test_boarding_wait_is_half_the_headway_capped_at_7_5():
+    h = [5, 10, 14.9, 15, 30, 120]
+    np.testing.assert_allclose(boarding_wait(h), [2.5, 5, 7.45, 7.5, 7.5, 7.5])
+    np.testing.assert_allclose(boarding_wait([30], cap_min=10), [10])
+
+
+# ── reading GTFS ─────────────────────────────────────────────────────
+
+def test_peak_timetable_headways_rides_and_service_filter(tmp_path):
+    tt = load_peak_timetable(gtfs_zip(tmp_path), "2026-09-15")
+    line = tt.lines.set_index("route_id")
+    assert set(line.index) == {"R1", "R2"}                 # OTHER not running
+    assert line.loc["R1", "route_type"] == "2"
+    r1 = int(line.loc["R1", "line_id"])
+    ls = tt.line_stops
+    h = ls[(ls.line_id == r1) & (ls.stop_id == "A")].iloc[0]
+    assert h["headway_min"] == pytest.approx(10.0)         # 12 departures / 2 h
+    r2 = int(line.loc["R2", "line_id"])
+    assert ls[(ls.line_id == r2) & (ls.stop_id == "Cp")].iloc[0][
+        "headway_min"] == pytest.approx(30.0)              # 4 departures
+    rides = tt.rides
+    ab = rides[(rides.line_id == r1) & (rides.from_stop == "A")
+               & (rides.to_stop == "B")]
+    assert ab["minutes"].iloc[0] == pytest.approx(6.0)
+    # the 12:00 trip is outside the window: not counted in headways
+    assert (ls[ls.line_id == r1].groupby("stop_id").size() == 1).all()
+
+
+def test_no_service_on_the_date_and_calendar_txt(tmp_path):
+    with pytest.raises(ValueError, match="No service"):
+        load_peak_timetable(gtfs_zip(tmp_path), "2026-09-20")
+    # calendar.txt weekdays and ranges are honoured, exceptions applied
+    src = gtfs_zip(tmp_path)
+    z = tmp_path / "cal.zip"
+    with zipfile.ZipFile(src) as a, zipfile.ZipFile(z, "w") as b:
+        for name in a.namelist():
+            if name != "calendar_dates.txt":
+                b.writestr(name, a.read(name))
+        b.writestr("calendar.txt", pd.DataFrame(
+            [("S1", 1, 1, 1, 1, 1, 0, 0, "20260901", "20261031")],
+            columns=["service_id", "monday", "tuesday", "wednesday",
+                     "thursday", "friday", "saturday", "sunday",
+                     "start_date", "end_date"]).to_csv(index=False))
+        b.writestr("calendar_dates.txt", pd.DataFrame(
+            [("S1", "20260922", 2)],
+            columns=["service_id", "date", "exception_type"]
+        ).to_csv(index=False))
+    assert load_peak_timetable(z, "2026-09-15").lines.shape[0] == 2   # Tuesday
+    with pytest.raises(ValueError, match="No service"):
+        load_peak_timetable(z, "2026-09-19")          # Saturday
+    with pytest.raises(ValueError, match="No service"):
+        load_peak_timetable(z, "2026-09-22")          # removed by exception
+
+
+def test_pickup_restriction_blocks_boarding(tmp_path):
+    tt = load_peak_timetable(gtfs_zip(tmp_path, pickup_b=1), "2026-09-15")
+    ls = tt.line_stops
+    r1 = int(tt.lines.set_index("route_id").loc["R1", "line_id"])
+    b = ls[(ls.line_id == r1) & (ls.stop_id == "B")].iloc[0]
+    assert not b["can_board"] and b["can_alight"]
+
+
+# ── routing ──────────────────────────────────────────────────────────
+
+def route(tmp_path, **kw):
+    tt = load_peak_timetable(gtfs_zip(tmp_path,
+                                      **{k: v for k, v in kw.items()
+                                         if k in ("l1_headway_min",
+                                                  "l2_headway_min")}),
+                             "2026-09-15")
+    opts = {k: v for k, v in kw.items()
+            if k not in ("l1_headway_min", "l2_headway_min")}
+    return PtRouter(tt, **opts).time_matrix(ORIGIN, DESTS, max_minutes=180)[0]
+
+
+def walk(m, kmh=4.0, detour=1.3):
+    return m * detour / (kmh * 1000 / 60)
+
+
+def test_door_to_door_time_adds_walk_wait_ride_transfer_and_egress(tmp_path):
+    t = route(tmp_path)
+    # A -> B: access 200 m, wait 5 (10-min line), ride 6, egress 100 m
+    assert t[0] == pytest.approx(walk(200) + 5 + 6 + walk(100), abs=1e-4)
+    # to D: ride 12 to C, walk 100 m to C', wait 7.5 (30-min line, capped),
+    # ride 10, egress 150 m; no transfer penalty
+    assert t[1] == pytest.approx(walk(200) + 5 + 12 + walk(100) + 7.5 + 10
+                                 + walk(150), abs=1e-4)
+    assert np.isnan(t[2])                   # 30 km away: not served
+    assert np.isnan(t[3])                   # 300 m walk: never a walk-only trip
+
+
+def test_infrequent_lines_wait_the_capped_average(tmp_path):
+    t60 = route(tmp_path, l1_headway_min=60)
+    t20 = route(tmp_path, l1_headway_min=20)
+    assert t60[0] == pytest.approx(walk(200) + 7.5 + 6 + walk(100), abs=1e-4)
+    assert t20[0] == pytest.approx(t60[0], abs=1e-4)          # both capped
+    t4 = route(tmp_path, l1_headway_min=4)                    # 2 min wait
+    assert t4[0] == pytest.approx(walk(200) + 2 + 6 + walk(100), abs=1e-4)
+
+
+def test_walking_speed_is_adjustable_and_default_4_kmh(tmp_path):
+    slow = route(tmp_path)                                    # 4 km/h default
+    fast = route(tmp_path, walk_kmh=6.0)
+    assert slow[0] - fast[0] == pytest.approx(
+        walk(200) + walk(100) - walk(200, 6) - walk(100, 6), abs=1e-4)
+    with pytest.raises(ValueError, match="positive"):
+        PtRouter(load_peak_timetable(gtfs_zip(tmp_path), "2026-09-15"),
+                 walk_kmh=0)
+
+
+def test_access_radius_follows_walking_speed_and_boarding_penalty(tmp_path):
+    tt = load_peak_timetable(gtfs_zip(tmp_path), "2026-09-15")
+    far_origin = np.array([xy(0, 1500)])          # 1.5 km from stop A
+    slow = PtRouter(tt, walk_kmh=4.0).time_matrix(far_origin, DESTS[:1])
+    fast = PtRouter(tt, walk_kmh=6.0).time_matrix(far_origin, DESTS[:1])
+    assert np.isnan(slow[0, 0]) and np.isfinite(fast[0, 0])   # 20 min limit
+    base = PtRouter(tt).time_matrix(ORIGIN, DESTS)[0]
+    pen = PtRouter(tt, boarding_penalty_min=3.0).time_matrix(ORIGIN, DESTS)[0]
+    assert pen[0] - base[0] == pytest.approx(3.0)             # one boarding
+    assert pen[1] - base[1] == pytest.approx(6.0)             # two boardings
+
+
+def test_max_minutes_limits_the_search(tmp_path):
+    tt = load_peak_timetable(gtfs_zip(tmp_path), "2026-09-15")
+    t = PtRouter(tt).time_matrix(ORIGIN, DESTS, max_minutes=30)[0]
+    assert np.isfinite(t[0]) and np.isnan(t[1])               # 43 min > 30
+
+
+# ── the store layer ──────────────────────────────────────────────────
+
+from ikob2.skims.pt_build import build_pt_layer  # noqa: E402
+from ikob2.skims.store import SkimStore  # noqa: E402
+
+
+def test_pt_layer_in_a_store_resumes_and_matches_the_router(tmp_path):
+    tt = load_peak_timetable(gtfs_zip(tmp_path), "2026-09-15")
+    router = PtRouter(tt)
+    origins = np.array([xy(0, 200), xy(0, 250), xy(5000, 50)])
+    store = SkimStore.create(tmp_path / "s", ["O0", "O1", "O2"],
+                             {"near": ["Z0"]})
+    codes = ["Z0", "Z1", "Z2", "Z3"]
+    build_pt_layer(store, router, origins, codes, DESTS, block_size=2)
+    got = store.block("all", "pt", "time")
+    exp = router.time_matrix(origins, DESTS)
+    np.testing.assert_allclose(got, exp, equal_nan=True)
+    assert store.combined("pt", "time", ["Z1", "Z0"], near="all")[0, 0] \
+        == pytest.approx(exp[0, 1])
+    assert store.done_rows("all", "pt", "time") == [[0, 3]]
+    # a second call has nothing to do
+    build_pt_layer(store, router, origins, codes, DESTS, block_size=2)
+    with pytest.raises(ValueError, match="different destinations"):
+        build_pt_layer(store, router, origins, codes[::-1], DESTS[::-1])
+    with pytest.raises(ValueError, match="origin_xy"):
+        build_pt_layer(store, router, origins[:2], codes, DESTS,
+                       layer="other")
+    with pytest.raises(ValueError, match="already exists"):
+        store.add_layer("all", codes)

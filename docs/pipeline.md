@@ -132,9 +132,27 @@ credits far-away jobs, and deciles whose job pool lies further away gain
 more (car decile 8: 1.73, decile 10: 1.17). Agreement on rankings does not
 mean agreement on the distribution across groups.
 
+## Peak load and public transport (preliminary)
+
+* **Peak load** (car times with congestion factors by road class, see
+  `docs/skims.md`): mean acceptable jobs by car fall to 0.61 of the free-flow
+  value (deciles 0.52 to 0.66) while the ranking of origins hardly changes
+  (Spearman 0.99, top-10% overlap 91%). The Weibull margin is steep around
+  its median (about 40 minutes by car), so a 10 to 20% longer trip removes
+  a large share of acceptable jobs.
+* **Public transport** from GTFS with the frequency model (waiting
+  `min(headway/2, 7.5)`, no transfer penalty, walking 4 km/h): 45,886
+  stops and 72,664 line-stops for the September weekday, computed for
+  111 origins x 14,318 destinations in under two minutes; 76% of the
+  pairs are reachable within 180 minutes. Example from Leidsche Rijn:
+  Amsterdam 62 minutes, Rotterdam 79, Arnhem 73, Groningen 158.
+  Time-only run of all three modes (`s0_modes_timeonly`, population-
+  weighted mean acceptable jobs): car 215,000, public transport 52,000,
+  bike 25,000. PT has no fare yet, so its cost margin is not applied.
+
 ## Not covered yet
 
-Walking (no time margin), public transport (skims, distances, fares),
+Walking (no time margin), public transport fares (distance by leg),
 the shared-bicycle chains and scenarios S1-S4, specifications M1, M1' and
 M3 (the copula option covers M3 for priced modes), the interchangeability
 ratio and other paper outputs, congestion.

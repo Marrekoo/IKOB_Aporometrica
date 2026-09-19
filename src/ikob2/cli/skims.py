@@ -134,6 +134,78 @@ def cmd_calibrate_detour(args) -> None:
           f"{list(zip(np.round(model.km, 1), np.round(model.factor, 3)))}")
 
 
+def cmd_build_distance(args) -> None:
+    from ikob2.data.geopackage import load_cbs_buurten
+    from ikob2.skims import distance as dist_mod
+    from ikob2.skims import valhalla_server
+    from ikob2.skims.car import DetourModel
+
+    logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
+    store = SkimStore.open(args.store)
+    zones, _ = load_cbs_buurten(args.kwb)
+    codes = np.asarray(zones.codes, dtype=str)
+    pts = zone_points(codes, zones.centroid_x, zones.centroid_y, zones.crs
+                      ).set_index("id")
+    origins = pts.loc[store.origins].reset_index()
+    cells, _ = coarse_cells(codes, pts.loc[codes, "x"], pts.loc[codes, "y"],
+                            np.asarray(zones.municipality_code, dtype=str))
+    layers = {}
+    for name in store.layer_names:
+        ids = list(store.layer(name).destinations)
+        layers[name] = (cells.set_index("id").loc[ids].reset_index()
+                        if name == "far" else pts.loc[ids].reset_index())
+    detour = DetourModel.load(args.detour)
+    url = f"http://localhost:{args.port}"
+    if not valhalla_server.status(port=args.port):
+        raise SystemExit(f"No Valhalla server on port {args.port}: "
+                         f"python -m ikob2.cli.servers valhalla start")
+    stats = dist_mod.build_car_distance(
+        store, origins, layers, detour,
+        lambda o, d: valhalla_server.matrix(o, d, mode="car", url=url),
+        radius_km=args.radius_km, origin_batch=args.origin_batch)
+    print(f"distance layers written to {args.store}: {stats}")
+
+
+def cmd_make_peak(args) -> None:
+    from ikob2.skims import peak
+
+    stats = peak.make_peak_extract(args.osm, args.out)
+    print(f"Peak-load extract written to {args.out}")
+    for cls, v in peak.coverage(stats).items():
+        print(f"  {cls:15s} x{peak.PEAK_FACTORS[cls]:.2f}  ways {v['ways']:8d}"
+              f"  rescaled {100 * v['share_rescaled']:5.1f}%")
+
+
+def cmd_build_pt(args) -> None:
+    from ikob2.data.geopackage import load_cbs_buurten
+    from ikob2.skims.gtfs_pt import PtRouter, load_peak_timetable
+    from ikob2.skims.pt_build import build_pt_layer
+
+    logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
+    store = SkimStore.open(args.store)
+    zones, _ = load_cbs_buurten(args.kwb)
+    codes = [str(c) for c in zones.codes]
+    xy = np.column_stack([zones.centroid_x, zones.centroid_y])
+    idx = {c: i for i, c in enumerate(codes)}
+    o_xy = xy[[idx[o] for o in store.origins]]
+    tt = load_peak_timetable(args.gtfs, args.date,
+                             window_h=(args.window[0], args.window[1]))
+    router = PtRouter(tt, walk_kmh=args.walk_kmh, walk_detour=args.walk_detour,
+                      max_access_min=args.max_access_min,
+                      transfer_radius_m=args.transfer_radius_m,
+                      wait_cap_min=args.wait_cap_min,
+                      boarding_penalty_min=args.boarding_penalty_min)
+    build_pt_layer(store, router, o_xy, codes, xy,
+                   max_minutes=args.max_minutes)
+    store.set_meta("pt", {
+        "gtfs": str(args.gtfs), "date": args.date, "window_h": args.window,
+        "walk_kmh": args.walk_kmh, "walk_detour": args.walk_detour,
+        "max_access_min": args.max_access_min,
+        "wait": "min(headway/2, %g) min per boarding" % args.wait_cap_min,
+        "boarding_penalty_min": args.boarding_penalty_min})
+    print(f"PT time layer 'all' written to {args.store}")
+
+
 def cmd_inspect(args) -> None:
     store = SkimStore.open(args.store)
     print(f"origins: {len(store.origins)}")
@@ -188,6 +260,40 @@ def main(argv=None) -> None:
     c.add_argument("--near", type=int, default=80)
     c.add_argument("--seed", type=int, default=0)
     c.set_defaults(func=cmd_calibrate_detour)
+
+    d = sub.add_parser("build-distance",
+                       help="car route distances via the local Valhalla")
+    d.add_argument("store")
+    d.add_argument("--kwb", required=True)
+    d.add_argument("--detour", required=True, help="DetourModel JSON")
+    d.add_argument("--port", type=int, default=8002)
+    d.add_argument("--radius-km", type=float, default=30.0)
+    d.add_argument("--origin-batch", type=int, default=10)
+    d.set_defaults(func=cmd_build_distance)
+
+    m = sub.add_parser("make-peak",
+                       help="OSM extract with congestion factors by road class")
+    m.add_argument("--osm", required=True)
+    m.add_argument("--out", required=True)
+    m.set_defaults(func=cmd_make_peak)
+
+    t = sub.add_parser("build-pt",
+                       help="public transport times from GTFS (frequency model)")
+    t.add_argument("store")
+    t.add_argument("--kwb", required=True)
+    t.add_argument("--gtfs", required=True)
+    t.add_argument("--date", default="2026-09-15",
+                   help="a weekday inside the feed's validity")
+    t.add_argument("--window", nargs=2, type=float, default=[7.0, 9.0],
+                   metavar=("FROM_H", "TO_H"))
+    t.add_argument("--walk-kmh", type=float, default=4.0)
+    t.add_argument("--walk-detour", type=float, default=1.3)
+    t.add_argument("--max-access-min", type=float, default=20.0)
+    t.add_argument("--transfer-radius-m", type=float, default=300.0)
+    t.add_argument("--wait-cap-min", type=float, default=7.5)
+    t.add_argument("--boarding-penalty-min", type=float, default=0.0)
+    t.add_argument("--max-minutes", type=float, default=180.0)
+    t.set_defaults(func=cmd_build_pt)
 
     i = sub.add_parser("inspect", help="describe a skim store")
     i.add_argument("store")

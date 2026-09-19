@@ -75,8 +75,22 @@ def _sector_tables(statline_dir: Path, wage_period: str, wfh_period: str):
 
 
 def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
-                   max_unreachable=None):
-    """Mode -> ModeMatrices over (store origins, all zones)."""
+                   distance_store=None):
+    """Mode -> ModeMatrices over (store origins, all zones).
+
+    distance_store : optional second store holding the car `distance`
+        variable (same origins and near/far layers), so that a scenario
+        store with different travel times (e.g. peak load) can reuse the
+        routed distances of the base store.
+    """
+    dstore = distance_store or store
+    if distance_store is not None:
+        for layer in ("near", "far"):
+            if (distance_store.origins != store.origins
+                    or distance_store.layer(layer).destinations
+                    != store.layer(layer).destinations):
+                raise ValueError(f"distance store and time store differ in "
+                                 f"origins or the '{layer}' layer.")
     codes = [str(c) for c in zones.codes]
     idx = {c: i for i, c in enumerate(codes)}
     o_idx = np.array([idx[o] for o in store.origins])
@@ -85,9 +99,26 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
         "stedelijkheid_adressen_per_km2", np.full(len(codes), np.nan)))
     out = {}
     for mode in modes:
+        if mode not in ("car", "bike", "pt"):
+            raise SystemExit(f"Mode '{mode}' has no time margin (margins "
+                             f"exist for bike, pt, car).")
+        if mode == "pt":
+            # PT is computed at buurt level for every destination
+            t = store.block("all", "pt", "time", destinations=codes)
+            logger.warning("PT has no fare yet: its cost margin is not "
+                           "applied (time-only gate).")
+            out[mode] = ModeMatrices(t)
+            continue
         t = store.combined(mode, "time", codes, near="near", far="far")
         if mode == "car":
-            dist = detour.route_km(crowfly_km(xy[o_idx], xy))
+            if ("near", "car", "distance") in dstore.arrays():
+                # routed distances (local Valhalla) where available
+                dist = dstore.combined("car", "distance", codes, near="near",
+                                       far="far")
+                fallback = detour.route_km(crowfly_km(xy[o_idx], xy))
+                dist = np.where(np.isfinite(dist), dist, fallback)
+            else:
+                dist = detour.route_km(crowfly_km(xy[o_idx], xy))
             time, cost = car_time_and_cost(
                 t, dist, car_model,
                 origin_urbanisation=urb[o_idx] if parking_search else None,
@@ -95,9 +126,6 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
             out[mode] = ModeMatrices(time, cost, car_model.matrix_id)
         elif mode == "bike":
             out[mode] = ModeMatrices(t)
-        else:
-            raise SystemExit(f"Mode '{mode}' has no time margin yet "
-                             f"(margins exist for bike, pt, car).")
     return out, codes
 
 
@@ -151,6 +179,10 @@ def cmd_run(args) -> None:
 
     zones, _ = load_cbs_buurten(args.kwb)
     store = SkimStore.open(args.skims)
+    dist_store = None
+    if args.distance_study:
+        dist_store = SkimStore.open(
+            Path(args.skims).parent / args.distance_study)
     detour = (DetourModel.load(args.detour) if args.detour
               else DetourModel.constant(1.3))
     if not args.detour:
@@ -159,7 +191,8 @@ def cmd_run(args) -> None:
     matrices, dest_codes = build_matrices(
         store, zones, args.modes, detour=detour,
         car_model=CAR_MODELS[args.car_model],
-        parking_search=not args.no_parking_search)
+        parking_search=not args.no_parking_search,
+        distance_store=dist_store)
 
     seg_cfg = SegmentConfig()
     segs = run_pipeline(args.kwb, args.statline, seg_cfg)
@@ -215,6 +248,9 @@ def main(argv=None) -> None:
                    help="skim store name under intermediate/skims")
     p.add_argument("--run", default="run",
                    help="output folder name under outputs/runs")
+    p.add_argument("--distance-study", default=None,
+                   help="skim store (sibling folder) with the car distances, "
+                        "e.g. utrecht_nl when --study is the peak store")
     p.add_argument("--kwb-year", type=int, default=2022)
     p.add_argument("--jobs-year", type=int, default=2022)
     p.add_argument("--kwb", default=None)

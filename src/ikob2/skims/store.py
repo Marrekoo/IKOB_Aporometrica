@@ -103,6 +103,21 @@ class SkimStore:
         tmp.write_text(json.dumps(self._m))
         os.replace(tmp, self.root / MANIFEST)
 
+    def add_layer(self, name: str, destinations: Sequence[str]) -> None:
+        """Add a destination layer to an existing store (e.g. 'all' for a
+        mode computed at buurt level for every destination)."""
+        if name in self._m["layers"]:
+            raise ValueError(f"Layer '{name}' already exists.")
+        dests = [str(d) for d in destinations]
+        if len(set(dests)) != len(dests):
+            raise ValueError(f"Layer '{name}': duplicate destinations.")
+        self._m["layers"][name] = {"destinations": dests, "cell_of": None}
+        self._save()
+
+    def set_meta(self, key: str, value) -> None:
+        self._m["meta"][key] = value
+        self._save()
+
     # ── description ──────────────────────────────────────────────────
 
     @property
@@ -228,13 +243,17 @@ class SkimStore:
         return out
 
     def combined(self, mode: str, variable: str, destinations: Sequence[str],
-                 *, near: str, far: str,
+                 *, near: str, far: str | None = None,
                  origins: Iterable[str] | None = None,
                  fill: float | None = None) -> np.ndarray:
         """Matrix over `destinations` (any codes covered by the far
         layer's `cell_of`): the near-layer value where the destination is
         in the near layer, else the value of its far cell."""
         near_dests = self.layer(near).destinations
+        if far is None:
+            # everything must be in the near layer
+            return self.block(near, mode, variable, origins=origins,
+                              destinations=destinations, fill=fill)
         far_info = self.layer(far)
         if far_info.cell_of is None:
             raise ValueError(f"Layer '{far}' has no cell_of mapping.")

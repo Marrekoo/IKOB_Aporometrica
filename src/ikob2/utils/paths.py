@@ -18,6 +18,9 @@ The data folder layout (default: /home/marco/IKOB data).
         jobs/                    imputed sector jobs per buurt
         skims/<study>/           skim stores
         calibration/             detour model and other calibrations
+        valhalla/                local routing server: config, tiles, logs
+        otp/                     OpenTripPlanner: jar, graph inputs, logs
+        osm_peak/                OSM extracts with peak-load speeds
       outputs/
         runs/<run>/              one folder per accessibility run
         comparisons/             run-versus-run comparison tables
@@ -35,7 +38,7 @@ DEFAULT_ROOT = Path("/home/marco/IKOB data")
 
 INPUT_DIRS = ("kwb", "lisa", "osm", "gtfs", "legacy_ikob", "survey", "odin")
 CACHE_DIRS = ("statline",)
-INTERMEDIATE_DIRS = ("segments", "jobs", "skims", "calibration")
+INTERMEDIATE_DIRS = ("segments", "jobs", "skims", "calibration", "valhalla", "otp", "osm_peak")
 OUTPUT_DIRS = ("runs", "comparisons")
 
 README = """# IKOB data
@@ -50,6 +53,9 @@ Data folder of the IKOB Aporometrica project (code: IKOB_Aporometrica).
         jobs/        imputed LISA sector jobs per buurt
         skims/<study>/   skim stores (python -m ikob2.cli.skims build)
         calibration/     detour model for car distances
+        valhalla/        local Valhalla routing server (config, tiles, logs)
+        otp/             local OpenTripPlanner (jar, graph, logs)
+        osm_peak/        OSM extracts with peak-load speeds (skims.peak)
     outputs/runs/<run>/  accessibility results of one run
                          (python -m ikob2.cli.accessibility)
     outputs/comparisons/ run-versus-run comparisons (cli.compare)
@@ -113,6 +119,15 @@ class DataLayout:
 
     def sector_jobs(self, year: int = 2022) -> Path:
         return self.intermediate / "jobs" / f"sector_jobs_{year}.csv"
+
+    def valhalla_dir(self) -> Path:
+        return self.intermediate / "valhalla"
+
+    def osm_peak_dir(self) -> Path:
+        return self.intermediate / "osm_peak"
+
+    def otp_dir(self) -> Path:
+        return self.intermediate / "otp"
 
     def detour_model(self) -> Path:
         return self.intermediate / "calibration" / "car_detour.json"
