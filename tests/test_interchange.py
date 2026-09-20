@@ -67,3 +67,25 @@ def test_dispersion_is_within_origin_not_across_origins():
     base, a, b = world(lambda k: 4.0 if k[0] == "O1" else 1.0, lambda k: 1.0)
     s = interchange_ratio(base, a, b)["summary"].iloc[0]
     assert s["pooled_cv"] == pytest.approx(0.0)
+
+
+def test_correlations_between_specifications_agree_in_levels_but_not_in_gains():
+    from ikob2.cli.paper_tables import correlations
+
+    def tab(levels, mode="pt_v2"):
+        rows = []
+        for i, a in enumerate(levels):
+            rows.append({"buurtcode": f"O{i // 3}", "mode": mode,
+                         "segment": f"single_D{2 + i % 3}", "household_type": "single",
+                         "income_class": f"D{2 + i % 3}", "population": 1.0,
+                         "accessibility": a})
+        return pd.DataFrame(rows)
+    lv = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]
+    a0, b0 = tab(lv), tab([2 * v for v in lv])              # same ranking
+    a1 = tab([v + g for v, g in zip(lv, [5, 0, 0, 5, 0, 0])])
+    b1 = tab([2 * v + g for v, g in zip(lv, [0, 5, 0, 0, 5, 0])])   # other gains
+    c = correlations({"a": (a0, a1, a1), "b": (b0, b1, b1)}, "pt_v2")
+    get = lambda m, x, y: c[(c.measure == m) & (c.method == "pearson")  # noqa: E731
+                            & (c.spec_a == x) & (c.spec_b == y)]["correlation"].iloc[0]
+    assert get("levels", "a", "b") == pytest.approx(1.0)
+    assert get("gain_s1", "a", "b") < 0.5

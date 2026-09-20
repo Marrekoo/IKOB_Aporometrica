@@ -17,7 +17,12 @@ writes to outputs/comparisons/specs/:
                                 interquantile ratio, spread), median, undefined
                                 pairs, full and controlled;
   gap_by_spec.csv          4.4  the reachability gap before and after S1, and
-                                the atom.
+                                the atom;
+  correlation_by_spec.csv       Pearson and Spearman correlation between the
+                                specifications of the accessibility levels and
+                                of the gains of S1 and S2 across origin x
+                                segment cells (Santana Palacios and El-Geneidy
+                                2022: levels agree, incidence does not).
 """
 
 from __future__ import annotations
@@ -47,16 +52,50 @@ def _wmean(df: pd.DataFrame, col: str, by: str) -> pd.Series:
         lambda s: s > 0)
 
 
+def correlations(runs: dict, mode: str) -> pd.DataFrame:
+    """Correlation between specifications across (origin, segment) cells,
+    decile 1 excluded (its atom makes it a special case): the levels of S0 and
+    the gains of S1 and S2. runs: tag -> (s0, s1, s2) tables."""
+    rows = []
+    idx = None
+    series = {"levels": {}, "gain_s1": {}, "gain_s2": {}}
+    for tag, (s0, s1, s2) in runs.items():
+        a = s0[s0["mode"] == mode].set_index(KEY_COLS)
+        idx = a.index if idx is None else idx
+        keep = a["income_class"] != "D1"
+        series["levels"][tag] = a["accessibility"].where(keep)
+        for name, run in (("gain_s1", s1), ("gain_s2", s2)):
+            if run is not None:
+                b = run[run["mode"] == mode].set_index(KEY_COLS)
+                series[name][tag] = (b["accessibility"] - a["accessibility"]).where(keep)
+    for measure, d in series.items():
+        if len(d) < 2:
+            continue
+        df = pd.DataFrame(d)
+        for method in ("pearson", "spearman"):
+            c = df.corr(method=method)
+            for x in c.index:
+                for y in c.columns:
+                    rows.append({"measure": measure, "method": method,
+                                 "spec_a": x, "spec_b": y, "correlation": c.loc[x, y]})
+    return pd.DataFrame(rows)
+
+
+KEY_COLS = ["buurtcode", "segment"]
+
+
 def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
            controlled_prefix: str = "spc", timeonly_prefix: str = "spt"
            ) -> dict[str, pd.DataFrame]:
     base, inc, rat, gap = [], [], [], []
+    runs = {}
     for tag in tags:
         s0, s1, s2 = (_read(lay, f"{prefix}_{tag}_{s}") for s in ("s0", "s1", "s2"))
         if s0 is None:
             logger.warning("no run %s_%s_s0", prefix, tag)
             continue
         d = s0[s0["mode"] == mode]
+        runs[tag] = (s0, s1, s2)
         base.append(pd.DataFrame({
             "spec": tag,
             "accessibility": _wmean(d, "accessibility", "income_class"),
@@ -84,7 +123,8 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
                 s = interchange_ratio(c0, c1, c2, mode)["summary"].iloc[0]
                 rat.append({"spec": tag, "comparison": label, **s.to_dict()})
         # gap: time-only runs are per time margin, so M3 shares M2's
-        t_tag = "m2" if tag.startswith("m3") else tag
+        # M3 has the time margin of M2, M1c that of M1
+        t_tag = {"m1c": "m1"}.get(tag, "m2" if tag.startswith("m3") else tag)
         t0 = _read(lay, f"{timeonly_prefix}_{t_tag}_s0")
         if t0 is not None:
             for scen, run in (("s0", s0), ("s1", s1)):
@@ -98,6 +138,7 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
                        ("gap_by_spec", gap)):
         out[name] = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
     out["interchange_by_spec"] = pd.DataFrame(rat)
+    out["correlation_by_spec"] = correlations(runs, mode)
     return out
 
 
