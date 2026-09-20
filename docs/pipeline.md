@@ -221,6 +221,17 @@ bicycle owners: scenarios S1-S4 should be measured against v0, not against
 plain PT. Assumptions to check: hubs are all rail stops, unlimited supply, a
 1-minute fixed time, dockless available at every origin, no stock-outs.
 
+### Dockless tariff baseline
+
+Dockless access (and the door-to-door variant v4) is priced by the Lime tiers
+(`shared_bike.dockless_model = "lime_tiers"`: EUR 3 / 4 / 5 up to 20 / 30 / 40
+minutes of rental, ride plus fixed minutes), the operator active in the
+province of Utrecht from January 2026. `unlock_per_minute` (unlock fee plus a
+rate per riding minute) remains available. With the Lime tiers instead of
+EUR 1.00 + 0.20 per minute the results hardly change (v2 -0.002%, v3 +0.004%):
+for the 10-20 minute access rides of the case the two structures cost about
+the same.
+
 ## Not covered yet
 
 Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),

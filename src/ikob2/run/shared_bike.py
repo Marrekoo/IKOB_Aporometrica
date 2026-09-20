@@ -11,7 +11,9 @@ Skim modes in the store (built by `cli.skims build-pt --mode-name ...`):
 Prices added to the public transport fare of the same journey:
 
     OV-fiets egress   a flat charge per rental (default EUR 4.80 per 24 h)
-    dockless access   unlock fee + rate per riding minute (EUR 1.00 + 0.20)
+    dockless access   Lime tiers by rental duration (EUR 3 / 4 / 5 up to
+                      20 / 30 / 40 minutes), or unlock fee + rate per riding
+                      minute (EUR 1.00 + 0.20): `dockless_model`
     own bicycle       free
 
 Variants (`shared_bike_modes`):
@@ -49,6 +51,7 @@ from ikob2.run.accessibility import (LegOption, LegOptionSet, MixedMode,
                                      ModeMatrices, OptionSet)
 
 VARIANTS = ("v0", "v1", "v2", "v3")
+DOCKLESS_MODELS = ("lime_tiers", "unlock_per_minute")
 
 
 @dataclass(frozen=True)
@@ -58,11 +61,15 @@ class SharedBikeTariffs:
     dockless_per_min_eur: float = DEFAULTS.shared_bike.dockless_per_min_eur
     lime_tiers: tuple = tuple(tuple(t) for t in DEFAULTS.shared_bike.lime_tiers)
     hub_tariffs: tuple = tuple(DEFAULTS.shared_bike.hub_tariffs)
+    dockless_model: str = DEFAULTS.shared_bike.dockless_model
 
     def __post_init__(self):
         if min(self.ovfiets_eur, self.dockless_unlock_eur,
                self.dockless_per_min_eur) < 0:
             raise ValueError("Tariffs must be >= 0.")
+        if self.dockless_model not in DOCKLESS_MODELS:
+            raise ValueError(f"dockless_model must be one of "
+                             f"{DOCKLESS_MODELS}, got {self.dockless_model!r}.")
         bounds = [b for b, _ in self.lime_tiers]
         if not self.lime_tiers or bounds != sorted(bounds):
             raise ValueError("lime_tiers: [longest minutes, EUR] rows, "
@@ -77,6 +84,15 @@ class SharedBikeTariffs:
         idx = np.minimum(np.searchsorted(bounds, m, side="left"),
                          len(price) - 1)
         return np.where(np.isfinite(m), price[idx], np.nan)
+
+    def dockless_eur(self, ride_min, fixed_min: float) -> np.ndarray:
+        """Price of a dockless rental of `ride_min` riding minutes:
+        Lime tiers by rental duration (ride plus fixed minutes), or an
+        unlock fee plus a rate per riding minute."""
+        ride = np.asarray(ride_min, dtype=float)
+        if self.dockless_model == "lime_tiers":
+            return self.lime_eur(ride + fixed_min)
+        return self.dockless_unlock_eur + self.dockless_per_min_eur * ride
 
     def egress_eur(self, ride_min, kind: str, fixed_min: float) -> np.ndarray:
         """Price of a bicycle egress of `ride_min` minutes from a hub of
@@ -129,9 +145,8 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
         or [("pt_wb", "pt_bb", None)]
     # the bicycle access leg is the same in every egress kind
     bb0 = next((bb for _, bb, _k in egress if bb in chains), None)
-    dock_bb = None if bb0 is None else (
-        tariffs.dockless_unlock_eur
-        + tariffs.dockless_per_min_eur * chains[bb0]["access_min"])
+    dock_bb = None if bb0 is None else tariffs.dockless_eur(
+        chains[bb0]["access_min"], bike_fixed_min)
 
     def egress_cost(mode, kind):
         if kind is None or kind == "ovfiets":
@@ -139,9 +154,8 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
         return tariffs.egress_eur(chains[mode]["egress_min"], kind,
                                   bike_fixed_min)
 
-    dock = (tariffs.dockless_unlock_eur
-            + tariffs.dockless_per_min_eur * chains["pt_bw"]["access_min"]) \
-        if "pt_bw" in chains else None
+    dock = tariffs.dockless_eur(chains["pt_bw"]["access_min"],
+                                bike_fixed_min) if "pt_bw" in chains else None
 
     def opt(mode, extra=0.0):
         return _option(chains[mode], fares[mode], extra=extra)
@@ -218,6 +232,6 @@ def dockless_mode(bike_time: np.ndarray, bike_share: np.ndarray,
     own = OptionSet((ModeMatrices(t),), "bike")
     rent = OptionSet((ModeMatrices(
         t + fixed_min,
-        tariffs.dockless_unlock_eur + tariffs.dockless_per_min_eur * t,
+        tariffs.dockless_eur(t, fixed_min),
         "dockless"),), "bike")
     return MixedMode(((p, own), (1 - p, rent)))

@@ -72,6 +72,7 @@ FLAGS = {
     "ovfiets_eur": "shared_bike.ovfiets_eur",
     "dockless_unlock_eur": "shared_bike.dockless_unlock_eur",
     "dockless_per_min_eur": "shared_bike.dockless_per_min_eur",
+    "dockless_model": "shared_bike.dockless_model",
     "car_model": "car.default_model", "parking_search": "car.parking_search",
     "pt_rail_table": "pt_fare.rail_table",
     "pt_rail_discount": "pt_fare.rail_discount",
@@ -238,7 +239,8 @@ def shared_bike_matrices(prm, args, store, codes, model, matrices):
                                 prm.shared_bike.dockless_per_min_eur,
                                 tuple(tuple(t) for t in
                                       prm.shared_bike.lime_tiers),
-                                tuple(prm.shared_bike.hub_tariffs))
+                                tuple(prm.shared_bike.hub_tariffs),
+                                prm.shared_bike.dockless_model)
     fixed = prm.bike_leg.fixed_minutes
     variants = [v for v in prm.accessibility.shared_bike if v != "v4"]
     out = shared_bike_modes(chains, fares, share, tariffs, variants=variants,
@@ -484,6 +486,10 @@ def main(argv=None) -> None:
                    help="OV-fiets charge per rental period (egress)")
     p.add_argument("--dockless-unlock-eur", type=float, default=None)
     p.add_argument("--dockless-per-min-eur", type=float, default=None)
+    p.add_argument("--dockless-model", choices=["lime_tiers", "unlock_per_minute"],
+                   default=None,
+                   help="dockless price: Lime tiers (baseline) or unlock fee "
+                        "+ rate per riding minute")
     p.add_argument("--car-model", default=None,
                    help="a table of car.models in the parameters")
     p.add_argument("--no-parking-search", dest="parking_search",

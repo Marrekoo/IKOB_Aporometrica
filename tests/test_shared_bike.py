@@ -31,7 +31,8 @@ def test_v1_prices_ovfiets_egress_only():
 def test_v2_owners_ride_free_others_pay_dockless_and_weights_sum_to_one():
     c, f = chains()
     p = np.array([.9, .8, .5])
-    v2 = shared_bike_modes(c, f, p, SharedBikeTariffs(4.8, 1.0, 0.2),
+    v2 = shared_bike_modes(c, f, p, SharedBikeTariffs(4.8, 1.0, 0.2,
+                                             dockless_model="unlock_per_minute"),
                            variants=("v2",))["pt_v2"]
     assert isinstance(v2, MixedMode)
     (w_o, owners), (w_n, others) = v2.parts
@@ -73,7 +74,9 @@ def test_v3_splits_times_into_legs_and_v4_prices_dockless():
     assert owners.options[0].times[2][0, 0] == 60.0          # plain: all PT
     bike_t = np.full(SHAPE, 20.0, dtype=np.float32)
     v4 = dockless_mode(bike_t, np.array([.9, .8, .5]),
-                       SharedBikeTariffs(4.8, 1.0, 0.2), 1.0)
+                       SharedBikeTariffs(4.8, 1.0, 0.2,
+                                         dockless_model="unlock_per_minute"),
+                       1.0)
     (_, own), (w_n, rent) = v4.parts
     assert own.options[0].cost is None
     assert rent.options[0].time[0, 0] == 21.0
@@ -125,3 +128,24 @@ def test_a_slower_cheaper_hub_can_be_the_one_that_passes():
     acceptable = [(t, cc) for t, cc in ((50.0, 11.0), (48.0, 12.8))
                   if cc <= budget]
     assert acceptable == [(50.0, 11.0)]
+
+
+def test_lime_tiers_price_dockless_access_as_the_baseline():
+    c, f = chains()
+    p = np.array([.9, .8, .5])
+    v2 = shared_bike_modes(c, f, p, variants=("v2",))["pt_v2"]   # default
+    _, (_, others) = v2.parts
+    costs = sorted(o.cost[0, 0] for o in others.options)
+    # dockless access: 10 min ride + 1 min fixed = 11 min -> EUR 3 -> 8 + 3;
+    # with OV-fiets: 12 + 1 = 13 min -> EUR 3, + 4.8 -> 8 + 3 + 4.8
+    assert costs == pytest.approx([8.0, 11.0, 12.8, 15.8])
+    with pytest.raises(ValueError, match="dockless_model"):
+        SharedBikeTariffs(dockless_model="free")
+
+
+def test_dockless_door_to_door_uses_the_same_model():
+    from ikob2.run.shared_bike import dockless_mode
+    bike_t = np.full(SHAPE, 20.0, dtype=np.float32)
+    lime = dockless_mode(bike_t, np.array([.9, .8, .5]), SharedBikeTariffs(), 1.0)
+    (_, _), (_, rent) = lime.parts
+    assert rent.options[0].cost[0, 0] == 4.0          # 21 min rented
