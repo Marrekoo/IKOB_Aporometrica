@@ -75,14 +75,18 @@ def hazard(survival: np.ndarray, grid: np.ndarray, floor: float) -> np.ndarray:
 
 def money_gate(envelope: pd.DataFrame, populations: pd.DataFrame, *,
                c_max: float | None = None, step: float = 1.0,
-               floor: float = 0.05) -> dict[str, pd.DataFrame]:
+               floor: float = 0.05, ttt_band: float = 0.05
+               ) -> dict[str, pd.DataFrame]:
     """Aggregated money-gate curves per origin.
 
     envelope    : household_type, income_class, low, high, atom per segment;
     populations : origins x segments (persons), columns '<type>_<class>';
     c_max, step : grid in EUR per trip (default: the highest bound, step 1);
     floor       : hazard and its monotonicity are read where the aggregate
-                  survival is above this share of S_bar(0+)...
+                  survival is above this share of S_bar(0+) (the bulk);
+    ttt_band    : the shape class of the whole curve: the TTT area above
+                  +band is increasing hazard (IFR), below -band decreasing
+                  (DFR), else near-exponential.
     Returns `curves` (buurtcode, c, survival, hazard), `ttt` (buurtcode, u,
     phi at 101 points) and `summary` (one row per origin)."""
     env = envelope.copy()
@@ -122,6 +126,8 @@ def money_gate(envelope: pd.DataFrame, populations: pd.DataFrame, *,
             "hazard_class": ("increasing" if inc >= 0.8 else
                              "decreasing" if inc <= 0.2 else "mixed"),
             "ttt_area": agg, "ttt_area_within": within,
+            "ttt_class": ("IFR" if agg > ttt_band else
+                          "DFR" if agg < -ttt_band else "near-exponential"),
             "ttt_shift": agg - within})
         curves.append(pd.DataFrame({"buurtcode": code, "c": grid,
                                     "survival": s_bar, "hazard": h}))

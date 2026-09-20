@@ -55,7 +55,9 @@ DICTIONARY = [
     ("money_gate_ttt.csv", "phi", "total-time-on-test transform of the aggregate at u = F(c); diagonal = exponential, above = increasing hazard", "-"),
     ("money_gate_summary.csv", "ttt_shift", "TTT area of the aggregate minus that of the segments alone; negative: aggregation moves the curve toward decreasing hazard", "-"),
     ("money_gate_summary.csv", "cv", "coefficient of variation of the aggregate cost threshold", "-"),
-    ("money_gate_summary.csv", "hazard_class", "increasing / mixed / decreasing hazard of the aggregate", "-"),
+    ("money_gate_summary.csv", "hazard_class", "increasing / mixed / decreasing hazard of the aggregate in the bulk (survival above 5% of S_bar(0+))", "-"),
+    ("money_gate_summary.csv", "ttt_class", "shape of the whole aggregate curve from its TTT area: IFR (> +0.05), near-exponential, DFR (< -0.05)", "-"),
+    ("money_gate_summary.csv", "ttt_area", "integral of phi(u) - u of the aggregate: 0 exponential, positive increasing hazard, negative decreasing", "-"),
     ("origins.gpkg:origins", "mg_<column>", "money_gate_summary.csv columns joined on the origin polygons", "-"),
     ("interchange_pairs.csv", "R", "gain of intervention A over gain of B, per origin and segment", "-"),
 ]
@@ -155,8 +157,9 @@ def write_products(out_dir: str | Path, table: pd.DataFrame, *, envelope,
         g["population"] = g["buurtcode"].map(pop)
         if gate is not None:
             s = gate["summary"].set_index("buurtcode")
-            for col in ("atom", "mean_threshold", "cv", "ttt_shift",
-                        "share_hazard_increasing", "hazard_class"):
+            for col in ("atom", "mean_threshold", "cv", "ttt_area", "ttt_shift",
+                        "share_hazard_increasing", "hazard_class",
+                        "ttt_class"):
                 g[f"mg_{col}"] = g["buurtcode"].map(s[col])
         g.to_file(gpkg, layer="origins", driver="GPKG")
         if hubs is not None and len(hubs):

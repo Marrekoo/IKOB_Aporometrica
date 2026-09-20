@@ -530,7 +530,9 @@ def cmd_run(args) -> None:
         from ikob2.outputs.export import write_products
         written = write_products(
             out_dir, t, envelope=envelope, price_scale=price_scale,
-            time_margins=margins, kwb_path=args.kwb, hubs=hubs_used)
+            time_margins=margins, kwb_path=args.kwb, hubs=hubs_used,
+            populations=(pop.set_index("buurtcode") if "buurtcode" in pop.columns
+                         else pop).reindex(store.origins))
         print("Analysis products:", ", ".join(written))
     print(f"Wrote {len(t)} rows to {out_dir}.")
     print(result.summary("income_class")["accessibility"].unstack(0)

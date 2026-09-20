@@ -37,6 +37,7 @@ def test_mixing_segments_of_different_scale_moves_toward_decreasing_hazard():
     pop = pd.DataFrame({"single_D2": [50.0], "single_D9": [50.0]}, index=["O1"])
     s = money_gate(e, pop, step=0.5)["summary"].iloc[0]
     assert s["ttt_shift"] < -0.02                 # mixture is less IFR than parts
+    assert s["ttt_class"] in ("near-exponential", "DFR")
     assert s["cv"] > 1.0                          # more dispersed than a uniform
 
 
