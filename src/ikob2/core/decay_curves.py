@@ -60,10 +60,15 @@ def weibull(cost: np.ndarray, shape: float, scale: float) -> np.ndarray:
         raise ValueError(f"weibull shape must be positive and finite, got {shape}")
     if not (scale > 0 and np.isfinite(scale)):
         raise ValueError(f"weibull scale must be positive and finite, got {scale}")
-    ratio = np.maximum(cost, 0.0).astype(np.float64, copy=False) / scale
+    # model dtype throughout, in place: the cost matrices are float32 already
+    # and the copies of a float64 evaluation dominated the run time
+    ratio = np.maximum(np.asarray(cost, dtype=DTYPE), DTYPE(0.0))
+    ratio *= DTYPE(1.0 / scale)
     with np.errstate(over="ignore"):
-        hazard = np.minimum(ratio ** shape, _EXP_CLIP)
-    return np.exp(-hazard).astype(DTYPE, copy=False)
+        hazard = np.power(ratio, DTYPE(shape), out=ratio)
+        np.minimum(hazard, DTYPE(_EXP_CLIP), out=hazard)
+    np.negative(hazard, out=hazard)
+    return np.exp(hazard, out=hazard)
 
 
 def uniform(cost: np.ndarray, low: float, high: float) -> np.ndarray:
@@ -91,12 +96,12 @@ def uniform(cost: np.ndarray, low: float, high: float) -> np.ndarray:
         raise ValueError(
             f"uniform requires 0 <= low <= high, got low={low}, high={high}"
         )
-    c = cost.astype(np.float64, copy=False)
+    c = np.asarray(cost, dtype=DTYPE)
     if high == low:
-        out = (c <= low).astype(np.float64)
-    else:
-        out = np.clip((high - c) / (high - low), 0.0, 1.0)
-    return out.astype(DTYPE, copy=False)
+        return (c <= low).astype(DTYPE)
+    out = np.subtract(DTYPE(high), c)                  # new array, in place below
+    out *= DTYPE(1.0 / (high - low))
+    return np.clip(out, DTYPE(0.0), DTYPE(1.0), out=out)
 
 
 def logistic(cost: np.ndarray, alpha: float, omega: float,

@@ -150,6 +150,7 @@ pt = 180
 [numerics]
 use_sparse = true          # store composed filters as CSR when sparse enough
 sparse_max_density = 0.25  # share of non-zero entries above which a filter stays dense
+threads = 0                # worker threads of the leg-wise evaluation; 0 = all cores
 check_frechet = true       # verify the Frechet-Hoeffding bounds of parametric copulas
 
 [distance]                 # car route distances via Valhalla, detour calibration

@@ -19,8 +19,10 @@ computed separately and added.
 
 from __future__ import annotations
 
-import itertools
+import contextlib
 import logging
+import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from typing import Mapping, Sequence
 
@@ -42,6 +44,8 @@ from ikob2.segments.specs import (
 from ikob2.segments.wfh import split_jobs_by_wfh
 
 logger = logging.getLogger(__name__)
+
+n_threads = DEFAULTS.numerics.threads or (os.cpu_count() or 1)
 
 WFH_TYPES = tuple(DEFAULTS.accessibility.wfh_types)
 
@@ -152,6 +156,17 @@ class AccessibilityResult:
         s = g[["_num", "_den"]].sum()
         s[value] = s["_num"] / s["_den"].where(s["_den"] > 0)
         return s[[value]].join(g["population"].sum())
+
+
+def _single_threaded_blas():
+    """One BLAS thread per worker thread: without it the workers' matrix
+    products spawn n_threads x n_cores threads that only get in each other's
+    way (about 2x slower). A no-op when threadpoolctl is not installed."""
+    try:
+        from threadpoolctl import threadpool_limits
+    except ImportError:            # pragma: no cover
+        return contextlib.nullcontext()
+    return threadpool_limits(limits=1, user_api="blas")
 
 
 def prepare_inputs(origins, destinations, populations, sector_jobs, wfh_share,
@@ -338,12 +353,19 @@ def run_accessibility(
 
     def legwise_total(oset):
         """Leg-wise gates, union by inclusion-exclusion (independent
-        thresholds, M2)."""
+        thresholds, M2).
+
+        Subsets of the options are visited depth first, so the per-leg
+        maximum time and the maximum cost of a subset are one elementwise
+        step from its parent. The time weight of a leg only depends on the
+        options of the subset that have that leg, so it is cached by that
+        key; segments are evaluated in parallel threads (numpy releases the
+        GIL on these array operations)."""
         if spec != "m2" or copula.family != "independence":
             raise ValueError("Leg-wise gates are defined for M2 with "
                              "independent thresholds.")
         opts = oset.options
-        n_leg = len(oset.margin_modes)
+        n_leg, n_opt = len(oset.margin_modes), len(opts)
         for o in opts:
             if len(o.times) != n_leg:
                 raise ValueError("Every option needs one time per leg.")
@@ -358,43 +380,82 @@ def run_accessibility(
         lime = np.stack([_finite(o.lime if o.lime is not None
                                  else np.zeros((n_o, n_d)), 0.0)
                          for o in opts])
-        groups = [(scale, group, costs + (scale - 1.0) * lime)
+        groups = [(group, costs + (scale - 1.0) * lime)
                   for scale, group in scale_groups(
                       any(o.lime is not None for o in opts))]
+        # options that have a time on each leg (a leg that no option of a
+        # subset uses has S_T(0) = 1 and is skipped)
+        active = [tuple(k for k in range(n_opt) if (times[k, leg] > 0).any())
+                  for leg in range(n_leg)]
+        leg_cache: dict = {}
+        pool32 = {w: {p: np.asarray(v, dtype=np.float32)
+                      for p, v in pools[w].items()} for w in WFH_TYPES}
         quiet = logging.getLogger("ikob2.engine.runner")
         level, quiet.level = quiet.level, logging.WARNING
+        total = {n: np.zeros(n_o) for n in names}
         try:
             segs = build_segments(time_margins[(oset.margin_modes[0],
                                                 WFH_TYPES[0])],
                                   envelope=envelope if priced else None,
                                   money_cost_id="c" if priced else None,
                                   pool_by="income_class", only=names)
-            total = {n: np.zeros(n_o) for n in names}
-            for r in range(1, len(opts) + 1):
-                for subset in itertools.combinations(range(len(opts)), r):
-                    sign = 1.0 if r % 2 else -1.0
-                    idx = list(subset)
-                    t = times[idx].max(axis=0)                   # (L, o, d)
-                    tw = {}
-                    for wfh in WFH_TYPES:
-                        w = None
-                        for leg, mode_l in enumerate(oset.margin_modes):
-                            spec_l = time_margins[(mode_l, wfh)]
-                            f = evaluate_marginal(t[leg], spec_l)
-                            w = f if w is None else w * f
-                        tw[wfh] = w
-                    for _scale, group, costs_g in groups:
-                        c = costs_g[idx].max(axis=0)
-                        for sg in segs:
-                            if sg.name not in group:
-                                continue
-                            sm = (evaluate_marginal(c, sg.class_filter.cost)
-                                  if priced else None)
-                            for wfh in WFH_TYPES:
-                                wgt = tw[wfh] if sm is None else tw[wfh] * sm
-                                total[sg.name] += sign * (
-                                    wgt @ np.asarray(pools[wfh][sg.pool],
-                                                     dtype=np.float32))
+            by_name = {sg.name: sg for sg in segs}
+
+            def leg_weight(leg, wfh, key, t_leg):
+                cache_it = len(active[leg]) < n_opt
+                ck = (leg, wfh, key)
+                if cache_it and ck in leg_cache:
+                    return leg_cache[ck]
+                f = evaluate_marginal(
+                    t_leg, time_margins[(oset.margin_modes[leg], wfh)])
+                if cache_it:
+                    leg_cache[ck] = f
+                return f
+
+            def time_weights(chosen, tmax):
+                tw = {}
+                for wfh in WFH_TYPES:
+                    w = None
+                    for leg in range(n_leg):
+                        if tmax[leg] is None:
+                            continue
+                        key = tuple(k for k in chosen if k in active[leg])
+                        f = leg_weight(leg, wfh, key, tmax[leg])
+                        w = f if w is None else w * f
+                    tw[wfh] = w
+                return tw
+
+            def segment_term(name, c, tw, sign):
+                sg = by_name[name]
+                sm = (evaluate_marginal(c, sg.class_filter.cost)
+                      if priced else None)
+                acc = 0.0
+                for wfh in WFH_TYPES:
+                    wgt = tw[wfh] if sm is None else tw[wfh] * sm
+                    acc = acc + wgt @ pool32[wfh][sg.pool]
+                total[name] += sign * np.asarray(acc, dtype=np.float64)
+
+            def visit(start, chosen, tmax, cmax, ex):
+                for k in range(start, n_opt):
+                    ch = chosen + (k,)
+                    tm = [tmax[leg] if k not in active[leg] else
+                          (times[k, leg] if tmax[leg] is None
+                           else np.maximum(tmax[leg], times[k, leg]))
+                          for leg in range(n_leg)]
+                    cm = [g_costs[k] if c_ is None else np.maximum(c_, g_costs[k])
+                          for (_, g_costs), c_ in zip(groups, cmax)]
+                    sign = 1.0 if len(ch) % 2 else -1.0
+                    tw = time_weights(ch, tm)
+                    futures = [ex.submit(segment_term, n, c, tw, sign)
+                               for (group, _), c in zip(groups, cm)
+                               for n in group]
+                    for fut in futures:
+                        fut.result()
+                    visit(k + 1, ch, tm, cm, ex)
+
+            with _single_threaded_blas(), \
+                    ThreadPoolExecutor(max_workers=n_threads) as ex:
+                visit(0, (), [None] * n_leg, [None] * len(groups), ex)
         finally:
             quiet.level = level
         return total, priced
