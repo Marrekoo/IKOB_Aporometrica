@@ -335,3 +335,57 @@ def test_legwise_single_leg_equals_the_plain_gate_under_every_specification(
         spec=spec, **extra)
     np.testing.assert_allclose(acc(res, "leg"), acc(res, "car"),
                                rtol=2e-4, atol=1e-2)
+
+
+# ── the ladder: M0 (isochrone in generalised time) and M1c ───────────
+
+def test_m0_is_a_step_in_generalised_time_at_the_median_acceptable_time():
+    from ikob2.segments.specs import median_time, time_margin_for
+    pop, jobs, wfh, wage, time, cost = world()
+    vot = {"car": 12.0}
+    res = run(pop, jobs, wfh, wage, {"car": ModeMatrices(time, cost, "fare")},
+              spec="m0", vot=vot)
+    # a hand computation for one segment, origin O0: sum of jobs within T*
+    med = {w: median_time(MARGINS[("car", w)]) for w in WFH_TYPES}
+    assert med["no_wfh"] > 0
+    g = time + cost * 60.0 / 12.0
+    t = res.table[(res.table.segment == NAMES[0]) & (res.table.buurtcode == "O0")]
+    assert (t["accessibility"] >= 0).all()
+    # the same run with the cost far above the value of time removes access
+    dear = run(pop, jobs, wfh, wage,
+               {"car": ModeMatrices(time, cost * 1000, "fare")},
+               spec="m0", vot=vot)
+    assert dear.table["accessibility"].sum() < res.table["accessibility"].sum()
+    assert time_margin_for("m0", MARGINS[("car", "no_wfh")]).curve == "step"
+
+
+def test_m0_option_set_takes_the_least_generalised_time():
+    pop, jobs, wfh, wage, time, cost = world()
+    a = ModeMatrices(time, cost, "fare")
+    fast_dear = ModeMatrices(time * 0.2, cost * 40, "fare")
+    res = run(pop, jobs, wfh, wage, {
+        "a": OptionSet((a,), "car"), "u": OptionSet((a, fast_dear), "car"),
+        "b": OptionSet((fast_dear,), "car")}, spec="m0", vot={"car": 12.0})
+    sa, su, sb = acc(res, "a"), acc(res, "u"), acc(res, "b")
+    assert (su >= np.maximum(sa, sb) - 1e-6).all()      # the union is at least each
+
+
+def test_m1c_uses_one_calibrated_exponential_cost_margin():
+    from ikob2.segments.specs import (cost_curve_factory, implied_vot,
+                                      median_segment_cost, median_time)
+    curve = cost_curve_factory("m1c", MARGINS[("car", "no_wfh")], None, 40.0)(None)
+    assert curve.curve == "exponential" and curve.params[0] == pytest.approx(1 / 40.0)
+    with pytest.raises(ValueError, match="calibrated"):
+        cost_curve_factory("m1c", MARGINS[("car", "no_wfh")], None, None)
+    m = median_time(MARGINS[("car", "no_wfh")])
+    k, eta = MARGINS[("car", "no_wfh")].params
+    assert m == pytest.approx(eta * np.log(2) ** (1 / k), rel=1e-6)
+    assert median_segment_cost(ENV) > 0
+    assert implied_vot(30.0, MARGINS[("car", "no_wfh")]) > 0
+    pop, jobs, wfh, wage, time, cost = world()
+    res = run(pop, jobs, wfh, wage, {"car": ModeMatrices(time, cost, "fare")},
+              spec="m1c", cost_mean_eur=40.0)
+    tab = res.table
+    assert (tab["atom"] == 0).all()        # no atom under the exponential specs
+    # decile 1 keeps its jobs (a shared margin, no censoring)
+    assert tab[tab.income_class == "D1"]["accessibility"].sum() > 0

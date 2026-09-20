@@ -1,8 +1,16 @@
 """
-The four impedance specifications of the paper (Table 4).
+The impedance specifications of the paper (Table 4) and the ladder of
+benchmarks around them.
 
+    M0   1{t + c/VoT <= T*}          cumulative opportunities in generalised
+                                     time: the practitioners' isochrone; T* is
+                                     the median acceptable time (Santana
+                                     Palacios and El-Geneidy, 2022)
     M1   exp{-(t + c/VoT)/beta}      generalised cost, one VoT per mode,
                                      beta = mean acceptable time
+    M1c  the same with ONE value of time calibrated so that the implied mean
+         acceptable cost equals the (population-weighted) median of the
+         segment means of the envelope: a well-calibrated fixed VoT
     M1'  the same with a VoT per segment such that the implied mean
          acceptable cost beta*VoT_s equals the segment's mean envelope
     M2   S_T(t) S_M(c)               Weibull time margin, uniform cost
@@ -24,7 +32,8 @@ from ikob2.core.families import mean_threshold
 from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec, CurveSpec
 from ikob2.params import DEFAULTS
 
-SPECS = ("m1", "m1p", "m2", "m3")
+SPECS = ("m0", "m1", "m1c", "m1p", "m2", "m3")
+EXPONENTIAL_SPECS = ("m1", "m1c", "m1p")
 
 # Values of time (EUR per hour) of the M1 benchmark, from the Dutch national
 # value-of-time study (LMS/NRM): car driver, train, bus/tram/metro. Public
@@ -73,12 +82,59 @@ def exponential_cost(mean: float) -> CurveSpec:
     return CurveSpec("exponential", (rate,))
 
 
+def median_time(time_margin: CurveSpec) -> float:
+    """Median acceptable time of a time margin (minutes): S_T(t) = 1/2."""
+    from scipy import optimize
+
+    from ikob2.core.families import get_family
+
+    if time_margin.curve == "step":
+        return float(time_margin.params[0])
+    fam = get_family(time_margin.curve)
+    params = [float(p) for p in time_margin.params]
+    target = np.log(0.5)
+    f = lambda t: float(fam.log_survival(np.array(t), *params)) - target  # noqa: E731
+    hi = 1.0
+    while f(hi) > 0 and hi < 1e7:
+        hi *= 2.0
+    return float(optimize.brentq(f, 1e-9, hi, xtol=1e-9))
+
+
+def median_segment_cost(envelope, weights=None) -> float:
+    """Population-weighted median of the mean acceptable cost of the
+    segments (EUR per trip): the calibration target of M1c. `weights` maps
+    the segment name '<type>_<class>' to persons (default: equal)."""
+    means, w = [], []
+    for row in envelope.itertuples():
+        means.append(mean_cost(row))
+        w.append(1.0 if weights is None else float(
+            weights.get(f"{row.household_type}_{row.income_class}", 0.0)))
+    means, w = np.array(means), np.array(w)
+    order = np.argsort(means, kind="stable")
+    cum = np.cumsum(w[order])
+    if cum[-1] <= 0:
+        raise ValueError("No population to weight the median cost.")
+    return float(means[order][np.searchsorted(cum, 0.5 * cum[-1])])
+
+
+def implied_vot(cost_mean_eur: float, time_margin: CurveSpec) -> float:
+    """Value of time (EUR per hour) implied by a mean acceptable cost and
+    the mean acceptable time of a margin."""
+    return cost_mean_eur * 60.0 / mean_time(time_margin)
+
+
 def cost_curve_factory(spec: str, time_margin: CurveSpec,
-                       vot_per_hour: float | None):
+                       vot_per_hour: float | None,
+                       cost_mean: float | None = None):
     """Function envelope row -> cost CurveSpec, or None to keep the uniform
-    margin of the envelope (M2, M3)."""
-    if spec in ("m2", "m3"):
+    margin of the envelope (M2, M3) or when there is no cost margin (M0)."""
+    if spec in ("m0", "m2", "m3"):
         return None
+    if spec == "m1c":
+        if cost_mean is None or cost_mean <= 0:
+            raise ValueError("M1c needs the calibrated mean acceptable cost.")
+        shared_c = exponential_cost(cost_mean)
+        return lambda row: shared_c
     if spec == "m1p":
         return lambda row: exponential_cost(mean_cost(row))
     if spec == "m1":
@@ -91,8 +147,11 @@ def cost_curve_factory(spec: str, time_margin: CurveSpec,
 
 
 def time_margin_for(spec: str, time_margin: CurveSpec) -> CurveSpec:
-    """M1 and M1' use an exponential time margin with the Weibull's mean."""
-    return exponential_time(time_margin) if spec in ("m1", "m1p") \
+    """The exponential specifications use an exponential time margin with the
+    mean of the margin; M0 a step at its median; M2 and M3 the margin."""
+    if spec == "m0":
+        return CurveSpec("step", (median_time(time_margin),))
+    return exponential_time(time_margin) if spec in EXPONENTIAL_SPECS \
         else time_margin
 
 

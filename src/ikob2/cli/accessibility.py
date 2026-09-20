@@ -410,6 +410,21 @@ def cmd_run(args) -> None:
             logger.info("Lime price scales differ from 1 for %d segments",
                         sum(v != 1.0 for v in price_scale.values()))
     scenario = {}
+    cost_mean = None
+    if args.spec == "m1c":
+        # one value of time, calibrated: the implied mean acceptable cost is
+        # the population-weighted median of the segments' mean envelope
+        from ikob2.segments.specs import implied_vot, median_segment_cost
+        pop_o = (pop.set_index("buurtcode") if "buurtcode" in pop.columns
+                 else pop).reindex(store.origins)
+        weights = pop_o[[n for n in seg_names if n in pop_o.columns]].sum()
+        cost_mean = (prm.accessibility.m1c_cost_mean_eur
+                     or median_segment_cost(envelope, weights.to_dict()))
+        scenario["m1c"] = {"cost_mean_eur": cost_mean, "implied_vot_eur_per_hour": {
+            m: implied_vot(cost_mean, margins[(m, "no_wfh")])
+            for m in ("car", "bike", "pt") if (m, "no_wfh") in margins}}
+        print(f"M1c: mean acceptable cost EUR {cost_mean:.2f} per trip; implied value "
+              f"of time {scenario['m1c']['implied_vot_eur_per_hour']}")
     hubs_used = None
     if args.shared_bike:
         from dataclasses import replace
@@ -510,7 +525,7 @@ def cmd_run(args) -> None:
         segment_names=envelope_segment_names(envelope),
         spec=args.spec, theta=args.theta, vot=prm.vot.to_dict(),
         availability=availability, price_scale=price_scale,
-        common_jobs=prm.accessibility.common_jobs)
+        common_jobs=prm.accessibility.common_jobs, cost_mean_eur=cost_mean)
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
@@ -589,7 +604,7 @@ def main(argv=None) -> None:
     p.add_argument("--theta", type=float, default=None,
                    help="Gumbel-Hougaard theta (--copula gumbel, or --spec "
                         "m3); inf is the comonotone limit")
-    p.add_argument("--spec", choices=["m1", "m1p", "m2", "m3"],
+    p.add_argument("--spec", choices=["m0", "m1", "m1c", "m1p", "m2", "m3"],
                    default=None,
                    help="impedance specification (docs/model_theory.md): "
                         "m1/m1p exponential generalised cost, m2 gates, "

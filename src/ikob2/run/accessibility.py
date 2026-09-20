@@ -231,6 +231,7 @@ def run_accessibility(
     availability: Mapping[str, pd.DataFrame] | None = None,
     price_scale: Mapping[str, float] | None = None,
     common_jobs: bool = False,
+    cost_mean_eur: float | None = None,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -257,6 +258,8 @@ def run_accessibility(
     price_scale : segment name -> multiplier on the shared-bicycle operator
         part (`lime`) of the journey cost, for segments with a concessionary
         price (default 1). Segments with equal scales share cost matrices.
+    cost_mean_eur : M1c: the calibrated mean acceptable cost (EUR per trip)
+        of the shared exponential cost margin.
     common_jobs : every segment reaches all jobs (no income matching): the
         controlled comparison of the paper, in which R does not vary by
         segment under M1.
@@ -281,7 +284,11 @@ def run_accessibility(
         """Per-segment accessibility of one (time, cost) pair, both job
         types added (for `seg_names`, default all segments)."""
         sn = names if seg_names is None else seg_names
-        gated = cost is not None and envelope is not None
+        gated = cost is not None and envelope is not None and spec != "m0"
+        if spec == "m0" and cost is not None and envelope is not None:
+            # generalised time: the cost in minutes at the value of time
+            time = np.asarray(time, dtype=np.float32) + _cost_minutes(
+                cost, rail_share, margin_mode)
         cost_matrices = {"time": _finite(time, unreachable_minutes)}
         mode_vot = (vot or {}).get(margin_mode)
         if gated:
@@ -306,7 +313,8 @@ def run_accessibility(
                 money_cost_id=cost_id if gated else None,
                 copula=copula if gated else INDEPENDENCE,
                 pool_by="income_class", only=sn,
-                cost_curve=(cost_curve_factory(spec, margin, mode_vot)
+                cost_curve=(cost_curve_factory(spec, margin, mode_vot,
+                                               cost_mean_eur)
                             if gated else None))
             all_segs += [replace(s, name=f"{wfh}|{s.name}",
                                  pool=f"{wfh}|{s.pool}") for s in segs]
@@ -321,6 +329,19 @@ def run_accessibility(
                     margin_mode, len(all_segs),
                     len({s.weight_key for s in all_segs}))
         return total
+
+    def _cost_minutes(cost, rail_share, margin_mode):
+        """A cost in EUR as minutes at the value of time (M0); public
+        transport weights the value of time by the rail share of km."""
+        v = vot or {}
+        vr = v.get(margin_mode)
+        if vr is None or vr <= 0:
+            raise ValueError("M0 needs a positive value of time for "
+                             f"'{margin_mode}' (EUR/hour).")
+        c = np.asarray(cost, dtype=np.float32)
+        if rail_share is not None and f"{margin_mode}_other" in v:
+            c = c * vot_factor(rail_share, vr, v[f"{margin_mode}_other"])
+        return c * np.float32(60.0 / vr)
 
     def _vot_factors(options, margin_mode):
         """(K, o, d) factors putting each option's cost in units of the rail
@@ -371,6 +392,21 @@ def run_accessibility(
         ls = np.stack([_finite(o.lime if o.lime is not None
                                else np.zeros_like(o.time), 0.0)
                        for o in options])
+        if spec == "m0":
+            # cumulative opportunities in generalised time: the alternative
+            # with the least generalised time decides
+            total = {n: np.zeros(n_o) for n in names}
+            for scale, group in scale_groups(any(o.lime is not None
+                                                 for o in options)):
+                g = np.min(np.stack([
+                    ts[k] + (_cost_minutes(cs[k] + (scale - 1.0) * ls[k],
+                                           options[k].rail_share, margin_mode)
+                             if priced else 0.0)
+                    for k in range(len(options))]), axis=0)
+                part = hansen_total(margin_mode, g, None, None, seg_names=group)
+                for n in group:
+                    total[n] += part[n]
+            return total, priced
         if spec == "m1":                 # cost in units of the rail value of time
             f = _vot_factors(options, margin_mode)
             cs, ls = cs * f, ls * f
@@ -440,8 +476,8 @@ def run_accessibility(
                     money_cost_id="c" if priced else None,
                     pool_by="income_class", only=names,
                     cost_curve=(cost_curve_factory(
-                        spec, m_pt, (vot or {}).get(pt_leg))
-                        if priced else None))}
+                        spec, m_pt, (vot or {}).get(pt_leg), cost_mean_eur)
+                        if priced and spec != "m0" else None))}
 
             def leg_weight(leg, wfh, key, t_leg):
                 cache_it = len(active[leg]) < n_opt
@@ -508,6 +544,14 @@ def run_accessibility(
         return total, priced
 
     def set_total(oset):
+        if isinstance(oset, LegOptionSet) and spec == "m0":
+            # generalised time is one total: legs add up
+            return option_total(oset.margin_modes[-1], tuple(
+                ModeMatrices(sum(np.asarray(t, dtype=np.float32)
+                                 for t in o.times), o.cost, o.cost_id,
+                             lime=o.lime, lime_rentals=o.lime_rentals,
+                             rail_share=o.rail_share)
+                for o in oset.options))
         if isinstance(oset, LegOptionSet):
             return legwise_total(oset)
         return option_total(oset.margin_mode, oset.options)
