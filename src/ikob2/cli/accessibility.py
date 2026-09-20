@@ -269,6 +269,22 @@ def shared_bike_matrices(prm, chains, fares, share, matrices, tariffs=None):
     return out
 
 
+def _hubs_for_export(prm, args):
+    """The hub locations of the shared-bicycle chains, for the run products
+    (None when the hub files cannot be found)."""
+    from ikob2.skims import hubs as hubs_mod
+
+    root = args.data_root or os.environ.get(params_mod.ENV_ROOT) \
+        or prm.paths.data_root
+    try:
+        return hubs_mod.load_hubs(
+            prm.pt.hub_files, Path(root) / "inputs" if root else None,
+            kinds=prm.pt.hub_kinds, tariffs=prm.shared_bike.hub_tariffs)
+    except (FileNotFoundError, ValueError) as exc:
+        logger.warning("Hubs not exported: %s", exc)
+        return None
+
+
 def parse_vot(items) -> dict[str, float]:
     """['car=10', 'pt=9'] -> {'car': 10.0, 'pt': 9.0} (EUR per hour)."""
     out = {}
@@ -385,6 +401,7 @@ def cmd_run(args) -> None:
             logger.info("Lime price scales differ from 1 for %d segments",
                         sum(v != 1.0 for v in price_scale.values()))
     scenario = {}
+    hubs_used = None
     if args.shared_bike:
         from dataclasses import replace
 
@@ -394,6 +411,7 @@ def cmd_run(args) -> None:
         chains, fares, share = load_chains(prm, args, store,
                                            codes_all(zones),
                                            pt_fare_model(prm))
+        hubs_used = _hubs_for_export(prm, args)
         tariffs = tariffs_from(prm)
         if tariffs.dockless_model == "flat" and tariffs.flat_eur == 0.0:
             if (args.spec != "m2" or copula.family != "independence"
@@ -469,6 +487,12 @@ def cmd_run(args) -> None:
                                       if k != "func"},
             "detour": detour.meta, "skim_meta": store.meta}
     (out_dir / "run.json").write_text(json.dumps(meta, indent=1, default=str))
+    if prm.accessibility.export:
+        from ikob2.outputs.export import write_products
+        written = write_products(
+            out_dir, t, envelope=envelope, price_scale=price_scale,
+            time_margins=margins, kwb_path=args.kwb, hubs=hubs_used)
+        print("Analysis products:", ", ".join(written))
     print(f"Wrote {len(t)} rows to {out_dir}.")
     print(result.summary("income_class")["accessibility"].unstack(0)
           .round(0).to_string())

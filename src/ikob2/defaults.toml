@@ -49,6 +49,7 @@ wfh_period = "2024JJ00"
 wfh_types = ["no_wfh", "wfh_possible"]
 modes = ["car", "bike"]
 cost_gate = true           # false: time-only accessibility
+export = true              # write the analysis products (segments, margins, hubs, origins.gpkg, dictionary)
 ownership = false          # weight modes by car / bicycle availability
 shared_bike = []           # variants v0..v4
 

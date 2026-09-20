@@ -266,6 +266,22 @@ gain nothing; D2 gets 73% of the gain. S4 (flat EUR 3.011, both calibrations)
 changes nothing (+0.0003%): bicycle legs are capped at 20 minutes, so almost
 every rental is in the EUR 3 tier and the flat price equals the tier price.
 
+### R value and analysis products
+
+`cli.interchange --base s0 --a s1 --b s2 --mode pt_v2` computes
+R = gain(A) / gain(B) per origin and segment (`interchange_pairs.csv`), the
+dispersion of R across an origin's segments (interquantile ratio and CV,
+`interchange_origins.csv`) and their population-weighted pooling
+(`interchange_summary.csv`). R is undefined where the gain of B is zero; those
+pairs stay in the table with `defined = False` and are counted. It needs the
+three runs S0, S1 and S2 (S2 is not built yet).
+
+Every run writes analysis products next to `accessibility.csv`
+(`accessibility.export`): `segments.csv` (budgets, atom, Lime price scale),
+`time_margins.csv`, `hubs.csv`, `origins.gpkg` (buurt polygons with mean
+accessibility per mode, and the hub points, EPSG:28992), `accessibility.parquet`
+(when pyarrow is installed), `dictionary.csv` and a README with an R snippet.
+
 ## Not covered yet
 
 Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),
