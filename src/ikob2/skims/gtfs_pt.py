@@ -432,10 +432,12 @@ class PtRouter:
                  access: LegSpec | None = None,
                  egress: LegSpec | None = None) -> dict:
         """Time and, if `track`, the fare inputs of the fastest journey:
-        {'time', 'rail_km', 'other_km', 'other_boardings', 'access_min'},
+        {'time', 'rail_km', 'other_km', 'other_boardings', 'access_min',
+        'egress_min'},
         each (origins x destinations) float32 (NaN where not reachable).
-        access_min: minutes of the access leg's ride (excluding fixed
-        minutes; zero on foot), for metered bicycle tariffs.
+        access_min / egress_min: minutes of the bicycle ride of the access
+        / egress leg (excluding fixed minutes; zero on foot), for metered
+        tariffs and leg-wise time gates.
 
         access / egress: None walks; a LegSpec uses a bicycle for that leg
         (egress with hubs_only: OV-fiets at rail stops).
@@ -456,9 +458,9 @@ class PtRouter:
             (np.concatenate([w, o_w]),
              (np.concatenate([u, origin_nodes[rep]]),
               np.concatenate([v, o_idx]))), shape=(total, total))
-        e_ptr, e_idx, e_w, _ = self._links(d, egress)
+        e_ptr, e_idx, e_w, e_ride = self._links(d, egress)
         names = ["time", "rail_km", "other_km", "other_boardings",
-                 "access_min"] if track else ["time"]
+                 "access_min", "egress_min"] if track else ["time"]
         out = {k: np.full((len(o), len(d)), np.nan, dtype=np.float32)
                for k in names}
         has = np.diff(e_ptr) > 0
@@ -498,8 +500,11 @@ class PtRouter:
                 z = zone_idx[first_seg]
                 good = np.isfinite(best[r][first_seg]) \
                     & (best[r][first_seg] <= max_minutes)
-                for j, name in enumerate(names[1:]):
+                for j, name in enumerate(names[1:5]):
                     out[name][s0 + r, z[good]] = attrs[r, stop_at[good], j]
+                if egress is not None:                # bicycle egress ride
+                    out["egress_min"][s0 + r, z[good]] = \
+                        e_ride[pos[first]][good]
         return out
 
     def _path_attributes(self, pred: np.ndarray, total: int,

@@ -19,6 +19,7 @@ computed separately and added.
 
 from __future__ import annotations
 
+import itertools
 import logging
 from dataclasses import dataclass, field
 from typing import Mapping, Sequence
@@ -27,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec
-from ikob2.engine.runner import SegmentedRunner
+from ikob2.engine.runner import SegmentedRunner, evaluate_marginal
 from ikob2.segments.bridge import (
     build_segments,
     envelope_segment_names,
@@ -71,6 +72,27 @@ class OptionSet:
     time margin to use (a chain is judged on its total time)."""
     options: tuple
     margin_mode: str = "pt"
+
+
+@dataclass(frozen=True)
+class LegOption:
+    """One journey judged leg by leg: `times` has one origins x destinations
+    matrix per leg (0 where the leg does not exist) and `cost` the price of
+    the whole journey."""
+    times: tuple
+    cost: np.ndarray | None = None
+    cost_id: str | None = None
+
+
+@dataclass(frozen=True)
+class LegOptionSet:
+    """Alternatives judged leg-wise (paper eq. 3.2): each leg has its own
+    time threshold (margin of `margin_modes[l]`) and the cost margin is on
+    the journey total. With independent thresholds the joint survival of an
+    option is prod_l S_T,l(t_l) x S_M(c); a person accepts a pair if any
+    option passes, computed by inclusion-exclusion over the options."""
+    options: tuple
+    margin_modes: tuple = ("bike", "bike", "pt")
 
 
 @dataclass(frozen=True)
@@ -266,6 +288,64 @@ def run_accessibility(
                 total[n] += sign * part[n]
         return total, priced
 
+    def legwise_total(oset):
+        """Leg-wise gates, union by inclusion-exclusion (independent
+        thresholds, M2)."""
+        if spec != "m2" or copula.family != "independence":
+            raise ValueError("Leg-wise gates are defined for M2 with "
+                             "independent thresholds.")
+        opts = oset.options
+        n_leg = len(oset.margin_modes)
+        for o in opts:
+            if len(o.times) != n_leg:
+                raise ValueError("Every option needs one time per leg.")
+            for tt in o.times:
+                check(ModeMatrices(np.asarray(tt)), "leg")
+        priced = envelope is not None and any(o.cost is not None for o in opts)
+        times = np.stack([[_finite(t, unreachable_minutes) for t in o.times]
+                          for o in opts])                  # (K, L, o, d)
+        costs = np.stack([_finite(o.cost if o.cost is not None
+                                  else np.zeros((n_o, n_d)),
+                                  unreachable_minutes) for o in opts])
+        quiet = logging.getLogger("ikob2.engine.runner")
+        level, quiet.level = quiet.level, logging.WARNING
+        try:
+            segs = build_segments(time_margins[(oset.margin_modes[0],
+                                                WFH_TYPES[0])],
+                                  envelope=envelope if priced else None,
+                                  money_cost_id="c" if priced else None,
+                                  pool_by="income_class", only=names)
+            total = {n: np.zeros(n_o) for n in names}
+            for r in range(1, len(opts) + 1):
+                for subset in itertools.combinations(range(len(opts)), r):
+                    sign = 1.0 if r % 2 else -1.0
+                    idx = list(subset)
+                    t = times[idx].max(axis=0)                   # (L, o, d)
+                    c = costs[idx].max(axis=0)
+                    tw = {}
+                    for wfh in WFH_TYPES:
+                        w = None
+                        for leg, mode_l in enumerate(oset.margin_modes):
+                            spec_l = time_margins[(mode_l, wfh)]
+                            f = evaluate_marginal(t[leg], spec_l)
+                            w = f if w is None else w * f
+                        tw[wfh] = w
+                    for sg in segs:
+                        sm = (evaluate_marginal(c, sg.class_filter.cost)
+                              if priced else None)
+                        for wfh in WFH_TYPES:
+                            wgt = tw[wfh] if sm is None else tw[wfh] * sm
+                            total[sg.name] += sign * (
+                                wgt @ np.asarray(pools[wfh][sg.pool], dtype=np.float32))
+        finally:
+            quiet.level = level
+        return total, priced
+
+    def set_total(oset):
+        if isinstance(oset, LegOptionSet):
+            return legwise_total(oset)
+        return option_total(oset.margin_mode, oset.options)
+
     rows = []
     for mode, mm in matrices.items():
         priced = False
@@ -276,12 +356,12 @@ def run_accessibility(
                 if w.shape != (n_o,) or (w < 0).any() or (w > 1).any():
                     raise ValueError("Mixture weights need one share in "
                                      "[0, 1] per origin.")
-                part, pr = option_total(oset.margin_mode, oset.options)
+                part, pr = set_total(oset)
                 priced = priced or pr
                 for n in names:
                     total[n] += w * part[n]
-        elif isinstance(mm, OptionSet):
-            total, priced = option_total(mm.margin_mode, mm.options)
+        elif isinstance(mm, (OptionSet, LegOptionSet)):
+            total, priced = set_total(mm)
         else:
             check(mm, mode)
             total = hansen_total(mode, mm.time, mm.cost, mm.cost_id,

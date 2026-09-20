@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 FARE_VARIABLES = ("rail_km", "other_km", "other_boardings")
 ACCESS_VARIABLE = "access_min"
+EGRESS_VARIABLE = "egress_min"
 
 
 def build_pt_layer(store: SkimStore, router: PtRouter, origin_xy: np.ndarray,
@@ -43,6 +44,8 @@ def build_pt_layer(store: SkimStore, router: PtRouter, origin_xy: np.ndarray,
     names = [variable, *(FARE_VARIABLES if fare_inputs else ())]
     if fare_inputs and access is not None:
         names.append(ACCESS_VARIABLE)
+    if fare_inputs and egress is not None:
+        names.append(EGRESS_VARIABLE)
     for name in names:
         store.allocate(layer, mode, name)
     pending = sorted({b for name in names

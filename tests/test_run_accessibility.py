@@ -269,3 +269,53 @@ def test_option_sets_reject_m1_and_bad_weights():
     with pytest.raises(ValueError, match="share"):
         run(pop, jobs, wfh, wage, {"x": MixedMode(
             ((np.array([2.0, 0, 0]), OptionSet((a,), "car")),))})
+
+
+# ── leg-wise gates ───────────────────────────────────────────────────
+
+from ikob2.run.accessibility import LegOption, LegOptionSet  # noqa: E402
+
+
+def test_legwise_single_leg_equals_the_plain_gate():
+    pop, jobs, wfh, wage, time, cost = world()
+    res = run(pop, jobs, wfh, wage, {
+        "car": ModeMatrices(time, cost, "fare"),
+        "leg": LegOptionSet((LegOption((time,), cost, "fare"),), ("car",))})
+    np.testing.assert_allclose(acc(res, "leg"), acc(res, "car"),
+                               rtol=2e-4, atol=1e-2)
+
+
+def test_legwise_is_more_lenient_than_one_gate_on_the_total():
+    pop, jobs, wfh, wage, time, cost = world()
+    half = time / 2
+    res = run(pop, jobs, wfh, wage, {
+        "car": ModeMatrices(time, cost, "fare"),
+        "leg": LegOptionSet((LegOption((half, half), cost, "fare"),),
+                            ("car", "car"))})
+    assert (acc(res, "leg") >= acc(res, "car") - 1e-2).all()
+    assert acc(res, "leg").sum() > acc(res, "car").sum()
+
+
+def test_legwise_union_inclusion_exclusion_and_identical_options():
+    pop, jobs, wfh, wage, time, cost = world()
+    a = LegOption((time * 0.4, time * 0.6), cost * 0.3, "fare")
+    b = LegOption((time * 0.2, time * 0.9), cost * 1.5, "fare")
+    ab = LegOption((time * 0.4, time * 0.9), cost * 1.5, "fare")
+    res = run(pop, jobs, wfh, wage, {
+        "a": LegOptionSet((a,), ("car", "car")),
+        "b": LegOptionSet((b,), ("car", "car")),
+        "ab": LegOptionSet((ab,), ("car", "car")),
+        "aa": LegOptionSet((a, a), ("car", "car")),
+        "u": LegOptionSet((a, b), ("car", "car"))})
+    np.testing.assert_allclose(acc(res, "aa"), acc(res, "a"), rtol=2e-4,
+                               atol=1e-2)
+    np.testing.assert_allclose(
+        acc(res, "u"), acc(res, "a") + acc(res, "b") - acc(res, "ab"),
+        rtol=2e-4, atol=1e-2)
+
+
+def test_legwise_needs_m2_independence():
+    pop, jobs, wfh, wage, time, cost = world()
+    leg = LegOptionSet((LegOption((time,), cost, "fare"),), ("car",))
+    with pytest.raises(ValueError, match="independent"):
+        run(pop, jobs, wfh, wage, {"x": leg}, spec="m3", theta=2.0)

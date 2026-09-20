@@ -55,3 +55,30 @@ def test_v0_and_validation():
         shared_bike_modes(c, f, np.array([.5, .5, .5]), variants=("v9",))
     with pytest.raises(ValueError):
         SharedBikeTariffs(ovfiets_eur=-1)
+
+
+def test_v3_splits_times_into_legs_and_v4_prices_dockless():
+    from ikob2.run.accessibility import LegOptionSet
+    from ikob2.run.shared_bike import dockless_mode
+    c, f = chains()
+    c["pt_bb"]["egress_min"] = np.full(SHAPE, 6.0, dtype=np.float32)
+    c["pt_wb"]["egress_min"] = np.full(SHAPE, 6.0, dtype=np.float32)
+    v3 = shared_bike_modes(c, f, np.array([.9, .8, .5]),
+                           variants=("v3",), bike_fixed_min=1.0)["pt_v3"]
+    (_, owners), _ = v3.parts
+    assert isinstance(owners, LegOptionSet)
+    bb = owners.options[2]                      # pt_bb: access 12+1, egress 6+1
+    a, b, pt = (x[0, 0] for x in bb.times)
+    assert (a, b, pt) == pytest.approx((13.0, 7.0, 35.0 - 13.0 - 7.0))
+    assert owners.options[0].times[2][0, 0] == 60.0          # plain: all PT
+    bike_t = np.full(SHAPE, 20.0, dtype=np.float32)
+    v4 = dockless_mode(bike_t, np.array([.9, .8, .5]),
+                       SharedBikeTariffs(4.8, 1.0, 0.2), 1.0)
+    (_, own), (w_n, rent) = v4.parts
+    assert own.options[0].cost is None
+    assert rent.options[0].time[0, 0] == 21.0
+    assert rent.options[0].cost[0, 0] == pytest.approx(1.0 + 0.2 * 20.0)
+    np.testing.assert_allclose(w_n, [.1, .2, .5])
+    with pytest.raises(ValueError, match="egress_min"):
+        c2, f2 = chains()
+        shared_bike_modes(c2, f2, np.array([.9, .8, .5]), variants=("v3",))

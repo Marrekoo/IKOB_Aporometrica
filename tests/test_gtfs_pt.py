@@ -448,3 +448,14 @@ def test_bicycle_egress_is_faster_than_walking_where_both_work(tmp_path):
                                                        fixed_minutes=1.0))
     # 0.9 km: walking 17.6 min; bicycle 4.4 min ride + 1 min fixed
     assert walk["time"][0, 0] - bike["time"][0, 0] > 5
+
+
+def test_bicycle_egress_minutes_are_reported(tmp_path):
+    o, d = xy(0, 200), [xy(10000, 900), xy(5000, 100)]
+    j = leg_journeys(tmp_path, o, d, egress=LegSpec(hubs_only=True,
+                                                    fixed_minutes=1.0))
+    ride = 900 * 1.3 / (16000 / 60)                # 0.9 km from rail stop C
+    assert j["egress_min"][0, 0] == pytest.approx(ride, abs=0.1)
+    assert np.isfinite(j["time"][0, 1]) and np.isfinite(j["egress_min"][0, 1])
+    walk_only = leg_journeys(tmp_path, o, d)
+    assert np.isnan(walk_only["egress_min"]).all()     # no bicycle egress
