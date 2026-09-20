@@ -178,7 +178,7 @@ def cmd_make_peak(args) -> None:
 
 def cmd_build_pt(args) -> None:
     from ikob2.data.geopackage import load_cbs_buurten
-    from ikob2.skims.gtfs_pt import PtRouter, load_peak_timetable
+    from ikob2.skims.gtfs_pt import LegSpec, PtRouter, load_peak_timetable
     from ikob2.skims.pt_build import build_pt_layer
 
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
@@ -197,9 +197,21 @@ def cmd_build_pt(args) -> None:
                       boarding_penalty_min=args.boarding_penalty_min,
                       rail_detour=args.rail_detour,
                       other_detour=args.other_detour)
-    build_pt_layer(store, router, o_xy, codes, xy,
-                   max_minutes=args.max_minutes)
-    store.set_meta("pt", {
+    leg = LegSpec(kmh=args.bike_kmh, detour=args.bike_detour,
+                  max_minutes=args.bike_max_min,
+                  fixed_minutes=args.bike_fixed_min)
+    access = leg if args.access == "bike" else None
+    egress = (LegSpec(**{**leg.__dict__, "hubs_only": args.egress_hubs
+                         == "rail"}) if args.egress == "bike" else None)
+    build_pt_layer(store, router, o_xy, codes, xy, mode=args.mode_name,
+                   max_minutes=args.max_minutes, access=access,
+                   egress=egress)
+    store.set_meta(args.mode_name, {
+        "access": args.access, "egress": args.egress,
+        "bike": {"kmh": args.bike_kmh, "detour": args.bike_detour,
+                 "max_min": args.bike_max_min,
+                 "fixed_min": args.bike_fixed_min,
+                 "egress_hubs": args.egress_hubs},
         "gtfs": str(args.gtfs), "date": args.date, "window_h": args.window,
         "walk_kmh": args.walk_kmh, "walk_detour": args.walk_detour,
         "max_access_min": args.max_access_min,
@@ -300,6 +312,21 @@ def main(argv=None) -> None:
     t.add_argument("--other-detour", type=float, default=1.25,
                    help="bus/tram/metro km = crow-fly between stops x this")
     t.add_argument("--max-minutes", type=float, default=180.0)
+    t.add_argument("--mode-name", default="pt",
+                   help="name of the mode in the store: 'pt' for the plain "
+                        "walk-walk journey, e.g. pt_bw (bicycle access, walk "
+                        "egress), pt_wb, pt_bb")
+    t.add_argument("--access", choices=["walk", "bike"], default="walk")
+    t.add_argument("--egress", choices=["walk", "bike"], default="walk")
+    t.add_argument("--egress-hubs", choices=["rail", "all"], default="rail",
+                   help="where a bicycle egress can start: rail stops "
+                        "(OV-fiets) or every stop")
+    t.add_argument("--bike-kmh", type=float, default=16.0)
+    t.add_argument("--bike-detour", type=float, default=1.3)
+    t.add_argument("--bike-max-min", type=float, default=20.0,
+                   help="longest bicycle leg (ride minutes)")
+    t.add_argument("--bike-fixed-min", type=float, default=1.0,
+                   help="unlock/park/return minutes added to a bicycle leg")
     t.set_defaults(func=cmd_build_pt)
 
     i = sub.add_parser("inspect", help="describe a skim store")

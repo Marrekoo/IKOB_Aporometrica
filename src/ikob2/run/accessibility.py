@@ -63,6 +63,50 @@ class ModeMatrices:
 
 
 @dataclass(frozen=True)
+class OptionSet:
+    """Alternative journeys between the same origins and destinations that
+    one person can choose from (for example plain public transport, and
+    public transport with a shared bicycle at the destination). The person
+    accepts a pair if any option passes both gates. `margin_mode` names the
+    time margin to use (a chain is judged on its total time)."""
+    options: tuple
+    margin_mode: str = "pt"
+
+
+@dataclass(frozen=True)
+class MixedMode:
+    """A mode that is a mixture over groups of the population that have
+    different options: parts = ((share per origin, OptionSet), ...), the
+    shares of an origin summing to 1 (for example residents with and
+    without a private bicycle)."""
+    parts: tuple
+
+
+def union_terms(times: np.ndarray, costs: np.ndarray):
+    """Terms (time, cost, sign) whose joint-survival sum is the probability
+    that at least one option is acceptable to a person with random
+    thresholds (tau, mu).
+
+    An option (t, c) is acceptable iff tau >= t and mu >= c. Sorted by time
+    per origin-destination pair, with the running cheapest cost cmin_k of
+    the options at least as fast, the acceptable region is the staircase
+    union of [t_k, inf) x [cmin_k, inf), so
+
+        P = sum_k f(t_k, cmin_k) - sum_{k<K} f(t_{k+1}, cmin_k)
+
+    exactly, for any dependence between the thresholds. times, costs:
+    (K, origins, destinations)."""
+    order = np.argsort(times, axis=0, kind="stable")
+    ts = np.take_along_axis(times, order, axis=0)
+    cs = np.take_along_axis(costs, order, axis=0)
+    cmin = np.minimum.accumulate(cs, axis=0)
+    k = len(ts)
+    terms = [(ts[i], cmin[i], 1.0) for i in range(k)]
+    terms += [(ts[i + 1], cmin[i], -1.0) for i in range(k - 1)]
+    return terms
+
+
+@dataclass(frozen=True)
 class AccessibilityResult:
     table: pd.DataFrame            # long: one row per origin x segment x mode
     meta: dict = field(default_factory=dict)
@@ -157,29 +201,25 @@ def run_accessibility(
              for w in WFH_TYPES}
 
     runner = SegmentedRunner(decay_epsilon=epsilon)
-    rows = []
-    for mode, mm in matrices.items():
-        if mm.time.shape != (n_o, n_d):
-            raise ValueError(f"Mode '{mode}' matrix {mm.time.shape} does "
-                             f"not match ({n_o}, {n_d}) origins x "
-                             f"destinations.")
-        gated = mm.cost is not None and envelope is not None
-        cost_matrices = {"time": _finite(mm.time, unreachable_minutes)}
-        cost_id = mm.cost_id
-        mode_vot = (vot or {}).get(mode)
+
+    def hansen_total(margin_mode, time, cost, cost_id, rail_share=None):
+        """Per-segment accessibility of one (time, cost) pair, both job
+        types added."""
+        gated = cost is not None and envelope is not None
+        cost_matrices = {"time": _finite(time, unreachable_minutes)}
+        mode_vot = (vot or {}).get(margin_mode)
         if gated:
-            cost = mm.cost
-            if (spec == "m1" and mm.rail_share is not None
-                    and f"{mode}_other" in (vot or {})):
-                cost = vot_weighted_cost(cost, mm.rail_share, vot[mode],
-                                         vot[f"{mode}_other"])
-                cost_id = f"{mm.cost_id}@vot"
+            if (spec == "m1" and rail_share is not None
+                    and f"{margin_mode}_other" in (vot or {})):
+                cost = vot_weighted_cost(cost, rail_share, vot[margin_mode],
+                                         vot[f"{margin_mode}_other"])
+                cost_id = f"{cost_id}@vot"
             cost_matrices[cost_id] = _finite(cost, unreachable_minutes)
         total = {n: np.zeros(n_o) for n in names}
         for wfh in WFH_TYPES:
-            margin = time_margins.get((mode, wfh))
+            margin = time_margins.get((margin_mode, wfh))
             if margin is None:
-                raise KeyError(f"No time margin for ({mode}, {wfh}); "
+                raise KeyError(f"No time margin for ({margin_mode}, {wfh}); "
                                f"have {sorted(time_margins)}.")
             segs = build_segments(
                 time_margin_for(spec, margin),
@@ -187,16 +227,66 @@ def run_accessibility(
                 money_cost_id=cost_id if gated else None,
                 copula=copula if gated else INDEPENDENCE,
                 pool_by="income_class", only=names,
-                cost_curve=(cost_curve_factory(spec, margin,
-                                               mode_vot)
+                cost_curve=(cost_curve_factory(spec, margin, mode_vot)
                             if gated else None))
             per = runner.run_hansen(None, segs, cost_matrices=cost_matrices,
                                     opportunities=pools[wfh])
             for n in names:
                 total[n] += per[n].astype(np.float64)
             logger.info("mode %s, %s: %d segments, %d composed filters",
-                        mode, wfh, len(segs),
+                        margin_mode, wfh, len(segs),
                         len({s.weight_key for s in segs}))
+        return total
+
+    def check(mm, label):
+        if mm.time.shape != (n_o, n_d):
+            raise ValueError(f"Mode '{label}' matrix {mm.time.shape} does "
+                             f"not match ({n_o}, {n_d}) origins x "
+                             f"destinations.")
+
+    def option_total(margin_mode, options):
+        """Union of alternative journeys for one person (staircase of
+        joint survival, see `union_terms`)."""
+        if spec == "m1":
+            raise ValueError("Option sets are not defined for M1 (its "
+                             "value of time is per journey).")
+        for o in options:
+            check(o, margin_mode)
+        priced = envelope is not None and any(o.cost is not None
+                                              for o in options)
+        ts = np.stack([_finite(o.time, unreachable_minutes) for o in options])
+        cs = np.stack([_finite(o.cost if o.cost is not None
+                               else np.zeros_like(o.time),
+                               unreachable_minutes) for o in options])
+        cid = next((o.cost_id for o in options if o.cost is not None), None)
+        total = {n: np.zeros(n_o) for n in names}
+        for t, c, sign in union_terms(ts, cs):
+            part = hansen_total(margin_mode, t, c if priced else None, cid)
+            for n in names:
+                total[n] += sign * part[n]
+        return total, priced
+
+    rows = []
+    for mode, mm in matrices.items():
+        priced = False
+        if isinstance(mm, MixedMode):
+            total = {n: np.zeros(n_o) for n in names}
+            for weight, oset in mm.parts:
+                w = np.asarray(weight, dtype=float)
+                if w.shape != (n_o,) or (w < 0).any() or (w > 1).any():
+                    raise ValueError("Mixture weights need one share in "
+                                     "[0, 1] per origin.")
+                part, pr = option_total(oset.margin_mode, oset.options)
+                priced = priced or pr
+                for n in names:
+                    total[n] += w * part[n]
+        elif isinstance(mm, OptionSet):
+            total, priced = option_total(mm.margin_mode, mm.options)
+        else:
+            check(mm, mode)
+            total = hansen_total(mode, mm.time, mm.cost, mm.cost_id,
+                                 mm.rail_share)
+            priced = mm.cost is not None and envelope is not None
         avail = None
         if availability and mode in availability:
             avail = availability[mode].reindex(index=origins,
@@ -205,7 +295,7 @@ def run_accessibility(
                 raise ValueError(f"Availability of '{mode}' must cover all "
                                  f"origins and segments, within [0, 1].")
         rows.append(_long(mode, origins, names, total, pop, envelope,
-                          priced=gated and atom_reported(spec), avail=avail))
+                          priced=priced and atom_reported(spec), avail=avail))
     table = pd.concat(rows, ignore_index=True)
     meta = {"origins": n_o, "destinations": n_d, "segments": len(names),
             "modes": list(matrices), "epsilon": epsilon,

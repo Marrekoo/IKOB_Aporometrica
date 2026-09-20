@@ -202,6 +202,18 @@ only, 199 km); median over reachable pairs 19.8 EUR. The fare goes to the
 run as the PT cost matrix, gated by the segments' cost margins like the
 car cost.
 
+## Bicycle access and egress for public transport
+
+`cli.skims build-pt --mode-name pt_bw --access bike` (and `pt_wb --egress
+bike`, `pt_bb` both) store further PT modes in the same store; the plain mode
+is `pt`. A bicycle leg (`gtfs_pt.LegSpec`) rides at `--bike-kmh` (16) with
+crow-fly detour `--bike-detour` (1.3), at most `--bike-max-min` (20) minutes,
+plus `--bike-fixed-min` (1) for unlocking or parking. A bicycle egress starts
+only at hub stops (`--egress-hubs rail`: rail stops, standing in for OV-fiets
+stations; `all` for every stop); an access can use any stop. With a bicycle
+access the riding minutes of the chosen access are stored as `access_min` for
+metered tariffs. The router still applies the frequency model unchanged.
+
 ## National network
 
 The national OSM extract (`netherlands-260822.osm.pbf`, 1.4 GB) builds

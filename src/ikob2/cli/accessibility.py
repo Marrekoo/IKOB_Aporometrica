@@ -183,6 +183,36 @@ def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpe
 from ikob2.segments.specs import DEFAULT_VOT  # noqa: E402
 
 
+def codes_all(zones) -> list[str]:
+    return [str(c) for c in zones.codes]
+
+
+def shared_bike_matrices(args, store, codes, model):
+    """The requested shared-bicycle variants as chain modes (needs the
+    store modes pt, pt_wb, pt_bw and pt_bb from `cli.skims build-pt`)."""
+    from ikob2.run.shared_bike import SharedBikeTariffs, shared_bike_modes
+    from ikob2.segments.ownership import load_bike_ownership
+
+    chains, fares = {}, {}
+    for mode in ("pt", "pt_wb", "pt_bw", "pt_bb"):
+        if ("all", mode, "time") not in store.arrays():
+            raise SystemExit(f"Store lacks mode '{mode}': build it with "
+                             f"`cli.skims build-pt --mode-name {mode}`.")
+        blk = lambda v: store.block("all", mode, v, destinations=codes)  # noqa: E731
+        chains[mode] = {"time": blk("time")}
+        if mode in ("pt_bw", "pt_bb"):
+            chains[mode]["access_min"] = blk("access_min")
+        chains[mode]["fare"] = model.fare(blk("rail_km"), blk("other_km"),
+                                          blk("other_boardings"))
+        fares[mode] = chains[mode]["fare"]
+    share = load_bike_ownership(args.bike_ownership,
+                                store.origins).to_numpy()
+    tariffs = SharedBikeTariffs(args.ovfiets_eur, args.dockless_unlock_eur,
+                                args.dockless_per_min_eur)
+    return shared_bike_modes(chains, fares, share, tariffs,
+                             variants=args.shared_bike)
+
+
 def parse_vot(items) -> dict[str, float]:
     """['car=10', 'pt=9'] -> {'car': 10.0, 'pt': 9.0} (EUR per hour)."""
     out = {}
@@ -268,6 +298,9 @@ def cmd_run(args) -> None:
               else CopulaSpec(args.copula, args.theta
                               if args.copula == "gumbel" else None))
 
+    if args.shared_bike:
+        matrices.update(shared_bike_matrices(args, store, codes_all(zones),
+                                             pt_fare_model(args)))
     availability = None
     if args.ownership:
         from ikob2.segments.ownership import (availability_frames,
@@ -373,6 +406,16 @@ def main(argv=None) -> None:
                    help="CSV from inputs/veh_owners (default: data folder)")
     p.add_argument("--car-availability", default=None,
                    help="CSV from `cli.segments car-availability`")
+    p.add_argument("--shared-bike", nargs="*", default=[],
+                   choices=["v0", "v1", "v2"],
+                   help="add shared-bicycle chain modes pt_v0 (own bicycle "
+                        "only), pt_v1 (OV-fiets egress), pt_v2 (access and "
+                        "egress by ownership); needs the store modes pt_wb, "
+                        "pt_bw, pt_bb and the bicycle ownership table")
+    p.add_argument("--ovfiets-eur", type=float, default=4.80,
+                   help="OV-fiets charge per rental period (egress)")
+    p.add_argument("--dockless-unlock-eur", type=float, default=1.00)
+    p.add_argument("--dockless-per-min-eur", type=float, default=0.20)
     p.add_argument("--car-model", choices=list(CAR_MODELS), default="fossil")
     p.add_argument("--no-parking-search", action="store_true")
     p.add_argument("--pt-rail-table", default=None,

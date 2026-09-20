@@ -68,6 +68,29 @@ def boarding_wait(headway_min, cap_min: float = WAIT_CAP_MIN):
     return np.minimum(h / 2.0, cap_min)
 
 
+@dataclass(frozen=True)
+class LegSpec:
+    """An access or egress leg by another mode than walking (a bicycle).
+
+    kmh, detour : speed and crow-fly detour factor of the leg;
+    max_minutes : longest leg (ride time), with `fixed_minutes` (unlocking,
+        parking, returning) added on top of the ride;
+    hubs_only   : the leg can only start/end at hub stops (rail stops:
+        where OV-fiets is available); otherwise at any stop.
+    """
+    kmh: float = 16.0
+    detour: float = 1.3
+    max_minutes: float = 20.0
+    fixed_minutes: float = 1.0
+    hubs_only: bool = False
+
+    def __post_init__(self):
+        if self.kmh <= 0 or self.detour <= 0 or self.max_minutes <= 0:
+            raise ValueError("kmh, detour and max_minutes must be positive.")
+        if self.fixed_minutes < 0:
+            raise ValueError("fixed_minutes must be >= 0.")
+
+
 @dataclass
 class PeakTimetable:
     """The peak-window view of a GTFS feed.
@@ -263,6 +286,14 @@ class PtRouter:
             stops["lon"].to_numpy(), stops["lat"].to_numpy())
         self.stop_xy = np.column_stack([x, y])
         self.stop_tree = cKDTree(self.stop_xy)
+        rail_lines = set(tt.lines.loc[[is_rail(t) for t in
+                                       tt.lines["route_type"]], "line_id"])
+        rail_stops = set(tt.line_stops.loc[
+            tt.line_stops["line_id"].isin(rail_lines), "stop_id"])
+        self.hub_idx = np.array([i for i, sid in enumerate(self.stop_ids)
+                                 if sid in rail_stops], dtype=int)
+        self.hub_tree = cKDTree(self.stop_xy[self.hub_idx]) \
+            if len(self.hub_idx) else None
         n_stops = len(self.stop_ids)          # layer 0: before boarding
         # layer 1 (after alighting) is n_stops + i; line-stops follow
 
@@ -357,18 +388,36 @@ class PtRouter:
 
     # ── queries ──────────────────────────────────────────────────────
 
-    def _links(self, xy: np.ndarray):
-        """CSR of point -> stops within the access radius: indptr,
-        stop indices, walking minutes."""
-        near = self.stop_tree.query_ball_point(xy, self.access_radius_m)
+    def _links(self, xy: np.ndarray, leg: LegSpec | None = None):
+        """CSR of point -> stops within reach: indptr, stop indices,
+        minutes (ride plus fixed minutes), ride minutes. `leg` None is
+        walking (max_access_min, walk speed); a LegSpec is a bicycle leg,
+        optionally only to hub stops."""
+        if leg is None:
+            radius, tree, ids = self.access_radius_m, self.stop_tree, None
+            fixed = 0.0
+        else:
+            radius = leg.max_minutes * (leg.kmh * 1000.0 / 60.0) / leg.detour
+            tree, ids = ((self.hub_tree, self.hub_idx) if leg.hubs_only
+                         else (self.stop_tree, None))
+            fixed = leg.fixed_minutes
+        if tree is None:                              # no hubs at all
+            z = np.zeros(0)
+            return np.zeros(len(xy) + 1, dtype=int), np.zeros(0, dtype=int), z, z
+        near = tree.query_ball_point(xy, radius)
         counts = np.array([len(n) for n in near])
         indptr = np.concatenate([[0], np.cumsum(counts)])
         idx = np.concatenate([np.array(n, dtype=int) for n in near]) \
             if counts.sum() else np.zeros(0, dtype=int)
         rep = np.repeat(np.arange(len(xy)), counts)
-        d = np.hypot(*(xy[rep] - self.stop_xy[idx]).T) if len(idx) else \
-            np.zeros(0)
-        return indptr, idx, self.walk_min(d)
+        d = np.hypot(*(xy[rep] - tree.data[idx]).T) if len(idx) \
+            else np.zeros(0)
+        stop_idx = ids[idx] if ids is not None else idx
+        if leg is None:
+            ride = self.walk_min(d)
+        else:
+            ride = d * leg.detour / (leg.kmh * 1000.0 / 60.0)
+        return indptr, stop_idx, ride + fixed, ride
 
     def time_matrix(self, origin_xy, dest_xy, *, max_minutes: float = 180.0,
                     chunk: int = 8) -> np.ndarray:
@@ -379,10 +428,17 @@ class PtRouter:
                              chunk=chunk, track=False)["time"]
 
     def journeys(self, origin_xy, dest_xy, *, max_minutes: float = 180.0,
-                 chunk: int = 8, track: bool = True) -> dict:
+                 chunk: int = 8, track: bool = True,
+                 access: LegSpec | None = None,
+                 egress: LegSpec | None = None) -> dict:
         """Time and, if `track`, the fare inputs of the fastest journey:
-        {'time', 'rail_km', 'other_km', 'other_boardings'}, each
-        (origins x destinations) float32 (NaN where not reachable).
+        {'time', 'rail_km', 'other_km', 'other_boardings', 'access_min'},
+        each (origins x destinations) float32 (NaN where not reachable).
+        access_min: minutes of the access leg's ride (excluding fixed
+        minutes; zero on foot), for metered bicycle tariffs.
+
+        access / egress: None walks; a LegSpec uses a bicycle for that leg
+        (egress with hubs_only: OV-fiets at rail stops).
 
         rail_km / other_km: in-vehicle kilometres on rail and on other
         lines (bus, tram, metro, ferry); other_boardings: boardings onto
@@ -391,7 +447,7 @@ class PtRouter:
         o = np.asarray(origin_xy, dtype=float)
         d = np.asarray(dest_xy, dtype=float)
         n_nodes = 2 * self.n_stops + self.n_line_stops
-        o_ptr, o_idx, o_w = self._links(o)
+        o_ptr, o_idx, o_w, o_ride = self._links(o, access)
         u, v, w = self._edges
         origin_nodes = n_nodes + np.arange(len(o))
         rep = np.repeat(np.arange(len(o)), np.diff(o_ptr))
@@ -400,9 +456,9 @@ class PtRouter:
             (np.concatenate([w, o_w]),
              (np.concatenate([u, origin_nodes[rep]]),
               np.concatenate([v, o_idx]))), shape=(total, total))
-        e_ptr, e_idx, e_w = self._links(d)
-        names = ["time", "rail_km", "other_km", "other_boardings"] if track \
-            else ["time"]
+        e_ptr, e_idx, e_w, _ = self._links(d, egress)
+        names = ["time", "rail_km", "other_km", "other_boardings",
+                 "access_min"] if track else ["time"]
         out = {k: np.full((len(o), len(d)), np.nan, dtype=np.float32)
                for k in names}
         has = np.diff(e_ptr) > 0
@@ -426,7 +482,13 @@ class PtRouter:
             out["time"][s0:s0 + chunk] = time_block
             if not track:
                 continue
-            attrs = self._path_attributes(pred, total)      # (c, total, 3)
+            link_ride = np.zeros((len(src), total))
+            for r_, o_ in enumerate(range(s0, s0 + len(src))):
+                if access is None:                  # walking: no bicycle ride
+                    break
+                sl = slice(o_ptr[o_], o_ptr[o_ + 1])
+                link_ride[r_, o_idx[sl]] = o_ride[sl]
+            attrs = self._path_attributes(pred, total, link_ride)  # (c,total,4)
             zone_idx = np.flatnonzero(has)
             for r in range(len(src)):
                 hit = vals[r] == np.repeat(best[r], seg_len)
@@ -440,14 +502,16 @@ class PtRouter:
                     out[name][s0 + r, z[good]] = attrs[r, stop_at[good], j]
         return out
 
-    def _path_attributes(self, pred: np.ndarray, total: int) -> np.ndarray:
-        """Cumulative (rail_km, other_km, other_boardings) from the origin
+    def _path_attributes(self, pred: np.ndarray, total: int,
+                         link_ride: np.ndarray | None = None) -> np.ndarray:
+        """Cumulative (rail_km, other_km, other_boardings, access ride
+        minutes) from the origin
         to every node along the shortest-path tree. pred: (c, total)
         predecessor matrix (-9999 for none). Pointer doubling: log(depth)
         vectorised passes instead of a walk per node."""
         c = pred.shape[0]
         n_nodes = 2 * self.n_stops + self.n_line_stops
-        cum = np.zeros((c, total + 1, 3))
+        cum = np.zeros((c, total + 1, 4))
         anc = np.full((c, total + 1), total, dtype=np.int64)  # total = sink
         rows, nodes = np.nonzero(pred >= 0)
         p = pred[rows, nodes].astype(np.int64)
@@ -458,7 +522,11 @@ class PtRouter:
         match = self._key_sorted[idx] == keys[in_graph]
         edge = self._key_to_edge[idx]
         r_ok, n_ok = rows[in_graph][match], nodes[in_graph][match]
-        cum[r_ok, n_ok] = self._attr[edge[match]]
+        cum[r_ok, n_ok, :3] = self._attr[edge[match]]
+        if link_ride is not None:               # origin -> first stop link
+            first = ~in_graph
+            cum[rows[first], nodes[first], 3] = link_ride[rows[first],
+                                                        nodes[first]]
         anc[rows, nodes] = p
         for _ in range(64):
             live = anc[:, :total] != total

@@ -393,3 +393,58 @@ def test_fare_of_a_routed_journey(tmp_path):
     assert fare[0, 0] == pytest.approx(PtFareModel().rail_fare([5.75])[0],
                                        rel=1e-3)
     assert fare[0, 1] > fare[0, 0] and np.isnan(fare[0, 2])
+
+
+# ── bicycle access and egress ────────────────────────────────────────
+
+from ikob2.skims.gtfs_pt import LegSpec  # noqa: E402
+
+
+def leg_journeys(tmp_path, o, d, **kw):
+    tt = load_peak_timetable(gtfs_zip(tmp_path), "2026-09-15")
+    return PtRouter(tt).journeys(np.array([o]), np.array(d), max_minutes=180,
+                                 **kw)
+
+
+def test_bicycle_access_reaches_where_walking_does_not(tmp_path):
+    o, d = xy(0, 3000), [xy(5000, 100)]
+    walk = leg_journeys(tmp_path, o, d)
+    assert np.isnan(walk["time"]).all()                    # 3 km: too far
+    bike = leg_journeys(tmp_path, o, d, access=LegSpec(kmh=16.0, detour=1.3,
+                                                       fixed_minutes=1.0))
+    ride = 3000 * 1.3 / (16000 / 60)                        # minutes
+    assert bike["access_min"][0, 0] == pytest.approx(ride, abs=0.05)
+    assert np.isfinite(bike["time"][0, 0])
+    # access ride + 1 min unlock + wait 5 + 6 min in the train + egress walk
+    egress = 100 * 1.3 / (4000 / 60)
+    assert bike["time"][0, 0] == pytest.approx(ride + 1 + 5 + 6 + egress,
+                                               abs=0.2)
+    assert walk["access_min"].shape == (1, 1)
+
+
+def test_walking_access_reports_zero_bicycle_minutes(tmp_path):
+    j = leg_journeys(tmp_path, xy(0, 200), [xy(5000, 100)])
+    assert j["access_min"][0, 0] == 0.0
+
+
+def test_bicycle_egress_only_from_rail_hubs(tmp_path):
+    o = xy(0, 200)
+    far_from_rail = [xy(15000, 2500)]          # 2.5 km from bus stop D
+    near_rail = [xy(10000, 2500)]              # 2.5 km from rail stop C
+    hub = LegSpec(hubs_only=True)
+    anyy = LegSpec(hubs_only=False)
+    assert np.isnan(leg_journeys(tmp_path, o, far_from_rail,
+                                 egress=hub)["time"]).all()
+    assert np.isfinite(leg_journeys(tmp_path, o, far_from_rail,
+                                    egress=anyy)["time"]).all()
+    assert np.isfinite(leg_journeys(tmp_path, o, near_rail,
+                                    egress=hub)["time"]).all()
+
+
+def test_bicycle_egress_is_faster_than_walking_where_both_work(tmp_path):
+    o, d = xy(0, 200), [xy(10000, 900)]        # 0.9 km from rail stop C
+    walk = leg_journeys(tmp_path, o, d)
+    bike = leg_journeys(tmp_path, o, d, egress=LegSpec(hubs_only=True,
+                                                       fixed_minutes=1.0))
+    # 0.9 km: walking 17.6 min; bicycle 4.4 min ride + 1 min fixed
+    assert walk["time"][0, 0] - bike["time"][0, 0] > 5

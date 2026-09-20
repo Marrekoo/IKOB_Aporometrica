@@ -195,3 +195,77 @@ def test_m1_public_transport_vot_weighted_by_rail_share():
                  {"pt": ModeMatrices(time, cost, "ptfare")}, spec="m1",
                  vot={"pt": 12.5}).table["accessibility"]
     np.testing.assert_allclose(weighted, single, rtol=1e-4)
+
+
+# ── alternative journeys (option sets) ───────────────────────────────
+
+from ikob2.run.accessibility import MixedMode, OptionSet  # noqa: E402
+
+
+def acc(res, mode):
+    t = res.table
+    return t[t["mode"] == mode].sort_values(["segment", "buurtcode"]
+                                            )["accessibility"].to_numpy()
+
+
+def test_option_set_identical_or_dominated_options_add_nothing():
+    pop, jobs, wfh, wage, time, cost = world()
+    a = ModeMatrices(time, cost, "fare")
+    slower_dearer = ModeMatrices(time + 5, cost + 3, "fare")
+    res = run(pop, jobs, wfh, wage, {
+        "single": OptionSet((a,), "car"),
+        "twice": OptionSet((a, a), "car"),
+        "dominated": OptionSet((a, slower_dearer), "car")})
+    np.testing.assert_allclose(acc(res, "twice"), acc(res, "single"),
+                               rtol=1e-4)
+    np.testing.assert_allclose(acc(res, "dominated"), acc(res, "single"),
+                               rtol=1e-4)
+
+
+def test_option_set_tradeoff_is_inclusion_exclusion():
+    pop, jobs, wfh, wage, time, cost = world()
+    slow_cheap = ModeMatrices(time * 1.6, cost * 0.3, "fare")
+    fast_dear = ModeMatrices(time, cost * 1.5, "fare")
+    both_bad = ModeMatrices(time * 1.6, cost * 1.5, "fare")   # (t_slow, c_dear)
+    res = run(pop, jobs, wfh, wage, {
+        "slow_cheap": OptionSet((slow_cheap,), "car"),
+        "fast_dear": OptionSet((fast_dear,), "car"),
+        "both": OptionSet((both_bad,), "car"),
+        "union": OptionSet((slow_cheap, fast_dear), "car")})
+    union = acc(res, "union")
+    expected = acc(res, "slow_cheap") + acc(res, "fast_dear") - acc(res, "both")
+    np.testing.assert_allclose(union, expected, rtol=1e-4, atol=1e-3)
+    assert (union >= np.maximum(acc(res, "slow_cheap"),
+                                acc(res, "fast_dear")) - 1e-3).all()
+    assert (union <= acc(res, "slow_cheap") + acc(res, "fast_dear") + 1e-3).all()
+
+
+def test_mixed_mode_weights_the_option_sets_per_origin():
+    pop, jobs, wfh, wage, time, cost = world()
+    plain = ModeMatrices(time * 1.6, cost * 0.3, "fare")
+    fast = ModeMatrices(time, cost * 1.5, "fare")
+    only_plain = OptionSet((plain,), "car")
+    both = OptionSet((plain, fast), "car")
+    w = np.array([1.0, 0.0, 0.25])
+    res = run(pop, jobs, wfh, wage, {
+        "a": only_plain, "b": both,
+        "mix": MixedMode(((1 - w, only_plain), (w, both)))})
+    t = res.table
+    piv = {m: t[t["mode"] == m].pivot(index="buurtcode", columns="segment",
+                                      values="accessibility") for m in
+           ("a", "b", "mix")}
+    for i, o in enumerate(ORIGINS):
+        np.testing.assert_allclose(
+            piv["mix"].loc[o], (1 - w[i]) * piv["a"].loc[o]
+            + w[i] * piv["b"].loc[o], rtol=1e-4, atol=1e-3)
+
+
+def test_option_sets_reject_m1_and_bad_weights():
+    pop, jobs, wfh, wage, time, cost = world()
+    a = ModeMatrices(time, cost, "fare")
+    with pytest.raises(ValueError, match="M1"):
+        run(pop, jobs, wfh, wage, {"x": OptionSet((a,), "car")}, spec="m1",
+            vot={"car": 12.0})
+    with pytest.raises(ValueError, match="share"):
+        run(pop, jobs, wfh, wage, {"x": MixedMode(
+            ((np.array([2.0, 0, 0]), OptionSet((a,), "car")),))})

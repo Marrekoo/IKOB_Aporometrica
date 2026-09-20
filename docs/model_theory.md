@@ -146,6 +146,40 @@ independence, without any change in their circumstances. Results for the
 lowest deciles should be reported over the dependence range, not at a
 single theta.
 
+### Alternative journeys and shared-bicycle chains
+
+When a person can choose between journeys for the same origin-destination
+pair (plain public transport, public transport with a bicycle at one end),
+a pair is acceptable if *any* option passes both gates. An option `(t, c)` is
+acceptable to a person with thresholds `(tau, mu)` iff `tau >= t` and
+`mu >= c`, so the acceptable region is a staircase. Sorting the `K` options
+by time and letting `cmin_k` be the cheapest cost among the options at least
+as fast,
+
+    P(any option acceptable) = sum_k f(t_k, cmin_k) - sum_{k<K} f(t_{k+1}, cmin_k)
+
+exactly, for any joint survival `f` (any copula). Options that are both
+slower and dearer than another add nothing. `run.accessibility.OptionSet`
+implements this (`union_terms`), `MixedMode` mixes option sets by origin (for
+example residents with and without a private bicycle). Not defined for M1,
+whose value of time is per journey.
+
+Variants (`run.shared_bike`; the chain is judged on its total time with the
+public transport margin, the cost on the journey total):
+
+| Variant | Who | Options |
+|---|---|---|
+| v0 | private-bicycle owners (buurt share) | plain PT; own bicycle to the stop, walk egress. The baseline. |
+| v1 | everyone | plain PT; walk access + OV-fiets at the destination rail station |
+| v2 | owners: own bicycle for access, OV-fiets for egress; others: dockless for access, OV-fiets for egress | plain; bicycle access; bicycle access + OV-fiets; walk + OV-fiets |
+
+Prices: OV-fiets a flat charge per rental (EUR 4.80), dockless EUR 1.00 plus
+EUR 0.20 per riding minute, own bicycle free, all added to the PT fare of the
+same journey. Bicycle legs: 16 km/h, detour 1.3 on crow-fly distance, at most
+20 minutes riding, 1 minute fixed (unlock, park, return). OV-fiets hubs are
+all rail stops (a station list is not used); dockless is available at every
+origin.
+
 ## 5. Diagnostics of a margin
 
 For any margin, `core.families` computes the hazard `h = -d log S/dz`, the

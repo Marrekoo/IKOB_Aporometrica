@@ -203,6 +203,24 @@ above are unaffected in both cases. The bounds bracket the population mean
 by 3.5% (car) and 3.8% (PT) at one-way budgets and 7% and 8% at halved
 budgets.
 
+## Shared-bicycle chains: variants v0, v1, v2 (preliminary)
+
+`--shared-bike v0 v1 v2` (run `shared_v012`, M2, cost-gated, conditional
+accessibility, mean acceptable jobs over all segments): plain PT 46,200;
+v0 (own bicycle to the stop for owners) 71,800 (x1.55); v1 (OV-fiets at the
+destination rail station, everyone) 66,800 (x1.45); v2 (bicycle at both ends,
+by ownership) 105,900 (x2.29). Car is 185,600 and bicycle alone 25,000.
+Accessibility is monotone across variants in every cell (v2 >= v1, v0 >=
+plain). The gain is spread over deciles 2 to 10 (x2.1 in D2 to x2.9 in D8
+for v2; D2 gains least under v1, x1.31 against x1.4-1.6, because the OV-fiets
+charge is large against its budget) and household types. The
+shared-bicycle contribution over the own-bicycle baseline (v2/v0) is
+x1.34-1.65 and is largest where the private-bicycle share is low (correlation
+-0.74 with the buurt share). Plain PT understates PT accessibility for
+bicycle owners: scenarios S1-S4 should be measured against v0, not against
+plain PT. Assumptions to check: hubs are all rail stops, unlimited supply, a
+1-minute fixed time, dockless available at every origin, no stock-outs.
+
 ## Not covered yet
 
 Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),

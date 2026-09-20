@@ -64,6 +64,7 @@ from `near` and `far`.
 | bike | `time` (16 km/h) |
 | walk | `time` (4 km/h from zone size) |
 | pt (layer `all`) | `time` (minutes, frequency model), `rail_km`, `other_km`, `other_boardings` |
+| pt_wb, pt_bw, pt_bb (layer `all`) | the same variables for walk access + bicycle egress at rail hubs, bicycle access + walk egress, and both; the bicycle-access modes also store `access_min` (riding minutes of the access leg) |
 
 Money costs are not stored: they are computed at run time from the stored
 distances by `skims.car.CarCostModel` (car: per-km rate x distance +
