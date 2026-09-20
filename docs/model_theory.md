@@ -131,6 +131,21 @@ envelope means of EUR 14-586 (D2 about 20, D10 about 475). The consequence is
 in `pipeline.md` (M1 is lower than M2 because of the cost gate, not the time
 shape).
 
+**Policy reading of the dependence parameter.** Stronger positive dependence
+between the time and money thresholds raises the joint survival
+`C(S_T, S_M)` and so shrinks the group that fails the gates: people who
+tolerate long trips also tolerate high costs, so fewer are stopped by either.
+The consequence is not only smaller numbers. A smaller, more concentrated
+non-surviving group is easier to miss in an aggregate or headcount policy
+analysis, and it lies in the low deciles where the money gate binds (the
+D2 range in the checks of `pipeline.md`: -28% to +19% around M2 at one-way
+budgets, -38% to +46% with halved budgets). An analysis that assumes
+dependence (or a generalised cost, which corresponds to the comonotone
+extreme) therefore reports fewer excluded people than one that assumes
+independence, without any change in their circumstances. Results for the
+lowest deciles should be reported over the dependence range, not at a
+single theta.
+
 ## 5. Diagnostics of a margin
 
 For any margin, `core.families` computes the hazard `h = -d log S/dz`, the

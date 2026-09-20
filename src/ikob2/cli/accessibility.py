@@ -265,7 +265,8 @@ def cmd_run(args) -> None:
     if args.no_cost_gate:
         envelope_arg = None
     copula = (INDEPENDENCE if args.copula == "independence"
-              else CopulaSpec("gumbel", args.theta))
+              else CopulaSpec(args.copula, args.theta
+                              if args.copula == "gumbel" else None))
 
     availability = None
     if args.ownership:
@@ -346,7 +347,8 @@ def main(argv=None) -> None:
     p.add_argument("--censored", choices=["atom", "drop"], default="atom")
     p.add_argument("--population-basis", default="population_scaled",
                    choices=["population_scaled", "household_based"])
-    p.add_argument("--copula", choices=["independence", "gumbel"],
+    p.add_argument("--copula", choices=["independence", "gumbel", "comonotone",
+                            "countermonotone"],
                    default="independence")
     p.add_argument("--theta", type=float, default=1.5,
                    help="Gumbel-Hougaard theta (--copula gumbel, or --spec "

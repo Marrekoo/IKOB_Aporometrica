@@ -182,6 +182,27 @@ gives 41,300. Dependence (M3) changes accessibility by at most 1.3%.
 Ownership (car by household type and income from ODiN, bicycle by buurt)
 lowers expected accessibility by about 25% for car and 10% for bike.
 
+### Dependence bounds and budget basis (checks on M3)
+
+`--copula countermonotone` (the Frechet lower bound) and `--legs-per-tour 2`
+(per-trip budgets halved), mean acceptable jobs, conditional:
+
+| | Car | Public transport |
+|---|---|---|
+| Countermonotone (lower bound) | 181,700 | 45,000 |
+| M2 | 185,600 | 46,200 |
+| M3, theta = infinity (upper bound) | 188,000 | 46,700 |
+| Countermonotone, budgets / 2 | 174,100 | 42,900 |
+| M2, budgets / 2 | 180,800 | 45,100 |
+| M3, theta = infinity, budgets / 2 | 186,100 | 46,300 |
+
+Only deciles 2 and 3 move (D2 car, one-way budgets: 125,200 to 205,800
+around M2's 173,500, i.e. 0.72 to 1.19; with budgets halved: 76,400 to
+178,600 around 122,300, 0.62 to 1.46, and D3, D4 also move). Deciles 5 and
+above are unaffected in both cases. The bounds bracket the population mean
+by 3.5% (car) and 3.8% (PT) at one-way budgets and 7% and 8% at halved
+budgets.
+
 ## Not covered yet
 
 Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),
