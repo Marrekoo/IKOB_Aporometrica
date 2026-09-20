@@ -11,6 +11,7 @@ The data folder layout (default: /home/marco/IKOB data).
         legacy_ikob/             legacy IKOB SEGS files (jobs by income, education)
         survey/                  fitted time margins (S_T_*.csv)
         odin/                    ODiN tables and codebook
+        veh_owners/              vehicle ownership per buurt (bicycle share)
       cache/
         statline/                CBS StatLine snapshots
       intermediate/              derived, reproducible from inputs
@@ -116,6 +117,9 @@ class DataLayout:
 
     def skim_dir(self, study: str) -> Path:
         return self.intermediate / "skims" / study
+
+    def bike_ownership(self) -> Path:
+        return self.inputs / "veh_owners" / "bike_ownership_buurten.csv"
 
     def sector_jobs(self, year: int = 2022) -> Path:
         return self.intermediate / "jobs" / f"sector_jobs_{year}.csv"

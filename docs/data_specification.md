@@ -16,6 +16,7 @@ its format and which code reads or writes it. The folder layout is
 | `inputs/gtfs/gtfs-nl.zip` | National GTFS feed (public transport timetables) | OVapi/NDOV | `skims.gtfs_pt`, OTP |
 | `inputs/survey/S_T_work.csv` (copy in `data/margins/`) | Weibull time margins per mode and job type | survey fit by the authors | `segments.time_margins` |
 | `inputs/odin/` | ODiN tables and codebook (trip counts behind the reference budgets) | CBS/RWS | background of Table 6 |
+| `inputs/veh_owners/bike_ownership_buurten.csv` | One row per Utrecht buurt (111): `buurtcode, buurtnaam, wijkcode, wijknaam, aantal_inwoners, buurtteam, pct_with_bicycle` (percentage of residents with one or more bicycles, 0-100), `mapping_confidence` (high/medium/low). Values are those of the Utrecht buurtteam survey 2025 (`Utrecht_buurten.csv`), assigned to buurten by hand from the names and the municipal map; the assignment is the uncertain step | municipality of Utrecht; mapping by the authors | `segments.ownership.load_bike_ownership` |
 | `ns-prijslijst-2026-nl.pdf` | Official NS 2026 price list | NS | transcribed to `skims/ns_2026_2e_klas.csv` |
 
 ## Files shipped in the repository (`data/`)
