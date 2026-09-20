@@ -108,3 +108,24 @@ def test_effectiveness_compares_gain_and_cost_shares():
     # a blanket half-price cut: the poor get 97% of the gain for 10% of the cost
     assert e.loc["D2", "share_ratio"] > 1 > e.loc["D9", "share_ratio"]
     assert e["gain_share"].sum() == pytest.approx(1.0)
+
+
+def test_price_from_prices_the_baseline_choices_at_new_prices():
+    """Compensation at baseline volume: half the Lime price on the same
+    choices collects half the revenue, whatever the volume response."""
+    pop, jobs, wfh, wage, *_ = world()
+    kw = dict(origins=ORIGINS, destinations=DESTS, populations=pop,
+              sector_jobs=jobs, wfh_share=wfh, sector_wage=wage,
+              envelope=ENV, time_margins=MARGINS)
+    plain, fast = opts(6.0)
+    base = OptionSet((plain, fast), "pt")
+    plain2, cheap = opts(3.0)
+    cheap_set = OptionSet((plain2, cheap), "pt")
+    u0 = lime_usage(mode=base, **kw)
+    u_new = lime_usage(mode=cheap_set, **kw)               # volumes react
+    u_at0 = lime_usage(mode=base, price_from=cheap_set, **kw)
+    assert u_at0.rentals == pytest.approx(u0.rentals)      # same choices
+    assert u_at0.revenue == pytest.approx(u0.revenue / 2, rel=1e-4)
+    assert u_new.rentals >= u0.rentals                      # cheaper: more accept
+    with pytest.raises(ValueError, match="options"):
+        lime_usage(mode=base, price_from=OptionSet((plain2,), "pt"), **kw)

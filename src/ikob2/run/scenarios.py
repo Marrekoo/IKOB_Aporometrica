@@ -73,10 +73,18 @@ def choice_terms(times: np.ndarray, costs: np.ndarray):
 def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
                sector_wage, envelope, time_margins, mode: MixedMode | OptionSet,
                price_scale: Mapping[str, float] | None = None,
-               margin_mode: str = "pt", unreachable_minutes: float = 1e4
+               margin_mode: str = "pt", unreachable_minutes: float = 1e4,
+               price_from: MixedMode | OptionSet | None = None,
+               price_from_scale: Mapping[str, float] | None = None
                ) -> Usage:
     """Lime revenue and rentals of a shared-bicycle mode (M2, independent
-    thresholds, options judged on their total time)."""
+    thresholds, options judged on their total time).
+
+    price_from (with price_from_scale) prices the same choices with the Lime
+    prices of another mode whose options correspond one to one: the revenue
+    that would be collected at these prices if nobody changed their choice
+    (baseline volume), which is what compensating an operator for lower prices
+    costs."""
     origins = [str(o) for o in origins]
     destinations = [str(d) for d in destinations]
     names, pop, pools = prepare_inputs(
@@ -87,6 +95,13 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
         time_margins[(margin_mode, WFH_TYPES[0])], envelope=envelope,
         money_cost_id="c", pool_by="income_class", only=names)}
     parts = mode.parts if isinstance(mode, MixedMode) else ((np.ones(n_o), mode),)
+    price_parts = (None if price_from is None else
+                   (price_from.parts if isinstance(price_from, MixedMode)
+                    else ((np.ones(n_o), price_from),)))
+    if price_parts is not None and len(price_parts) != len(parts):
+        raise ValueError("price_from must have the same parts as mode.")
+    pscale = {n: float((price_from_scale if price_from_scale is not None
+                        else price_scale or {}).get(n, 1.0)) for n in names}
     scale = {n: float((price_scale or {}).get(n, 1.0)) for n in names}
     groups: dict = {}
     for n, s in scale.items():
@@ -94,7 +109,7 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
 
     rev = {n: 0.0 for n in names}
     ren = {n: 0.0 for n in names}
-    for weight, oset in parts:
+    for part_no, (weight, oset) in enumerate(parts):
         w = np.asarray(weight, dtype=float)
         opts = oset.options
         ts = np.stack([_finite(o.time, unreachable_minutes) for o in opts])
@@ -106,7 +121,15 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
             continue
         order = np.argsort(ts, axis=0, kind="stable")
         t_sorted = np.take_along_axis(ts, order, axis=0)
-        l_sorted = np.take_along_axis(ls, order, axis=0)
+        if price_parts is None:
+            l_sorted = np.take_along_axis(ls, order, axis=0)
+        else:
+            p_opts = price_parts[part_no][1].options
+            if len(p_opts) != len(opts):
+                raise ValueError("price_from options do not match mode.")
+            l_sorted = np.take_along_axis(np.stack(
+                [_finite(o.lime if o.lime is not None else np.zeros_like(o.time),
+                         0.0) for o in p_opts]), order, axis=0)
         n_sorted = ns[order]                                   # (K, o, d)
         st = {wfh: [evaluate_marginal(t_sorted[k], time_margins[
             (margin_mode, wfh)]) for k in range(len(opts))]
@@ -117,7 +140,7 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
             for k in range(len(opts)):
                 if not (n_sorted[k] > 0).any():
                     continue
-                price = (l_sorted[k] * sc).astype(np.float32)
+                price = l_sorted[k].astype(np.float32)
                 count = n_sorted[k].astype(np.float32)
                 for name in group:
                     cost_curve = segs[name].class_filter.cost
@@ -128,9 +151,10 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
                         pool = np.asarray(pools[wfh][segs[name].pool],
                                           dtype=np.float32)
                         weight_i = w * pop[name].fillna(0.0).to_numpy()
-                        rev[name] += float(weight_i @ ((m * price) @ pool))
+                        rev[name] += pscale[name] * float(
+                            weight_i @ ((m * price) @ pool))
                         ren[name] += float(weight_i @ ((m * count) @ pool))
-    scaled = sum(scale[n] * ren[n] for n in names)
+    scaled = sum(pscale[n] * ren[n] for n in names)
     return Usage(sum(rev.values()), sum(ren.values()), scaled,
                  {n: (rev[n], ren[n]) for n in names})
 

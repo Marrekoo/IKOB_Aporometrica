@@ -282,6 +282,38 @@ Every run writes analysis products next to `accessibility.csv`
 accessibility per mode, and the hub points, EPSG:28992), `accessibility.parquet`
 (when pyarrow is installed), `dictionary.csv` and a README with an R snippet.
 
+### Scenario costs, S2 and R (preliminary)
+
+Cost and risk division (`costs` parameters, `run/costs.py`): S2 costs the set-up
+(EUR 7,500 per hub, in full for the total public cost, spread over the 5-year
+permit term) plus rebalancing and enforcement (EUR 2,500 per hub and year), so
+EUR 4,000 per hub and year; the social tariff compensation of the cluster model
+is an S1 cost. S1 costs the compensation of the operator for revenue foregone at
+baseline volume (`--report-usage`, `scenario.cost` in run.json). Volume: 1.25
+million rides in 8 months in the concession area (RTV Utrecht) = 1.875 million
+per year (2.6 rides per bike per day for 2,000 bikes) at the model's mean price
+of EUR 3.01: EUR 5.65 million revenue a year.
+
+S2 (`cli.hubs propose`): as many new Lime hubs as there are municipal hubs (27),
+in the buurten with low plain-PT accessibility and low bicycle ownership (rank
+average, spacing 400 m, placed at buurt centroids); skim modes `pt_wb_lime_s2`,
+`pt_bb_lime_s2` (54 hubs), read with `shared_bike.egress_suffix`.
+
+| pt_v2 | Public cost EUR/yr | Gain (job-persons) | Gain per EUR/yr |
+|---|---|---|---|
+| S1 blanket half price | 2,822,518 | 13.05 M (+0.037%) | 4.6 |
+| S1 scaled to S2's cost (-1.9%) | 108,000 | 0.51 M | 4.7 |
+| S1 targeted D2-D4 half price | 662,643 | 13.02 M | 19.7 |
+| S2 27 extra hubs | 108,000 | 6.80 M (+0.019%) | 62.9 |
+| S3 = S1 + S2 | 2,822,257 | 19.90 M | 7.1 |
+
+R = gain(S1) / gain(S2): pooled median 0.45 (blanket), CV of R across an
+origin's segments 2.0 and a q90-q10 spread of 31.8; 464 of 4,440 pairs are
+undefined (decile 1: no priced access, so no gain from S2). Under a
+generalised cost with common inputs R would be constant (CV 0). Caveat: the
+S1 cost covers the whole concession area's rides, the gains only the residents
+of the municipality of Utrecht.
+
 ## Not covered yet
 
 Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),

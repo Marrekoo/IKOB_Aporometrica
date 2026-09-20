@@ -126,6 +126,7 @@ flat_method = "fixed_point"   # calibration: fixed_point (revenue neutral after 
 # duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
 lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]
 hub_tariffs = ["ovfiets", "lime"]      # tariff class ids of skim variable egress_kind
+egress_suffix = {}                     # skim mode suffix per hub kind, e.g. {lime = "_s2"} reads pt_wb_lime_s2
 egress_hub_kinds = ["lime", "ovfiets"]   # egress skim modes pt_wb_<kind>, pt_bb_<kind>; [] = plain pt_wb, pt_bb
 
 [skims]
@@ -153,6 +154,31 @@ use_sparse = true          # store composed filters as CSR when sparse enough
 sparse_max_density = 0.25  # share of non-zero entries above which a filter stays dense
 threads = 0                # worker threads of the leg-wise evaluation; 0 = all cores
 check_frechet = true       # verify the Frechet-Hoeffding bounds of parametric copulas
+
+[costs]                    # public cost model of the shared-bicycle measures (EUR)
+# Cluster of hubs (municipal financial model; the province co-finances the set-up)
+hub_cluster_size = 10
+hub_setup_eur_cluster = 75000.0            # signage, marking, bicycle parking (once)
+province_capex_share = 0.5                 # co-financing of the set-up by the province
+hub_rebalancing_eur_year_cluster = 20000.0
+hub_enforcement_eur_year_cluster = 5000.0
+# The social tariff compensation of the model (18,750 per cluster and year) is a
+# price concession: it is the cost side of S1, not of S2, and is not counted here.
+hub_tariff_compensation_eur_year_cluster = 18750.0
+horizon_years = 5.0        # permit term 3 + 2 years; capex spread over it
+discount_rate = 0.0
+# Volume: rides of the whole concession area (RTV Utrecht, 2026-09-09): 1.25 million
+# in the first 8 months; the fleet is 2,000 bikes in and around Utrecht
+rides_observed = 1250000.0
+rides_months = 8.0
+fleet = 2000.0
+
+[siting]                   # extra hubs of scenario S2
+hub_density_factor = 2.0   # doubling: as many new hubs as there are municipal hubs
+min_spacing_m = 400.0      # no new hub closer than this to another hub
+access_mode = "pt"         # baseline accessibility that ranks the buurten (population weighted)
+access_weight = 0.5        # weight of low accessibility in the score; the rest is low bicycle ownership
+kind = "lime"              # tariff kind of the new hubs
 
 [distance]                 # car route distances via Valhalla, detour calibration
 radius_km = 30.0

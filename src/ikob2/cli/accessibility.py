@@ -229,19 +229,23 @@ def load_chains(prm, args, store, codes, model):
     # egress chains per hub kind (pt_wb_<kind>, pt_bb_<kind>); with no kinds
     # in shared_bike.egress_hub_kinds the plain pt_wb / pt_bb are used
     kinds = list(prm.shared_bike.egress_hub_kinds)
+    suffix = prm.shared_bike.egress_suffix.to_dict()
     egress = [f"{m}_{k}" for k in kinds for m in ("pt_wb", "pt_bb")] \
         or ["pt_wb", "pt_bb"]
     for mode in ("pt", "pt_bw", *egress):
-        if ("all", mode, "time") not in store.arrays():
-            raise SystemExit(f"Store lacks mode '{mode}': build it with "
-                             f"`cli.skims build-pt --mode-name {mode}` "
+        # a kind may read other skim modes (S2: pt_wb_lime_s2 with more hubs)
+        stored = mode + suffix.get(mode.split("_", 2)[-1], "") \
+            if mode.startswith(("pt_wb_", "pt_bb_")) else mode
+        if ("all", stored, "time") not in store.arrays():
+            raise SystemExit(f"Store lacks mode '{stored}': build it with "
+                             f"`cli.skims build-pt --mode-name {stored}` "
                              f"(hub kinds: shared_bike.egress_hub_kinds).")
-        blk = lambda v: store.block("all", mode, v, destinations=codes)  # noqa: E731
+        blk = lambda v: store.block("all", stored, v, destinations=codes)  # noqa: E731
         chains[mode] = {"time": blk("time")}
         if mode.startswith("pt_bw") or mode.startswith("pt_bb"):
             chains[mode]["access_min"] = blk("access_min")
         if mode.startswith(("pt_wb", "pt_bb")) \
-                and ("all", mode, "egress_min") in store.arrays():
+                and ("all", stored, "egress_min") in store.arrays():
             chains[mode]["egress_min"] = blk("egress_min")
         chains[mode]["fare"] = model.fare(blk("rail_km"), blk("other_km"),
                                           blk("other_boardings"))
@@ -453,6 +457,35 @@ def cmd_run(args) -> None:
                 "rentals_scaled": u.rentals_scaled,
                 "by_segment": {n: {"revenue": r, "rentals": k}
                                for n, (r, k) in u.by_segment.items()}}
+            # public cost of the price change: the operator is compensated
+            # for the revenue foregone at BASELINE volume (tiers, no scales)
+            from ikob2.run.costs import s1_compensation
+            base_mode = shared_bike_modes(
+                chains, fares, share,
+                replace(tariffs, dockless_model="lime_tiers", lime_scale=1.0),
+                variants=("v2",),
+                bike_fixed_min=prm.bike_leg.fixed_minutes)["pt_v2"]
+            usage_kw = dict(
+                origins=store.origins, destinations=dest_codes,
+                populations=pop, sector_jobs=sector_jobs, wfh_share=wfh,
+                sector_wage=wage, envelope=envelope_arg, time_margins=margins,
+                unreachable_minutes=prm.accessibility.unreachable_minutes)
+            u0 = lime_usage(mode=base_mode, **usage_kw)
+            u_at0 = lime_usage(mode=base_mode, price_from=mode,
+                               price_from_scale=price_scale, **usage_kw)
+            cost = s1_compensation(prm.costs, u0.revenue, u_at0.revenue,
+                                   u0.rentals)
+            factor = cost["annual_rentals"] / u0.rentals
+            cost["by_segment_eur_year"] = {
+                n: (u0.by_segment[n][0] - u_at0.by_segment[n][0]) * factor
+                for n in u0.by_segment}
+            scenario["cost"] = cost
+            print(f"Lime price change: public compensation EUR "
+                  f"{cost['compensation_eur_year']:,.0f} per year "
+                  f"({100 * cost['share_of_revenue']:.1f}% of EUR "
+                  f"{cost['annual_revenue_eur']:,.0f} revenue; mean price "
+                  f"EUR {cost['mean_price_eur']:.2f}, "
+                  f"{cost['annual_rentals']:,.0f} rentals per year)")
         matrices.update(shared_bike_matrices(prm, chains, fares, share,
                                              matrices, tariffs))
     availability = None
