@@ -87,6 +87,7 @@ block_size = 10            # origins per resumable block in the PT layer
 egress_hubs = "file"       # file: the hub_files below; rail: every rail stop; all: every stop
 hub_files = ["hubs/utrecht_hubs.csv", "ovfiets/locaties.json"]   # under <data root>/inputs
 hub_walk_radius_m = 300.0  # walk from an alighting stop to a hub from a file
+hub_kinds = ["lime", "ovfiets"]   # tariff of each file in hub_files (see shared_bike.hub_tariffs)
 
 [bike_leg]                 # bicycle access/egress leg of a PT chain
 kmh = 16.0
@@ -97,7 +98,7 @@ fixed_minutes = 1.0
 [pt_fare]
 rail_eur_per_km_at_1km = 2.60
 rail_eur_per_km_at_100km = 0.20
-rail_discount = 0.0
+rail_discount = 0.0       # off-peak discounts do not apply: the model is the 7-9 h peak (commuting)
 rail_beyond_table = "cap"
 regional_boarding_eur = 1.08
 regional_eur_per_km = 0.18
@@ -109,6 +110,11 @@ rail_anchors = false       # true: power law through the two anchors above
 ovfiets_eur = 4.80
 dockless_unlock_eur = 1.00
 dockless_per_min_eur = 0.20
+# Lime (municipal hubs, from Jan 2026, RTV Utrecht 2025-11-03): price by rental
+# duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
+lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]
+hub_tariffs = ["ovfiets", "lime"]      # tariff class ids of skim variable egress_kind
+egress_mode_suffix = "_hub"            # skim modes pt_wb / pt_bb + suffix (hubs from files)
 
 [skims]
 near_km = 50.0

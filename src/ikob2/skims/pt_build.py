@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 FARE_VARIABLES = ("rail_km", "other_km", "other_boardings")
 ACCESS_VARIABLE = "access_min"
 EGRESS_VARIABLE = "egress_min"
+EGRESS_KIND_VARIABLE = "egress_kind"    # tariff class of the hub used (hub files)
 
 
 def build_pt_layer(store: SkimStore, router: PtRouter, origin_xy: np.ndarray,
@@ -48,6 +49,8 @@ def build_pt_layer(store: SkimStore, router: PtRouter, origin_xy: np.ndarray,
         names.append(ACCESS_VARIABLE)
     if fare_inputs and egress is not None:
         names.append(EGRESS_VARIABLE)
+        if router.hubs_xy is not None and egress.hubs_only:
+            names.append(EGRESS_KIND_VARIABLE)
     for name in names:
         store.allocate(layer, mode, name)
     pending = sorted({b for name in names

@@ -56,11 +56,37 @@ class SharedBikeTariffs:
     ovfiets_eur: float = DEFAULTS.shared_bike.ovfiets_eur   # per rental (egress)
     dockless_unlock_eur: float = DEFAULTS.shared_bike.dockless_unlock_eur
     dockless_per_min_eur: float = DEFAULTS.shared_bike.dockless_per_min_eur
+    lime_tiers: tuple = tuple(tuple(t) for t in DEFAULTS.shared_bike.lime_tiers)
+    hub_tariffs: tuple = tuple(DEFAULTS.shared_bike.hub_tariffs)
 
     def __post_init__(self):
         if min(self.ovfiets_eur, self.dockless_unlock_eur,
                self.dockless_per_min_eur) < 0:
             raise ValueError("Tariffs must be >= 0.")
+        bounds = [b for b, _ in self.lime_tiers]
+        if not self.lime_tiers or bounds != sorted(bounds):
+            raise ValueError("lime_tiers: [longest minutes, EUR] rows, "
+                             "increasing in minutes.")
+
+    def lime_eur(self, minutes) -> np.ndarray:
+        """Lime price of a rental of `minutes` (the last tier's price
+        beyond the last bound); NaN stays NaN."""
+        m = np.asarray(minutes, dtype=float)
+        bounds = np.array([b for b, _ in self.lime_tiers])
+        price = np.array([p for _, p in self.lime_tiers])
+        idx = np.minimum(np.searchsorted(bounds, m, side="left"),
+                         len(price) - 1)
+        return np.where(np.isfinite(m), price[idx], np.nan)
+
+    def egress_eur(self, ride_min, kind, fixed_min: float) -> np.ndarray:
+        """Price of a bicycle egress from the ride minutes and the tariff
+        class of the hub used (`hub_tariffs`: OV-fiets flat, Lime by
+        duration)."""
+        ride = np.asarray(ride_min, dtype=float)
+        lime = np.asarray(kind) == self.hub_tariffs.index("lime")
+        price = np.where(lime, self.lime_eur(ride + fixed_min),
+                         self.ovfiets_eur)
+        return np.where(np.isfinite(ride), price, np.nan).astype(np.float32)
 
 
 def _option(store_mode: dict, fare: np.ndarray, *, extra=0.0,
@@ -89,7 +115,16 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
     p = np.asarray(bike_share, dtype=float)
     if p.ndim != 1 or (p < 0).any() or (p > 1).any():
         raise ValueError("bike_share: one share in [0, 1] per origin.")
-    ov = tariffs.ovfiets_eur
+
+    def egress_cost(mode):
+        """Egress price of a chain: by hub tariff class when the skim has
+        it, else the OV-fiets flat charge."""
+        ch = chains[mode]
+        if "egress_kind" in ch and "egress_min" in ch:
+            return tariffs.egress_eur(ch["egress_min"], ch["egress_kind"],
+                                      bike_fixed_min)
+        return tariffs.ovfiets_eur
+
     dock = (tariffs.dockless_unlock_eur
             + tariffs.dockless_per_min_eur * chains["pt_bw"]["access_min"]) \
         if "pt_bw" in chains else None
@@ -106,23 +141,27 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
         owners = OptionSet((plain, opt("pt_bw")), "pt")
         out["pt_v0"] = MixedMode(((p, owners), (1 - p, OptionSet((plain,), "pt"))))
     if "v1" in variants:
-        out["pt_v1"] = OptionSet((plain, opt("pt_wb", ov)), "pt")
+        out["pt_v1"] = OptionSet((plain, opt("pt_wb", egress_cost("pt_wb"))),
+                                  "pt")
     if "v2" in variants:
-        owners = OptionSet((plain, opt("pt_bw"), opt("pt_bb", ov),
-                            opt("pt_wb", ov)), "pt")
-        others = OptionSet((plain, opt("pt_bw", dock), opt("pt_bb", dock_bb + ov),
-                            opt("pt_wb", ov)), "pt")
+        ov_wb, ov_bb = egress_cost("pt_wb"), egress_cost("pt_bb")
+        owners = OptionSet((plain, opt("pt_bw"), opt("pt_bb", ov_bb),
+                            opt("pt_wb", ov_wb)), "pt")
+        others = OptionSet((plain, opt("pt_bw", dock),
+                            opt("pt_bb", dock_bb + ov_bb),
+                            opt("pt_wb", ov_wb)), "pt")
         out["pt_v2"] = MixedMode(((p, owners), (1 - p, others)))
     if "v3" in variants:
         for need in ("access_min", "egress_min"):
             if need not in chains.get("pt_bb", {}):
                 raise ValueError(f"v3 needs '{need}' in the pt_bb chain.")
         out["pt_v3"] = _legwise(chains, fares, p, tariffs, dock, dock_bb,
-                                bike_fixed_min)
+                                bike_fixed_min, egress_cost("pt_wb"),
+                                egress_cost("pt_bb"))
     return out
 
 
-def _legwise(chains, fares, p, tariffs, dock, dock_bb, fixed):
+def _legwise(chains, fares, p, tariffs, dock, dock_bb, fixed, ov_wb, ov_bb):
     """v2's options with the times split into (bicycle access, bicycle
     egress, public transport) legs."""
     zero = np.zeros_like(chains["pt"]["time"])
@@ -138,12 +177,11 @@ def _legwise(chains, fares, p, tariffs, dock, dock_bb, fixed):
         return LegOption((a, b, pt), cost, "pt_chain")
 
     owners = LegOptionSet((leg("pt"), leg("pt_bw", access=True),
-                           leg("pt_bb", tariffs.ovfiets_eur, True, True),
-                           leg("pt_wb", tariffs.ovfiets_eur, False, True)))
+                           leg("pt_bb", ov_bb, True, True),
+                           leg("pt_wb", ov_wb, False, True)))
     others = LegOptionSet((leg("pt"), leg("pt_bw", dock, access=True),
-                           leg("pt_bb", dock_bb + tariffs.ovfiets_eur, True,
-                               True),
-                           leg("pt_wb", tariffs.ovfiets_eur, False, True)))
+                           leg("pt_bb", dock_bb + ov_bb, True, True),
+                           leg("pt_wb", ov_wb, False, True)))
     return MixedMode(((p, owners), (1 - p, others)))
 
 

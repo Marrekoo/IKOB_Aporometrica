@@ -211,17 +211,21 @@ def shared_bike_matrices(prm, args, store, codes, model, matrices):
     from ikob2.segments.ownership import load_bike_ownership
 
     chains, fares = {}, {}
+    suffix = prm.shared_bike.egress_mode_suffix    # egress modes: hubs from files
     for mode in ("pt", "pt_wb", "pt_bw", "pt_bb"):
-        if ("all", mode, "time") not in store.arrays():
-            raise SystemExit(f"Store lacks mode '{mode}': build it with "
-                             f"`cli.skims build-pt --mode-name {mode}`.")
-        blk = lambda v: store.block("all", mode, v, destinations=codes)  # noqa: E731
+        stored = mode + suffix if mode in ("pt_wb", "pt_bb") else mode
+        if ("all", stored, "time") not in store.arrays():
+            raise SystemExit(f"Store lacks mode '{stored}': build it with "
+                             f"`cli.skims build-pt --mode-name {stored}` "
+                             f"(or set shared_bike.egress_mode_suffix).")
+        blk = lambda v: store.block("all", stored, v, destinations=codes)  # noqa: E731
         chains[mode] = {"time": blk("time")}
         if mode in ("pt_bw", "pt_bb"):
             chains[mode]["access_min"] = blk("access_min")
-        if mode in ("pt_wb", "pt_bb") and ("all", mode, "egress_min") \
-                in store.arrays():
-            chains[mode]["egress_min"] = blk("egress_min")
+        if mode in ("pt_wb", "pt_bb"):
+            for var in ("egress_min", "egress_kind"):
+                if ("all", stored, var) in store.arrays():
+                    chains[mode][var] = blk(var)
         chains[mode]["fare"] = model.fare(blk("rail_km"), blk("other_km"),
                                           blk("other_boardings"))
         fares[mode] = chains[mode]["fare"]
@@ -229,7 +233,10 @@ def shared_bike_matrices(prm, args, store, codes, model, matrices):
                                 store.origins).to_numpy()
     tariffs = SharedBikeTariffs(prm.shared_bike.ovfiets_eur,
                                 prm.shared_bike.dockless_unlock_eur,
-                                prm.shared_bike.dockless_per_min_eur)
+                                prm.shared_bike.dockless_per_min_eur,
+                                tuple(tuple(t) for t in
+                                      prm.shared_bike.lime_tiers),
+                                tuple(prm.shared_bike.hub_tariffs))
     fixed = prm.bike_leg.fixed_minutes
     variants = [v for v in prm.accessibility.shared_bike if v != "v4"]
     out = shared_bike_modes(chains, fares, share, tariffs, variants=variants,

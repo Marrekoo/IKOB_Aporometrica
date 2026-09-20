@@ -63,15 +63,35 @@ def read_hub_file(path: str | Path) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def load_hubs(paths: Iterable[str | Path], inputs: Path | None = None
-              ) -> pd.DataFrame:
-    """All hubs of the listed files, and their RD New coordinates (x, y)."""
+def load_hubs(paths: Iterable[str | Path], inputs: Path | None = None,
+              kinds: Iterable[str] | None = None,
+              tariffs: Iterable[str] | None = None) -> pd.DataFrame:
+    """All hubs of the listed files, and their RD New coordinates (x, y).
+    `kinds` (one per file) names the tariff of a file's hubs and `tariffs`
+    the known tariff names; the column `tariff` holds the index of the
+    kind in `tariffs`."""
     from pyproj import Transformer
 
+    paths = list(paths)
     frames = [read_hub_file(resolve_path(p, inputs)) for p in paths]
     if not frames:
         raise ValueError("No hub files given.")
+    kind_list = list(kinds) if kinds is not None else None
+    if kind_list is not None and len(kind_list) != len(frames):
+        raise ValueError(f"{len(frames)} hub file(s) but {len(kind_list)} "
+                         f"hub kind(s).")
+    for i, f in enumerate(frames):
+        f["kind"] = kind_list[i] if kind_list else "hub"
     df = pd.concat(frames, ignore_index=True)
+    known = list(tariffs) if tariffs is not None else []
+    if known:
+        unknown = sorted(set(df["kind"]) - set(known))
+        if unknown:
+            raise ValueError(f"Unknown hub kind(s) {unknown}; tariffs: "
+                             f"{known}.")
+        df["tariff"] = df["kind"].map({k: i for i, k in enumerate(known)})
+    else:
+        df["tariff"] = 0
     x, y = Transformer.from_crs("EPSG:4326", "EPSG:28992",
                                 always_xy=True).transform(
         df["lon"].to_numpy(), df["lat"].to_numpy())
