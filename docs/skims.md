@@ -233,3 +233,27 @@ runs on a walking-network extract, see `servers.md`.
   variants S1-S4, which need their own networks.
 * The choice of departure windows and percentile for PT (the frequency
   model uses none; OTP validation is in `servers.md`).
+
+## Bicycle egress hubs from files
+
+`cli.skims build-pt --egress bike --egress-hubs file` lets a rider take a
+shared bicycle only at the hubs listed in files (`pt.hub_files`, or
+`--hub-file` once per file, relative to `<data root>/inputs`):
+
+* `hubs/utrecht_hubs.csv`: the 27 municipal hubs (hub, lat, lon, precision,
+  source); stations from the OV-fiets coordinates, streets from PDOK road
+  geometries, corrected with the user's descriptions;
+* `ovfiets/locaties.json`: the OV-fiets feed, http://fiets.openov.nl/locaties.json
+  (301 locations).
+
+The journey is: alight at a stop within `pt.hub_walk_radius_m` (300 m) of a
+hub, walk to it, ride to the destination (`bike_leg` speed, detour, limit,
+fixed minutes). The fastest hub per stop counts; the reported egress minutes
+are the ride only. `--egress-hubs rail` (every rail stop) and `all` (every
+stop) remain. A store mode built with other hubs is refused: give a new
+`--mode-name`, because finished blocks are not recomputed.
+
+Hub set as skim modes, for example (own names keep the rail-stop modes):
+
+    python -m ikob2.cli.skims build-pt <store> --kwb <gpkg> --gtfs <zip> \
+        --egress bike --egress-hubs file --mode-name pt_wb_hub

@@ -254,7 +254,9 @@ class PtRouter:
                  wait_cap_min: float = WAIT_CAP_MIN,
                  boarding_penalty_min: float = _PT.boarding_penalty_min,
                  rail_detour: float = _PT.rail_detour,
-                 other_detour: float = _PT.other_detour):
+                 other_detour: float = _PT.other_detour,
+                 hubs_xy: np.ndarray | None = None,
+                 hub_walk_radius_m: float = _PT.hub_walk_radius_m):
         if walk_kmh <= 0 or walk_detour <= 0:
             raise ValueError("walk_kmh and walk_detour must be positive.")
         if rail_detour < 1 or other_detour < 1:
@@ -268,6 +270,10 @@ class PtRouter:
         self.transfer_radius_m = transfer_radius_m
         self.wait_cap = wait_cap_min
         self.board_penalty = boarding_penalty_min
+        # hub locations from a file (RD New metres); None: the rail stops
+        self.hubs_xy = None if hubs_xy is None else np.asarray(
+            hubs_xy, dtype=float).reshape(-1, 2)
+        self.hub_walk_radius_m = hub_walk_radius_m
         self._build()
 
     # walking minutes for a crow-fly distance in metres
@@ -400,6 +406,8 @@ class PtRouter:
         minutes (ride plus fixed minutes), ride minutes. `leg` None is
         walking (max_access_min, walk speed); a LegSpec is a bicycle leg,
         optionally only to hub stops."""
+        if leg is not None and leg.hubs_only and self.hubs_xy is not None:
+            return self._hub_links(xy, leg)
         if leg is None:
             radius, tree, ids = self.access_radius_m, self.stop_tree, None
             fixed = 0.0
@@ -425,6 +433,54 @@ class PtRouter:
         else:
             ride = d * leg.detour / (leg.kmh * 1000.0 / 60.0)
         return indptr, stop_idx, ride + fixed, ride
+
+    def _hub_links(self, xy, leg: LegSpec):
+        """Egress links through hubs from a file: a stop within
+        `hub_walk_radius_m` of a hub, a walk to the hub, then the bicycle
+        from the hub to the point. Same CSR layout as `_links`: per point the
+        stops it can be reached from, with minutes (walk to the hub, ride,
+        fixed minutes) and the ride minutes; the fastest hub per stop."""
+        xy = np.asarray(xy, dtype=float)
+        empty = (np.zeros(len(xy) + 1, dtype=int), np.zeros(0, dtype=int),
+                 np.zeros(0), np.zeros(0))
+        if not len(self.hubs_xy):
+            return empty
+        hub_stops = self.stop_tree.query_ball_point(self.hubs_xy,
+                                                    self.hub_walk_radius_m)
+        h_cnt = np.array([len(s) for s in hub_stops])
+        h_ptr = np.concatenate([[0], np.cumsum(h_cnt)])
+        h_stop = np.concatenate([np.array(s, dtype=int) for s in hub_stops]) \
+            if h_cnt.sum() else np.zeros(0, dtype=int)
+        h_rep = np.repeat(np.arange(len(self.hubs_xy)), h_cnt)
+        h_walk = self.walk_min(np.hypot(*(self.hubs_xy[h_rep]
+                                          - self.stop_xy[h_stop]).T)) \
+            if len(h_stop) else np.zeros(0)
+        radius = leg.max_minutes * (leg.kmh * 1000.0 / 60.0) / leg.detour
+        near = cKDTree(self.hubs_xy).query_ball_point(xy, radius)
+        n_near = np.array([len(n) for n in near])
+        if not n_near.sum():
+            return empty
+        pt = np.repeat(np.arange(len(xy)), n_near)
+        hub = np.concatenate([np.array(n, dtype=int) for n in near])
+        ride = np.hypot(*(xy[pt] - self.hubs_xy[hub]).T) * leg.detour \
+            / (leg.kmh * 1000.0 / 60.0)
+        k = h_cnt[hub]                       # stops next to each hub
+        rep = np.repeat(np.arange(len(pt)), k)
+        first = np.repeat(np.cumsum(k) - k, k)
+        pos = h_ptr[hub][rep] + (np.arange(k.sum()) - first)
+        p_pt, p_stop = pt[rep], h_stop[pos]
+        p_ride = ride[rep]
+        p_min = p_ride + leg.fixed_minutes + h_walk[pos]
+        order = np.lexsort((p_min, p_stop, p_pt))      # fastest hub per stop
+        p_pt, p_stop, p_min, p_ride = (a[order] for a in
+                                       (p_pt, p_stop, p_min, p_ride))
+        keep = np.ones(len(p_pt), dtype=bool)
+        keep[1:] = (p_pt[1:] != p_pt[:-1]) | (p_stop[1:] != p_stop[:-1])
+        p_pt, p_stop, p_min, p_ride = (a[keep] for a in
+                                       (p_pt, p_stop, p_min, p_ride))
+        indptr = np.concatenate([[0], np.cumsum(np.bincount(
+            p_pt, minlength=len(xy)))])
+        return indptr, p_stop, p_min, p_ride
 
     def time_matrix(self, origin_xy, dest_xy, *, max_minutes: float = _PT.max_minutes,
                     chunk: int = 8) -> np.ndarray:

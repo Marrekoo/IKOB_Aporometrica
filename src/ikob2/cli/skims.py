@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import logging
+import os
 from pathlib import Path
 
 import numpy as np
@@ -223,7 +224,11 @@ def cmd_build_pt(args) -> None:
     from ikob2.skims.gtfs_pt import LegSpec, PtRouter, load_peak_timetable
     from ikob2.skims.pt_build import build_pt_layer
 
+    from ikob2.skims import hubs as hubs_mod
+
     prm = resolve(args, PT_FLAGS)
+    if args.hub_file:
+        prm = prm.with_values({"pt.hub_files": list(args.hub_file)})
     args.window = args.window or prm.pt.window_h
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     store = SkimStore.open(args.store)
@@ -240,13 +245,32 @@ def cmd_build_pt(args) -> None:
                       wait_cap_min=args.wait_cap_min,
                       boarding_penalty_min=args.boarding_penalty_min,
                       rail_detour=args.rail_detour,
-                      other_detour=args.other_detour)
+                      other_detour=args.other_detour,
+                      hub_walk_radius_m=prm.pt.hub_walk_radius_m)
     leg = LegSpec(kmh=args.bike_kmh, detour=args.bike_detour,
                   max_minutes=args.bike_max_min,
                   fixed_minutes=args.bike_fixed_min)
     access = leg if args.access == "bike" else None
+    hub_files = []
+    if args.egress == "bike" and args.egress_hubs == "file":
+        root = args.data_root or os.environ.get(params_mod.ENV_ROOT) \
+            or prm.paths.data_root
+        inputs = Path(root) / "inputs" if root else None
+        hubs = hubs_mod.load_hubs(prm.pt.hub_files, inputs)
+        router.hubs_xy = hubs_mod.hub_xy(hubs)
+        hub_files = sorted(set(hubs["source"]))
+        logger.info("egress from %d hubs (%s)", len(hubs), ", ".join(hub_files))
     egress = (LegSpec(**{**leg.__dict__, "hubs_only": args.egress_hubs
-                         == "rail"}) if args.egress == "bike" else None)
+                         in ("rail", "file")})
+              if args.egress == "bike" else None)
+    previous = store.meta.get(args.mode_name)
+    if previous and previous.get("bike", {}).get("egress_hubs") not in (
+            None, args.egress_hubs):
+        raise SystemExit(
+            f"Mode '{args.mode_name}' in {args.store} was built with egress "
+            f"hubs '{previous['bike']['egress_hubs']}', not "
+            f"'{args.egress_hubs}': give a new --mode-name (finished blocks "
+            f"are not recomputed).")
     build_pt_layer(store, router, o_xy, codes, xy, mode=args.mode_name,
                    max_minutes=args.max_minutes, access=access,
                    egress=egress)
@@ -255,7 +279,9 @@ def cmd_build_pt(args) -> None:
         "bike": {"kmh": args.bike_kmh, "detour": args.bike_detour,
                  "max_min": args.bike_max_min,
                  "fixed_min": args.bike_fixed_min,
-                 "egress_hubs": args.egress_hubs},
+                 "egress_hubs": args.egress_hubs,
+                 "hub_files": hub_files,
+                 "hub_walk_radius_m": prm.pt.hub_walk_radius_m},
         "gtfs": str(args.gtfs), "date": args.date, "window_h": args.window,
         "walk_kmh": args.walk_kmh, "walk_detour": args.walk_detour,
         "max_access_min": args.max_access_min,
@@ -363,9 +389,17 @@ def main(argv=None) -> None:
                         "egress), pt_wb, pt_bb")
     t.add_argument("--access", choices=["walk", "bike"], default="walk")
     t.add_argument("--egress", choices=["walk", "bike"], default="walk")
-    t.add_argument("--egress-hubs", choices=["rail", "all"], default=None,
-                   help="where a bicycle egress can start: rail stops "
-                        "(OV-fiets) or every stop")
+    t.add_argument("--egress-hubs", choices=["rail", "all", "file"],
+                   default=None,
+                   help="where a bicycle egress can start: hub locations "
+                        "from files (pt.hub_files or --hub-file), rail stops, "
+                        "or every stop")
+    t.add_argument("--hub-file", action="append", default=[],
+                   metavar="FILE",
+                   help="hub locations (CSV with lat, lon, or the OV-fiets "
+                        "JSON), relative to <data root>/inputs; repeatable; "
+                        "replaces pt.hub_files")
+    t.add_argument("--data-root", default=None)
     t.add_argument("--bike-kmh", type=float, default=None)
     t.add_argument("--bike-detour", type=float, default=None)
     t.add_argument("--bike-max-min", type=float, default=None,

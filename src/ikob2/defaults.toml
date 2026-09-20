@@ -84,7 +84,9 @@ other_detour = 1.25
 max_minutes = 180.0
 gtfs_chunksize = 2000000
 block_size = 10            # origins per resumable block in the PT layer
-egress_hubs = "rail"       # rail, all
+egress_hubs = "file"       # file: the hub_files below; rail: every rail stop; all: every stop
+hub_files = ["hubs/utrecht_hubs.csv", "ovfiets/locaties.json"]   # under <data root>/inputs
+hub_walk_radius_m = 300.0  # walk from an alighting stop to a hub from a file
 
 [bike_leg]                 # bicycle access/egress leg of a PT chain
 kmh = 16.0
