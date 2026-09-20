@@ -11,6 +11,10 @@
 # --data-root; there is no built-in location.
 data_root = ""
 budgets = "data/envelope/reference_budgets.csv"      # relative to the repository
+# multipliers on the Lime price by household type / income class (concessions such
+# as the U-pas); rows "household_type,income_class,scale", "*" = all, later rows
+# override earlier ones; "" = none
+lime_price_scales = "data/tariffs/lime_price_scales.csv"
 margins_fallback = "data/margins/S_T_work.csv"
 statline_fallback = "data/statline"
 kwb_version = "v3"
@@ -113,7 +117,10 @@ dockless_per_min_eur = 0.20
 # how a dockless (access) rental is priced: "lime_tiers" (baseline, from Jan 2026)
 # or "unlock_per_minute" (unlock fee + rate per riding minute, the earlier structure)
 dockless_model = "lime_tiers"
-lime_scale = 1.0           # multiplier on every Lime tier price (S1: 0.5)
+lime_scale = 1.0           # multiplier on every Lime price (S1: 0.5)
+flat_eur = 0.0             # dockless_model "flat" (S4): EUR per rental; 0 = calibrate for revenue neutrality
+report_usage = false      # record the Lime revenue and rentals of the run (v2) in run.json
+flat_method = "fixed_point"   # calibration: fixed_point (revenue neutral after behaviour) or weighted_mean (baseline volumes)
 # Lime (municipal hubs, from Jan 2026, RTV Utrecht 2025-11-03): price by rental
 # duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
 lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]

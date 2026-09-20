@@ -74,6 +74,10 @@ FLAGS = {
     "dockless_per_min_eur": "shared_bike.dockless_per_min_eur",
     "dockless_model": "shared_bike.dockless_model",
     "lime_scale": "shared_bike.lime_scale",
+    "flat_eur": "shared_bike.flat_eur",
+    "flat_method": "shared_bike.flat_method",
+    "report_usage": "shared_bike.report_usage",
+    "price_scales": "paths.lime_price_scales",
     "car_model": "car.default_model", "parking_search": "car.parking_search",
     "pt_rail_table": "pt_fare.rail_table",
     "pt_rail_discount": "pt_fare.rail_discount",
@@ -205,11 +209,20 @@ def codes_all(zones) -> list[str]:
     return [str(c) for c in zones.codes]
 
 
-def shared_bike_matrices(prm, args, store, codes, model, matrices):
-    """The requested shared-bicycle variants as chain modes (needs the
-    store modes pt, pt_wb, pt_bw and pt_bb from `cli.skims build-pt`)."""
-    from ikob2.run.shared_bike import (SharedBikeTariffs, dockless_mode,
-                                       shared_bike_modes)
+def tariffs_from(prm):
+    """SharedBikeTariffs of the `shared_bike` parameters."""
+    from ikob2.run.shared_bike import SharedBikeTariffs
+
+    s = prm.shared_bike
+    return SharedBikeTariffs(
+        s.ovfiets_eur, s.dockless_unlock_eur, s.dockless_per_min_eur,
+        tuple(tuple(t) for t in s.lime_tiers), tuple(s.hub_tariffs),
+        s.dockless_model, s.lime_scale, s.flat_eur)
+
+
+def load_chains(prm, args, store, codes, model):
+    """(chains, fares, bicycle share per origin) of the shared-bicycle
+    variants: the store modes pt, pt_bw and the egress modes."""
     from ikob2.segments.ownership import load_bike_ownership
 
     chains, fares = {}, {}
@@ -235,14 +248,14 @@ def shared_bike_matrices(prm, args, store, codes, model, matrices):
         fares[mode] = chains[mode]["fare"]
     share = load_bike_ownership(args.bike_ownership,
                                 store.origins).to_numpy()
-    tariffs = SharedBikeTariffs(prm.shared_bike.ovfiets_eur,
-                                prm.shared_bike.dockless_unlock_eur,
-                                prm.shared_bike.dockless_per_min_eur,
-                                tuple(tuple(t) for t in
-                                      prm.shared_bike.lime_tiers),
-                                tuple(prm.shared_bike.hub_tariffs),
-                                prm.shared_bike.dockless_model,
-                                prm.shared_bike.lime_scale)
+    return chains, fares, share
+
+
+def shared_bike_matrices(prm, chains, fares, share, matrices, tariffs=None):
+    """The requested shared-bicycle variants as chain modes."""
+    from ikob2.run.shared_bike import dockless_mode, shared_bike_modes
+
+    tariffs = tariffs or tariffs_from(prm)
     fixed = prm.bike_leg.fixed_minutes
     variants = [v for v in prm.accessibility.shared_bike if v != "v4"]
     out = shared_bike_modes(chains, fares, share, tariffs, variants=variants,
@@ -346,10 +359,10 @@ def cmd_run(args) -> None:
     sector_jobs = pd.read_csv(args.sector_jobs, index_col=0)
     wage, wfh = _sector_tables(Path(args.statline), args.wage_period,
                                args.wfh_period)
-    envelope = load_reference_budgets(args.budgets,
+    envelope = load_reference_budgets(params_mod.repo_path(args.budgets),
                                       censored=args.censored,
                                       legs_per_tour=args.legs_per_tour)
-    margins = load_time_margins(args.margins)
+    margins = load_time_margins(params_mod.repo_path(args.margins))
     envelope_arg = envelope
     if args.time_shape != "weibull":
         margins = {(m, w): time_curve(args.time_shape, args.cutoff,
@@ -361,14 +374,73 @@ def cmd_run(args) -> None:
               else CopulaSpec(args.copula, args.theta
                               if args.copula == "gumbel" else None))
 
+    seg_names = envelope_segment_names(envelope)
+    price_scale = None
+    if prm.paths.lime_price_scales:
+        from ikob2.run.shared_bike import (load_price_scales,
+                                           segment_price_scales)
+        price_scale = segment_price_scales(seg_names, load_price_scales(
+            params_mod.repo_path(prm.paths.lime_price_scales)))
+        if any(v != 1.0 for v in price_scale.values()):
+            logger.info("Lime price scales differ from 1 for %d segments",
+                        sum(v != 1.0 for v in price_scale.values()))
+    scenario = {}
     if args.shared_bike:
-        matrices.update(shared_bike_matrices(prm, args, store, codes_all(zones),
-                                             pt_fare_model(prm), matrices))
+        from dataclasses import replace
+
+        from ikob2.run.scenarios import calibrate_flat, lime_usage
+        from ikob2.run.shared_bike import shared_bike_modes
+
+        chains, fares, share = load_chains(prm, args, store,
+                                           codes_all(zones),
+                                           pt_fare_model(prm))
+        tariffs = tariffs_from(prm)
+        if tariffs.dockless_model == "flat" and tariffs.flat_eur == 0.0:
+            if (args.spec != "m2" or copula.family != "independence"
+                    or envelope_arg is None):
+                raise SystemExit("The flat price is calibrated for M2 with "
+                                 "independent thresholds and the cost gate.")
+
+            def usage_for(p):
+                t = (replace(tariffs, dockless_model="lime_tiers") if p is None
+                     else replace(tariffs, flat_eur=p))
+                mode = shared_bike_modes(
+                    chains, fares, share, t, variants=("v2",),
+                    bike_fixed_min=prm.bike_leg.fixed_minutes)["pt_v2"]
+                return lime_usage(
+                    origins=store.origins, destinations=dest_codes,
+                    populations=pop, sector_jobs=sector_jobs, wfh_share=wfh,
+                    sector_wage=wage, envelope=envelope_arg,
+                    time_margins=margins, mode=mode, price_scale=price_scale,
+                    unreachable_minutes=prm.accessibility.unreachable_minutes)
+
+            flat, scenario = calibrate_flat(usage_for,
+                                            method=prm.shared_bike.flat_method)
+            scenario["flat_eur"] = flat
+            tariffs = replace(tariffs, flat_eur=flat)
+            print(f"S4 flat price per Lime rental ({prm.shared_bike.flat_method}): "
+                  f"EUR {flat:.3f} (tier weighted mean {scenario['weighted_mean_eur']:.3f})")
+        if prm.shared_bike.report_usage:
+            mode = shared_bike_modes(
+                chains, fares, share, tariffs, variants=("v2",),
+                bike_fixed_min=prm.bike_leg.fixed_minutes)["pt_v2"]
+            u = lime_usage(
+                origins=store.origins, destinations=dest_codes,
+                populations=pop, sector_jobs=sector_jobs, wfh_share=wfh,
+                sector_wage=wage, envelope=envelope_arg, time_margins=margins,
+                mode=mode, price_scale=price_scale,
+                unreachable_minutes=prm.accessibility.unreachable_minutes)
+            scenario["lime_usage"] = {
+                "revenue": u.revenue, "rentals": u.rentals,
+                "rentals_scaled": u.rentals_scaled,
+                "by_segment": {n: {"revenue": r, "rentals": k}
+                               for n, (r, k) in u.by_segment.items()}}
+        matrices.update(shared_bike_matrices(prm, chains, fares, share,
+                                             matrices, tariffs))
     availability = None
     if args.ownership:
         from ikob2.segments.ownership import (availability_frames,
                                               load_bike_ownership)
-        seg_names = envelope_segment_names(envelope)
         bike = load_bike_ownership(args.bike_ownership, store.origins)
         car = pd.read_csv(args.car_availability)
         availability = availability_frames(store.origins, seg_names,
@@ -381,7 +453,7 @@ def cmd_run(args) -> None:
         copula=copula, epsilon=args.epsilon,
         segment_names=envelope_segment_names(envelope),
         spec=args.spec, theta=args.theta, vot=prm.vot.to_dict(),
-        availability=availability)
+        availability=availability, price_scale=price_scale)
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
@@ -391,7 +463,8 @@ def cmd_run(args) -> None:
             result.summary(by, "accessibility_expected").to_csv(
                 out_dir / f"summary_{by.split('_')[0]}_expected.csv")
     result.summary("household_type").to_csv(out_dir / "summary_household.csv")
-    meta = {**result.meta, "parameters": prm.to_dict(), "created": dt.datetime.now().isoformat(
+    meta = {**result.meta, "parameters": prm.to_dict(), "scenario": scenario,
+            "lime_price_scales": price_scale, "created": dt.datetime.now().isoformat(
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
                                       if k != "func"},
             "detour": detour.meta, "skim_meta": store.meta}
@@ -488,9 +561,23 @@ def main(argv=None) -> None:
                    help="OV-fiets charge per rental period (egress)")
     p.add_argument("--dockless-unlock-eur", type=float, default=None)
     p.add_argument("--dockless-per-min-eur", type=float, default=None)
+    p.add_argument("--price-scales", default=None, metavar="CSV",
+                   help="multipliers on the Lime price by household type and "
+                        "income class (concessions); default "
+                        "paths.lime_price_scales")
+    p.add_argument("--report-usage", action="store_const", const=True,
+                   default=None,
+                   help="record the Lime revenue and rentals (v2) in run.json")
+    p.add_argument("--flat-eur", type=float, default=None,
+                   help="with --dockless-model flat: EUR per rental (0 = "
+                        "calibrate for revenue neutrality)")
+    p.add_argument("--flat-method", choices=["fixed_point", "weighted_mean"],
+                   default=None,
+                   help="S4 calibration: fixed_point (default) or "
+                        "weighted_mean of the baseline volumes")
     p.add_argument("--lime-scale", type=float, default=None,
                    help="multiplier on every Lime tier price (S1 halves: 0.5)")
-    p.add_argument("--dockless-model", choices=["lime_tiers", "unlock_per_minute"],
+    p.add_argument("--dockless-model", choices=["lime_tiers", "unlock_per_minute", "flat"],
                    default=None,
                    help="dockless price: Lime tiers (baseline) or unlock fee "
                         "+ rate per riding minute")

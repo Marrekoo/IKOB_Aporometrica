@@ -55,6 +55,10 @@ class ModeMatrices:
     cost: np.ndarray | None = None
     cost_id: str | None = None
     rail_share: np.ndarray | None = None   # share of km by rail (PT, for M1)
+    # part of `cost` paid to the shared-bicycle operator whose prices can be
+    # scaled per segment (Lime), and the number of such rentals
+    lime: np.ndarray | None = None
+    lime_rentals: float = 0.0
 
     def __post_init__(self):
         if self.cost is not None:
@@ -62,6 +66,9 @@ class ModeMatrices:
                 raise ValueError("time and cost must have the same shape.")
             if self.cost_id is None:
                 raise ValueError("A cost matrix needs a cost_id.")
+        if self.lime is not None and (self.cost is None or
+                                      np.shape(self.lime) != self.time.shape):
+            raise ValueError("lime needs a cost of the same shape.")
 
 
 @dataclass(frozen=True)
@@ -79,10 +86,12 @@ class OptionSet:
 class LegOption:
     """One journey judged leg by leg: `times` has one origins x destinations
     matrix per leg (0 where the leg does not exist) and `cost` the price of
-    the whole journey."""
+    the whole journey; `lime` and `lime_rentals` as in ModeMatrices."""
     times: tuple
     cost: np.ndarray | None = None
     cost_id: str | None = None
+    lime: np.ndarray | None = None
+    lime_rentals: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -145,6 +154,37 @@ class AccessibilityResult:
         return s[[value]].join(g["population"].sum())
 
 
+def prepare_inputs(origins, destinations, populations, sector_jobs, wfh_share,
+                   sector_wage, envelope, segment_names):
+    """(segment names, populations by origin, job pools by job type and
+    income class) of a run; shared by the accessibility run and the
+    scenario calibration."""
+    if envelope is not None:
+        names = envelope_segment_names(envelope)
+    elif segment_names is not None:
+        names = list(segment_names)
+    else:
+        raise ValueError("Without an envelope, give segment_names.")
+    pop = populations
+    if "buurtcode" in pop.columns:
+        pop = pop.set_index("buurtcode")
+    pop = pop.reindex(origins)
+    missing_pop = [n for n in names if n not in pop.columns]
+    if missing_pop:
+        raise KeyError(f"Populations lack segment column(s) "
+                       f"{missing_pop[:5]}.")
+    # income pools for both job types, one weight table (partition)
+    W = sector_income_weights(sector_wage, sector_jobs.sum())
+    jobs_by_type = dict(zip(WFH_TYPES,
+                            split_jobs_by_wfh(sector_jobs, wfh_share)))
+    used = {n.rsplit("_", 1)[1] for n in names}
+    pools = {w: {c: v for c, v in
+                 sector_pools(jobs_by_type[w], destinations, W).items()
+                 if c in used}                 # 'onbekend' has no segment
+             for w in WFH_TYPES}
+    return names, pop, pools
+
+
 def run_accessibility(
     *,
     origins: Sequence[str],
@@ -164,6 +204,7 @@ def run_accessibility(
     theta: float | None = None,
     vot: Mapping[str, float] | None = None,
     availability: Mapping[str, pd.DataFrame] | None = None,
+    price_scale: Mapping[str, float] | None = None,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -187,6 +228,9 @@ def run_accessibility(
         household, private bicycle). `accessibility` stays conditional on
         having the mode; `availability` and `accessibility_expected` (their
         product) are added. Modes not listed have availability 1.
+    price_scale : segment name -> multiplier on the shared-bicycle operator
+        part (`lime`) of the journey cost, for segments with a concessionary
+        price (default 1). Segments with equal scales share cost matrices.
     """
     if spec not in SPECS:
         raise ValueError(f"Unknown specification {spec!r}; use {SPECS}.")
@@ -197,37 +241,17 @@ def run_accessibility(
     origins = [str(o) for o in origins]
     destinations = [str(d) for d in destinations]
     n_o, n_d = len(origins), len(destinations)
-    if envelope is not None:
-        names = envelope_segment_names(envelope)
-    elif segment_names is not None:
-        names = list(segment_names)
-    else:
-        raise ValueError("Without an envelope, give segment_names.")
-
-    pop = populations
-    if "buurtcode" in pop.columns:
-        pop = pop.set_index("buurtcode")
-    pop = pop.reindex(origins)
-    missing_pop = [n for n in names if n not in pop.columns]
-    if missing_pop:
-        raise KeyError(f"Populations lack segment column(s) "
-                       f"{missing_pop[:5]}.")
-
-    # income pools for both job types, one weight table (partition)
-    W = sector_income_weights(sector_wage, sector_jobs.sum())
-    jobs_by_type = dict(zip(WFH_TYPES,
-                            split_jobs_by_wfh(sector_jobs, wfh_share)))
-    used = {n.rsplit("_", 1)[1] for n in names}
-    pools = {w: {c: v for c, v in
-                 sector_pools(jobs_by_type[w], destinations, W).items()
-                 if c in used}                 # 'onbekend' has no segment
-             for w in WFH_TYPES}
+    names, pop, pools = prepare_inputs(
+        origins, destinations, populations, sector_jobs, wfh_share,
+        sector_wage, envelope, segment_names)
 
     runner = SegmentedRunner(decay_epsilon=epsilon)
 
-    def hansen_total(margin_mode, time, cost, cost_id, rail_share=None):
+    def hansen_total(margin_mode, time, cost, cost_id, rail_share=None,
+                     seg_names=None):
         """Per-segment accessibility of one (time, cost) pair, both job
-        types added."""
+        types added (for `seg_names`, default all segments)."""
+        sn = names if seg_names is None else seg_names
         gated = cost is not None and envelope is not None
         cost_matrices = {"time": _finite(time, unreachable_minutes)}
         mode_vot = (vot or {}).get(margin_mode)
@@ -238,7 +262,7 @@ def run_accessibility(
                                          vot[f"{margin_mode}_other"])
                 cost_id = f"{cost_id}@vot"
             cost_matrices[cost_id] = _finite(cost, unreachable_minutes)
-        total = {n: np.zeros(n_o) for n in names}
+        total = {n: np.zeros(n_o) for n in sn}
         # both job types in ONE engine call: the cost marginals do not
         # depend on the job type, so the engine computes them once
         all_segs, opportunities = [], {}
@@ -252,7 +276,7 @@ def run_accessibility(
                 envelope=envelope if gated else None,
                 money_cost_id=cost_id if gated else None,
                 copula=copula if gated else INDEPENDENCE,
-                pool_by="income_class", only=names,
+                pool_by="income_class", only=sn,
                 cost_curve=(cost_curve_factory(spec, margin, mode_vot)
                             if gated else None))
             all_segs += [replace(s, name=f"{wfh}|{s.name}",
@@ -262,12 +286,21 @@ def run_accessibility(
         per = runner.run_hansen(None, all_segs, cost_matrices=cost_matrices,
                                 opportunities=opportunities)
         for wfh in WFH_TYPES:
-            for n in names:
+            for n in sn:
                 total[n] += per[f"{wfh}|{n}"].astype(np.float64)
         logger.info("mode %s: %d segments, %d composed filters",
                     margin_mode, len(all_segs),
                     len({s.weight_key for s in all_segs}))
         return total
+
+    def scale_groups(has_lime):
+        """(scale, segment names) with equal price scales."""
+        if not has_lime or not price_scale:
+            return [(1.0, list(names))]
+        groups: dict = {}
+        for n in names:
+            groups.setdefault(float(price_scale.get(n, 1.0)), []).append(n)
+        return sorted(groups.items())
 
     def check(mm, label):
         if mm.time.shape != (n_o, n_d):
@@ -290,11 +323,17 @@ def run_accessibility(
                                else np.zeros_like(o.time),
                                unreachable_minutes) for o in options])
         cid = next((o.cost_id for o in options if o.cost is not None), None)
+        ls = np.stack([_finite(o.lime if o.lime is not None
+                               else np.zeros_like(o.time), 0.0)
+                       for o in options])
         total = {n: np.zeros(n_o) for n in names}
-        for t, c, sign in union_terms(ts, cs):
-            part = hansen_total(margin_mode, t, c if priced else None, cid)
-            for n in names:
-                total[n] += sign * part[n]
+        for scale, group in scale_groups(any(o.lime is not None
+                                             for o in options)):
+            for t, c, sign in union_terms(ts, cs + (scale - 1.0) * ls):
+                part = hansen_total(margin_mode, t, c if priced else None,
+                                    cid, seg_names=group)
+                for n in group:
+                    total[n] += sign * part[n]
         return total, priced
 
     def legwise_total(oset):
@@ -316,6 +355,12 @@ def run_accessibility(
         costs = np.stack([_finite(o.cost if o.cost is not None
                                   else np.zeros((n_o, n_d)),
                                   unreachable_minutes) for o in opts])
+        lime = np.stack([_finite(o.lime if o.lime is not None
+                                 else np.zeros((n_o, n_d)), 0.0)
+                         for o in opts])
+        groups = [(scale, group, costs + (scale - 1.0) * lime)
+                  for scale, group in scale_groups(
+                      any(o.lime is not None for o in opts))]
         quiet = logging.getLogger("ikob2.engine.runner")
         level, quiet.level = quiet.level, logging.WARNING
         try:
@@ -330,7 +375,6 @@ def run_accessibility(
                     sign = 1.0 if r % 2 else -1.0
                     idx = list(subset)
                     t = times[idx].max(axis=0)                   # (L, o, d)
-                    c = costs[idx].max(axis=0)
                     tw = {}
                     for wfh in WFH_TYPES:
                         w = None
@@ -339,13 +383,18 @@ def run_accessibility(
                             f = evaluate_marginal(t[leg], spec_l)
                             w = f if w is None else w * f
                         tw[wfh] = w
-                    for sg in segs:
-                        sm = (evaluate_marginal(c, sg.class_filter.cost)
-                              if priced else None)
-                        for wfh in WFH_TYPES:
-                            wgt = tw[wfh] if sm is None else tw[wfh] * sm
-                            total[sg.name] += sign * (
-                                wgt @ np.asarray(pools[wfh][sg.pool], dtype=np.float32))
+                    for _scale, group, costs_g in groups:
+                        c = costs_g[idx].max(axis=0)
+                        for sg in segs:
+                            if sg.name not in group:
+                                continue
+                            sm = (evaluate_marginal(c, sg.class_filter.cost)
+                                  if priced else None)
+                            for wfh in WFH_TYPES:
+                                wgt = tw[wfh] if sm is None else tw[wfh] * sm
+                                total[sg.name] += sign * (
+                                    wgt @ np.asarray(pools[wfh][sg.pool],
+                                                     dtype=np.float32))
         finally:
             quiet.level = level
         return total, priced

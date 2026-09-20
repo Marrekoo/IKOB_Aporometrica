@@ -232,6 +232,40 @@ EUR 1.00 + 0.20 per minute the results hardly change (v2 -0.002%, v3 +0.004%):
 for the 10-20 minute access rides of the case the two structures cost about
 the same.
 
+### Scenarios S1 and S4, concession prices, effectiveness
+
+* **S1**: every Lime tier price halved, `--lime-scale 0.5` (dockless access and
+  Lime hubs; OV-fiets is not changed).
+* **Price table by segment**: `paths.lime_price_scales` /
+  `--price-scales FILE`, rows `household_type,income_class,scale` (`*` = all,
+  later rows override earlier ones), for concessions such as the U-pas. It
+  scales the Lime part of the journey cost per segment, in the baseline and in
+  every scenario. `data/tariffs/lime_price_scales.csv` (all 1) is the default;
+  `lime_price_scales_targeted_example.csv` halves D2 to D4.
+* **S4**: `--dockless-model flat` replaces the tiers by one price per rental.
+  Without `--flat-eur` it is calibrated for revenue neutrality
+  (`--flat-method fixed_point`, the default, or `weighted_mean`). Model: a
+  person uses the fastest option they find acceptable; volume is the number
+  of acceptable pairs (jobs, population) with a Lime rental in the chosen
+  option, and the closed-form choice probability is
+  `S_T(t_k)[S_M(c_k) - S_M(max(c_k, cmin_(k-1)))]` (checked against a Monte
+  Carlo simulation). Fixed point: the price for which price x rentals at that
+  price equals the baseline revenue. Both calibrations ran on `pt_v2`
+  (independent thresholds, cost gate). The calibrated price is in `run.json`
+  under `scenario`.
+* **Effectiveness**: `--report-usage` stores the Lime revenue and rentals per
+  segment; `cli.compare run_a run_b --mode pt_v2` then writes who gains against
+  what it costs (`effectiveness_income_class.csv`, `..._household_type.csv`):
+  gain and cost shares by group and their ratio.
+
+Results (`pt_v2`, mean over the case; preliminary): S1 blanket +13.05 million
+job-persons (+0.037%) at a revenue loss of 49.6%; halving only D2 to D4 gives
+the same gain (+13.02 million) at a loss of 11.4%, 4.4 times more gain per euro
+foregone. Under the blanket cut D10 and D9 carry 30% and 19% of the cost and
+gain nothing; D2 gets 73% of the gain. S4 (flat EUR 3.011, both calibrations)
+changes nothing (+0.0003%): bicycle legs are capped at 20 minutes, so almost
+every rental is in the EUR 3 tier and the flat price equals the tier price.
+
 ## Not covered yet
 
 Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),

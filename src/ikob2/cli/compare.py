@@ -17,12 +17,25 @@ from ikob2 import params as params_mod
 from ikob2.utils.paths import DataLayout
 
 
+def _usage(run_dir):
+    import json
+
+    f = run_dir / "run.json"
+    if not f.exists():
+        return None
+    return (json.loads(f.read_text()).get("scenario", {})
+            .get("lime_usage", {}).get("by_segment"))
+
+
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)
     p.add_argument("--data-root", default=None)
     p.add_argument("--value", default="accessibility")
+    p.add_argument("--mode", default="pt_v2",
+                   help="mode for the effectiveness table (needs runs made "
+                        "with --report-usage)")
     p.add_argument("run_a")
     p.add_argument("run_b")
     args = p.parse_args(argv)
@@ -41,6 +54,17 @@ def main(argv=None) -> None:
     print(res["origins"].round(3).to_string(index=False), "\n")
     print(res["income"].round(3).pivot(index="income_class",
           columns="mode", values=["a", "b", "ratio_b_over_a"]).to_string())
+    ua = _usage(lay.run_dir(args.run_a))
+    ub = _usage(lay.run_dir(args.run_b))
+    if ua and ub:
+        from ikob2.run.scenarios import effectiveness
+        eff = {}
+        for by in ("income_class", "household_type"):
+            eff[by] = effectiveness(a, b, ua, ub, args.mode, by)
+            eff[by].to_csv(out / f"effectiveness_{by}.csv")
+        print(f"\nWho gains against what it costs ({args.mode}); share_ratio "
+              f"> 1: more benefit than cost share\n")
+        print(eff["income_class"].round(4).to_string())
     print(f"\nTables written to {out}")
 
 
