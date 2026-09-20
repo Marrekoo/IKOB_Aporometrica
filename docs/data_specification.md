@@ -34,6 +34,7 @@ its format and which code reads or writes it. The folder layout is
 | Path | Format | Produced by |
 |---|---|---|
 | `intermediate/segments/nl_segments.gpkg` (optional) | one row per buurt, population per household type x income decile; `cli.accessibility` computes the segments on the fly from KWB and the StatLine snapshots, so this file is only needed for inspection | `cli.segments run` |
+| `intermediate/ownership/car_availability_utrecht.csv` | `household_type, income_class, n_national, share_national, n_local, share_local, share`: share of adults with a car in the household, from the pooled ODiN 2022-23 file (`inputs/odin/ODIN_22_23_clean.csv`, columns HHSam, HHGestInkG, HHAuto, OPRijbewijsAu, FactorP, WoGem, Leeftijd); `share` is the shrunk estimate | `cli.segments car-availability` |
 | `intermediate/jobs/sector_jobs_2022.csv` | `buurtcode, L01..L15`: jobs per LISA sector per buurt | `cli.segments jobs` |
 | `intermediate/skims/<study>/` | skim store (below) | `cli.skims build`, `build-distance`, `build-pt` |
 | `intermediate/calibration/` | detour model | `cli.skims calibrate-detour` |
@@ -73,8 +74,8 @@ regional boarding and per-km fare on `other_km`, `other_boardings`).
 
 | File | Content |
 |---|---|
-| `accessibility.csv` | long table, one row per origin x mode x segment: `buurtcode, mode, segment, household_type, income_class, population, accessibility` (acceptable jobs), `atom` (share for whom no priced trip is acceptable), `accessibility_normalised` |
-| `summary_household.csv`, `summary_income.csv` | population-weighted means by mode and household type / income class |
+| `accessibility.csv` | long table, one row per origin x mode x segment: `buurtcode, mode, segment, household_type, income_class, population, accessibility` (acceptable jobs), `atom` (share for whom no priced trip is acceptable), `accessibility_normalised`; with `--ownership` also `availability` (share who have the mode) and `accessibility_expected` (= accessibility x availability) |
+| `summary_household.csv`, `summary_income.csv` | population-weighted means by mode and household type / income class; `*_expected.csv` the same for `accessibility_expected` (with `--ownership`) |
 | `run.json` | all parameters of the run: modes, time shape, cut-off, cost gate, fare model, skim store, data versions |
 
 `outputs/comparisons/` holds run-versus-run tables (`cli.compare`): rank

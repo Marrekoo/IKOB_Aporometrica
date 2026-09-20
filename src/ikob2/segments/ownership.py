@@ -17,6 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Sequence
 
+import numpy as np
 import pandas as pd
 
 COLUMN = "pct_with_bicycle"
@@ -59,3 +60,37 @@ def load_bike_ownership(path: str | Path,
         share = share.fillna(fill)
     share.name = "bike_share"
     return share
+
+
+def availability_frames(origins: Sequence[str], segment_names: Sequence[str],
+                        *, bike_share: pd.Series | None = None,
+                        car_table: pd.DataFrame | None = None,
+                        ) -> dict[str, pd.DataFrame]:
+    """Availability of each mode as origins x segments frames in [0, 1], for
+    `run_accessibility(availability=...)`. Modes without a source are absent
+    (available to everyone).
+
+    bike_share : per origin buurt (`load_bike_ownership`), the same for every
+        segment.
+    car_table : `car_availability` output (household_type, income_class,
+        share), the same for every origin.
+    """
+    origins = [str(o) for o in origins]
+    out: dict[str, pd.DataFrame] = {}
+    if bike_share is not None:
+        s = bike_share.reindex(origins)
+        if s.isna().any():
+            raise ValueError(f"No bicycle share for {int(s.isna().sum())} "
+                             f"origin(s), e.g. {s.index[s.isna()][:3].tolist()}.")
+        out["bike"] = pd.DataFrame(
+            {n: s.to_numpy() for n in segment_names}, index=origins)
+    if car_table is not None:
+        by = {f"{r.household_type}_{r.income_class}": float(r.share)
+              for r in car_table.itertuples()}
+        missing = [n for n in segment_names if n not in by]
+        if missing:
+            raise KeyError(f"Car availability lacks segment(s) {missing[:5]}.")
+        out["car"] = pd.DataFrame(
+            {n: np.full(len(origins), by[n]) for n in segment_names},
+            index=origins)
+    return out

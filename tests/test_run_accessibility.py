@@ -148,3 +148,36 @@ def test_input_validation():
         ModeMatrices(time, cost[:2], "c")
     with pytest.raises(ValueError, match="cost_id"):
         ModeMatrices(time, cost)
+
+
+def test_availability_scales_expected_but_not_conditional_accessibility():
+    from ikob2.segments.ownership import availability_frames
+    pop, jobs, wfh, wage, time, cost = world()
+    mats = {"bike": ModeMatrices(time),
+            "car": ModeMatrices(time * 0.5, cost, "carcost")}
+    base = run(pop, jobs, wfh, wage, mats).table
+    bike = pd.Series([0.9, 0.8, 0.5], index=ORIGINS)
+    car = pd.DataFrame([(h, f"D{i}", 0.5 if h == "single" else 1.0)
+                        for h in ("single", "couple", "single_parent",
+                                  "couple_children") for i in range(1, 11)],
+                       columns=["household_type", "income_class", "share"])
+    av = availability_frames(ORIGINS, NAMES, bike_share=bike, car_table=car)
+    t = run(pop, jobs, wfh, wage, mats, availability=av).table
+    np.testing.assert_allclose(t["accessibility"], base["accessibility"])
+    assert (base["availability"] == 1.0).all()
+    b = t[t["mode"] == "bike"]
+    np.testing.assert_allclose(
+        b["accessibility_expected"],
+        b["accessibility"] * b["buurtcode"].map(bike).to_numpy())
+    c = t[t["mode"] == "car"]
+    single = c["household_type"] == "single"
+    assert (c.loc[single, "availability"] == 0.5).all()
+    assert (c.loc[~single, "availability"] == 1.0).all()
+
+
+def test_availability_out_of_range_rejected():
+    pop, jobs, wfh, wage, time, cost = world()
+    bad = pd.DataFrame(2.0, index=ORIGINS, columns=NAMES)
+    with pytest.raises(ValueError, match="within"):
+        run(pop, jobs, wfh, wage, {"bike": ModeMatrices(time)},
+            availability={"bike": bad})

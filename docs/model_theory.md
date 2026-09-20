@@ -36,6 +36,27 @@ accepts the trip, and in which time and money are separate gates rather than
 one generalised cost. The paper argues why (a fixed value of time makes the
 gates interchangeable; see the "fixed-VOT trap" diagnostics in `families.md`).
 
+### Availability of modes
+
+`a[i, s, m]` is the accessibility of someone *who has* mode `m`. The share
+who have it is an availability `p[i, s, m]`, and the run reports both
+(`availability`) and their product (`accessibility_expected`), the expected
+number of acceptable jobs of a random member of the segment by that mode:
+
+* **Car**: share of adults in a household with a car, by household type and
+  income decile, from ODiN 2022-23 (weighted). Utrecht cells are shrunk
+  towards the national cell, `p = (n_l p_l + k p_n)/(n_l + k)`, k = 30
+  (`segments.car_availability`). No spatial variation within the study area.
+* **Bicycle**: share of residents with a private bicycle per buurt, from the
+  Utrecht buurtteam survey (2025), assigned to buurten by hand
+  (`segments.ownership`); the same for every segment of a buurt.
+* **Public transport, walking**: available to everyone (p = 1).
+
+Limits: "no car in the household" is not "cannot go by car" (lifts, car
+sharing, company cars); ODiN records the household, not who may use the car;
+the bicycle share is per residents, not per segment; the chance of having
+both a car and a bicycle is not modelled (modes are not combined yet).
+
 ## 2. Time margin: Weibull
 
 `S_T(t) = exp(-(t / eta)^k)`, `eta` the scale, `k` the shape (`k > 1`: the

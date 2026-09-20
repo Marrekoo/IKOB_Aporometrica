@@ -17,6 +17,7 @@ The data folder layout (default: /home/marco/IKOB data).
       intermediate/              derived, reproducible from inputs
         segments/                44 household-type x income segments per buurt
         jobs/                    imputed sector jobs per buurt
+        ownership/               car availability per segment (from ODiN)
         skims/<study>/           skim stores
         calibration/             detour model and other calibrations
         valhalla/                local routing server: config, tiles, logs
@@ -120,6 +121,9 @@ class DataLayout:
 
     def bike_ownership(self) -> Path:
         return self.inputs / "veh_owners" / "bike_ownership_buurten.csv"
+
+    def car_availability(self, study: str = "utrecht") -> Path:
+        return self.intermediate / "ownership" / f"car_availability_{study}.csv"
 
     def sector_jobs(self, year: int = 2022) -> Path:
         return self.intermediate / "jobs" / f"sector_jobs_{year}.csv"

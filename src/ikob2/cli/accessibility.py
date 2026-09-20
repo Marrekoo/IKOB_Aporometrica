@@ -193,6 +193,9 @@ def resolve_paths(args) -> None:
             lay.sector_jobs(args.jobs_year))
         args.out = args.out or str(lay.run_dir(args.run))
         args.statline = args.statline or str(lay.statline())
+        args.bike_ownership = args.bike_ownership or str(lay.bike_ownership())
+        args.car_availability = args.car_availability or str(
+            lay.car_availability())
         if not args.detour and lay.detour_model().exists():
             args.detour = str(lay.detour_model())
         survey = lay.inputs / "survey" / "S_T_work.csv"
@@ -255,17 +258,32 @@ def cmd_run(args) -> None:
     copula = (INDEPENDENCE if args.copula == "independence"
               else CopulaSpec("gumbel", args.theta))
 
+    availability = None
+    if args.ownership:
+        from ikob2.segments.ownership import (availability_frames,
+                                              load_bike_ownership)
+        seg_names = envelope_segment_names(envelope)
+        bike = load_bike_ownership(args.bike_ownership, store.origins)
+        car = pd.read_csv(args.car_availability)
+        availability = availability_frames(store.origins, seg_names,
+                                           bike_share=bike, car_table=car)
+
     result = run_accessibility(
         origins=store.origins, destinations=dest_codes, populations=pop,
         sector_jobs=sector_jobs, wfh_share=wfh, sector_wage=wage,
         envelope=envelope_arg, time_margins=margins, matrices=matrices,
         copula=copula, epsilon=args.epsilon,
         segment_names=envelope_segment_names(envelope),
-        spec=args.spec, theta=args.theta, vot=parse_vot(args.vot))
+        spec=args.spec, theta=args.theta, vot=parse_vot(args.vot),
+        availability=availability)
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
     result.summary("income_class").to_csv(out_dir / "summary_income.csv")
+    if availability:
+        for by in ("income_class", "household_type"):
+            result.summary(by, "accessibility_expected").to_csv(
+                out_dir / f"summary_{by.split('_')[0]}_expected.csv")
     result.summary("household_type").to_csv(out_dir / "summary_household.csv")
     meta = {**result.meta, "created": dt.datetime.now().isoformat(
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
@@ -332,6 +350,14 @@ def main(argv=None) -> None:
     p.add_argument("--vot", nargs="*", default=[], metavar="MODE=EUR_PER_HOUR",
                    help="value of time per priced mode for --spec m1, "
                         "e.g. car=10 pt=9 (LMS/NRM values)")
+    p.add_argument("--ownership", action="store_true",
+                   help="weight modes by availability: car (ODiN, per "
+                        "segment) and private bicycle (per buurt); adds "
+                        "`availability` and `accessibility_expected`")
+    p.add_argument("--bike-ownership", default=None,
+                   help="CSV from inputs/veh_owners (default: data folder)")
+    p.add_argument("--car-availability", default=None,
+                   help="CSV from `cli.segments car-availability`")
     p.add_argument("--car-model", choices=list(CAR_MODELS), default="fossil")
     p.add_argument("--no-parking-search", action="store_true")
     p.add_argument("--pt-rail-table", default=None,

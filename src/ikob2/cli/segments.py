@@ -83,6 +83,18 @@ def cmd_run(args) -> None:
         print(f"  {k}: {v}")
 
 
+def cmd_car(args) -> None:
+    from ikob2.segments.car_availability import (car_availability,
+                                                 read_odin_persons)
+    persons = read_odin_persons(args.odin)
+    t = car_availability(persons, args.municipality, basis=args.basis,
+                         prior=args.prior)
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    t.to_csv(args.out, index=False)
+    print(f"Wrote {len(t)} segments to {args.out} "
+          f"({len(persons)} adult respondents).")
+
+
 def cmd_jobs(args) -> None:
     import pandas as pd
 
@@ -168,6 +180,19 @@ def main(argv=None) -> None:
     j.add_argument("--legacy-year", default="2018")
     j.add_argument("--out", default="output/sector_jobs_2022.csv")
     j.set_defaults(func=cmd_jobs)
+
+    c = sub.add_parser("car-availability",
+                       help="car availability per segment from ODiN")
+    c.add_argument("--odin", required=True,
+                   help="cleaned ODiN pool CSV (ODIN_22_23_clean.csv)")
+    c.add_argument("--municipality", type=int, default=344,
+                   help="CBS municipality number of the study area (344 = "
+                        "Utrecht); local cells are shrunk to the national")
+    c.add_argument("--basis", choices=["household_car", "car_and_licence"],
+                   default="household_car")
+    c.add_argument("--prior", type=float, default=30.0)
+    c.add_argument("--out", default="output/car_availability.csv")
+    c.set_defaults(func=cmd_car)
 
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level,

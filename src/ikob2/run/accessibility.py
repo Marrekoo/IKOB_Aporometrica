@@ -94,6 +94,7 @@ def run_accessibility(
     spec: str = "m2",
     theta: float | None = None,
     vot: Mapping[str, float] | None = None,
+    availability: Mapping[str, pd.DataFrame] | None = None,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -112,6 +113,11 @@ def run_accessibility(
         Gumbel-Hougaard copula with `theta` (inf: comonotone); `copula`
         applies to M2 only. M1 needs `vot`: mode -> value of time in
         EUR/hour.
+    availability : mode -> origins x segments frame in [0, 1]: the share of
+        the segment at that origin that can use the mode (car in the
+        household, private bicycle). `accessibility` stays conditional on
+        having the mode; `availability` and `accessibility_expected` (their
+        product) are added. Modes not listed have availability 1.
     """
     if spec not in SPECS:
         raise ValueError(f"Unknown specification {spec!r}; use {SPECS}.")
@@ -181,8 +187,15 @@ def run_accessibility(
             logger.info("mode %s, %s: %d segments, %d composed filters",
                         mode, wfh, len(segs),
                         len({s.weight_key for s in segs}))
+        avail = None
+        if availability and mode in availability:
+            avail = availability[mode].reindex(index=origins,
+                                               columns=list(names))
+            if avail.isna().any().any() or ((avail < 0) | (avail > 1)).any().any():
+                raise ValueError(f"Availability of '{mode}' must cover all "
+                                 f"origins and segments, within [0, 1].")
         rows.append(_long(mode, origins, names, total, pop, envelope,
-                          priced=gated and atom_reported(spec)))
+                          priced=gated and atom_reported(spec), avail=avail))
     table = pd.concat(rows, ignore_index=True)
     meta = {"origins": n_o, "destinations": n_d, "segments": len(names),
             "modes": list(matrices), "epsilon": epsilon,
@@ -198,7 +211,7 @@ def _finite(a: np.ndarray, fill: float) -> np.ndarray:
     return out
 
 
-def _long(mode, origins, names, total, pop, envelope, *, priced):
+def _long(mode, origins, names, total, pop, envelope, *, priced, avail=None):
     atom = ({segment_name(r.household_type, r.income_class): float(r.atom)
              for r in envelope.itertuples()} if envelope is not None else {})
     parts = []
@@ -215,5 +228,8 @@ def _long(mode, origins, names, total, pop, envelope, *, priced):
             "atom": a,
             "accessibility_normalised": (raw / (1.0 - a) if a < 1.0
                                          else np.nan),
+            "availability": (1.0 if avail is None else avail[n].to_numpy()),
         }))
+        parts[-1]["accessibility_expected"] = (parts[-1]["accessibility"]
+                                               * parts[-1]["availability"])
     return pd.concat(parts, ignore_index=True)
