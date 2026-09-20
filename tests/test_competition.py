@@ -22,7 +22,7 @@ def test_competition_simple_dense():
 
 @pytest.mark.skipif(not HAVE_SCIPY, reason="scipy not installed")
 def test_competition_sparse_matches_dense():
-    sparse_decay = maybe_to_sparse(DECAY.astype(np.float32))
+    sparse_decay = maybe_to_sparse(DECAY.astype(np.float32), max_density=2.0)
     comp = compute_competition(sparse_decay, POPULATION)
     assert np.allclose(comp, EXPECTED)
     assert comp.ndim == 1  # matvec_T must ravel sparse matmul output

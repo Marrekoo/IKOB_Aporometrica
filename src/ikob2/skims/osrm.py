@@ -20,17 +20,19 @@ import urllib.request
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
 from ikob2.skims.car import DetourModel, calibrate_detour, crowfly_km
 
 logger = logging.getLogger(__name__)
 
-DEMO_URL = "https://router.project-osrm.org"
-MAX_TABLE = 100
+DEMO_URL = DEFAULTS.distance.osrm_url
+MAX_TABLE = DEFAULTS.distance.osrm_max_table
 
 
 def osrm_table(base_url: str, origins: np.ndarray, dests: np.ndarray,
                *, profile: str = "driving", timeout: float = 60.0,
-               retries: int = 3, pause: float = 1.0):
+               retries: int = DEFAULTS.distance.osrm_retries,
+               pause: float = DEFAULTS.distance.osrm_pause):
     """Route distance (km) and duration (min) matrices, NaN where OSRM
     finds no route. origins / dests are (n, 2) arrays of lon, lat; the
     request must respect the server's table limit (len(o) + len(d) <=
@@ -102,9 +104,12 @@ def calibrate_from_routes(points_xy: pd.DataFrame, routes: pd.DataFrame,
     return calibrate_detour(crow, routes["route_km"].to_numpy(), **kwargs)
 
 
-def sample_pairs(points: pd.DataFrame, origin_ids, *, n_origins: int = 20,
-                 n_far: int = 80, n_near: int = 80, near_km: float = 15.0,
-                 seed: int = 0) -> tuple[pd.DataFrame, pd.DataFrame]:
+def sample_pairs(points: pd.DataFrame, origin_ids, *,
+                 n_origins: int = DEFAULTS.distance.calibration_origins,
+                 n_far: int = DEFAULTS.distance.calibration_far,
+                 n_near: int = DEFAULTS.distance.calibration_near,
+                 near_km: float = DEFAULTS.distance.calibration_near_km,
+                 seed: int = DEFAULTS.distance.calibration_seed) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Origins from the study area and a destination sample that covers
     all distances: uniform over the country plus a set within `near_km`
     of the origins' centre (uniform sampling alone yields few short

@@ -47,6 +47,13 @@ Inputs are open data (CBS, LISA, OpenStreetMap, GTFS, NS 2026 price list);
 `docs/data_specification.md` lists sources. Intermediate results and outputs
 are recomputed from `inputs/`; each run writes `run.json` with its parameters.
 
+## Parameters
+
+All model and run parameters live in `src/ikob2/defaults.toml`. Override them
+with `--params my.toml`, `--set pt.walk_kmh=4.5` or a dedicated flag; set the
+data folder with `--data-root` or `$IKOB_DATA_ROOT`. See
+[docs/architecture.md](docs/architecture.md#parameters).
+
 ## Status
 
 Implemented: segments, jobs imputation, Weibull/uniform margins, atom,

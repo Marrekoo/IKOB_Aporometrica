@@ -31,15 +31,12 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from ikob2.params import DEFAULTS
+
 logger = logging.getLogger(__name__)
 
 PEAK_FACTORS: dict[str, float] = {
-    "motorway": 1.4, "motorway_link": 1.4, "trunk": 1.4, "trunk_link": 1.4,
-    "primary": 1.2, "primary_link": 1.2,
-    "secondary": 1.2, "secondary_link": 1.2,
-    "tertiary": 1.05, "tertiary_link": 1.05,
-    "residential": 1.05, "unclassified": 1.05, "living_street": 1.05,
-}
+    k: float(v) for k, v in DEFAULTS.peak.factors.to_dict().items()}
 
 _NUMBER = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*(mph|km/h|kmh)?\s*$")
 _SPEED_TAGS = ("maxspeed", "maxspeed:forward", "maxspeed:backward")
@@ -55,7 +52,8 @@ def parse_speed_kmh(value: str) -> float | None:
     return speed * 1.609344 if m.group(2) == "mph" else speed
 
 
-def scale_speed(value: str, factor: float, minimum: float = 5.0) -> str | None:
+def scale_speed(value: str, factor: float,
+                minimum: float = DEFAULTS.peak.minimum_kmh) -> str | None:
     """maxspeed value divided by `factor`, rounded to whole km/h and
     never below `minimum`; None if the value is not numeric."""
     v = parse_speed_kmh(value)

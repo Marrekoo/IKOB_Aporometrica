@@ -67,6 +67,32 @@ Dependencies point downwards: `core` imports nothing from the rest,
   written resumably; routing servers run as local processes with memory
   guards, because the development machine has 15 GB and no Docker.
 
+## Parameters
+
+Model and run parameters are not written in the code. `src/ikob2/defaults.toml`
+holds every value (value of time, car and PT fare models, PT router, bicycle
+leg, shared-bicycle tariffs, skim limits, segment and jobs settings, server
+ports, budget and margin file names). A run resolves them, in increasing
+priority, from that file, `--params FILE` (a partial toml/json with the same
+layout), `--set section.key=value` (repeatable) and the dedicated flags
+(`--walk-kmh`, `--theta`, ...). Unknown keys and wrong types are errors, and
+`run.json` records the resolved values under `parameters`. There is no
+built-in data folder: use `--data-root`, `$IKOB_DATA_ROOT` or `paths.data_root`.
+`ikob2.params.DEFAULTS` supplies the default arguments of library functions,
+so library and command line cannot disagree.
+
+Not parameters: CBS table and column identifiers, the LISA sector mappings,
+numerical safeguards (clips, tolerances) and the legacy `cli.run` /
+`cli.batch_run` workflow.
+
+## Speed
+
+Four costs dominated a run with the shared-bicycle variants (175 s to 66 s):
+statistics for a log line computed even when logging was off, CSR copies of
+filters that are nearly full (`numerics.sparse_max_density`), the Frechet
+check on copulas that satisfy the bounds by construction, and the cost
+margins computed once per job type instead of once.
+
 ## Tests
 
 `pytest` (about 460 tests, 10 s): unit tests of every numerical building

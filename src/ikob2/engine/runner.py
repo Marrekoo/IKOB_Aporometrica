@@ -107,13 +107,14 @@ def evaluate_marginal(cost, spec) -> np.ndarray:
     fn = get_decay_function(spec.curve)
     dense = ensure_dense(cost).astype(DTYPE, copy=False)
     result = with_atom(fn(dense, *spec.params), dense, spec.atom)
-    logger.info(
-        "Marginal %s%s on matrix[min=%.4g p50=%.4g max=%.4g] "
-        "-> filter[mean=%.4g, frac>0.05=%.3f]",
-        spec.curve, spec.params,
-        float(dense.min()), float(np.median(dense)), float(dense.max()),
-        float(result.mean()), float((result > 0.05).mean()),
-    )
+    if logger.isEnabledFor(logging.INFO):    # the statistics cost a median
+        logger.info(
+            "Marginal %s%s on matrix[min=%.4g p50=%.4g max=%.4g] "
+            "-> filter[mean=%.4g, frac>0.05=%.3f]",
+            spec.curve, spec.params,
+            float(dense.min()), float(np.median(dense)), float(dense.max()),
+            float(result.mean()), float((result > 0.05).mean()),
+        )
     return result
 
 

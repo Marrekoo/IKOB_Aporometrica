@@ -37,19 +37,22 @@ from pathlib import Path
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
+
 # KWB urbanisation class (1 = most urban) -> minutes to find parking on
 # arrival (legacy IKOB values).
-PARKING_ARRIVAL_MIN = {1: 12.0, 2: 8.0, 3: 4.0, 4: 0.0, 5: 0.0}
-DEPARTURE_FACTOR = 0.25
+PARKING_ARRIVAL_MIN = {int(k): float(v) for k, v in
+                       DEFAULTS.car.parking_arrival_min.to_dict().items()}
+DEPARTURE_FACTOR = DEFAULTS.car.departure_factor
 
 
 @dataclass(frozen=True)
 class CarCostModel:
     """Per-km money cost of using a car, and per-minute charges for
     shared-car and taxi users."""
-    variable_eur_per_km: float = 0.16       # fossil; electric ~ 0.05
+    variable_eur_per_km: float = DEFAULTS.car.models.fossil.variable_eur_per_km
     road_pricing_eur_per_km: float = 0.0
-    per_minute_eur: float = 0.0             # shared car 0.05, taxi 0.40
+    per_minute_eur: float = 0.0
 
     def __post_init__(self):
         for name in ("variable_eur_per_km", "road_pricing_eur_per_km",
@@ -66,22 +69,38 @@ class CarCostModel:
                 f"min={self.per_minute_eur:g})")
 
 
-# Legacy alternatives for households without a car.
-FOSSIL_CAR = CarCostModel(0.16)
-ELECTRIC_CAR = CarCostModel(0.05)
-SHARED_CAR = CarCostModel(0.33, per_minute_eur=0.05)
-TAXI = CarCostModel(2.40, per_minute_eur=0.40)
+    @classmethod
+    def from_params(cls, spec) -> "CarCostModel":
+        """From a parameter table (`car.models.<name>`)."""
+        d = spec.to_dict() if hasattr(spec, "to_dict") else dict(spec)
+        return cls(**d)
 
 
-def parking_times(urbanisation) -> tuple[np.ndarray, np.ndarray]:
+# The car models of the parameter file (car.models): fossil, electric, and
+# the alternatives for households without a car (shared car, taxi).
+CAR_MODELS = {name: CarCostModel.from_params(spec) for name, spec
+              in DEFAULTS.car.models.to_dict().items()}
+FOSSIL_CAR = CAR_MODELS["fossil"]
+ELECTRIC_CAR = CAR_MODELS["electric"]
+SHARED_CAR = CAR_MODELS["shared"]
+TAXI = CAR_MODELS["taxi"]
+
+
+def parking_times(urbanisation, arrival_min=None, departure_factor=None
+                  ) -> tuple[np.ndarray, np.ndarray]:
     """(arrival, departure) search minutes per zone from the KWB
     urbanisation class; unknown/missing classes count as class 5 (no
-    search time)."""
+    search time). `arrival_min` (class -> minutes) and `departure_factor`
+    default to the parameter file (car.parking_arrival_min,
+    car.departure_factor)."""
+    table = PARKING_ARRIVAL_MIN if arrival_min is None else {
+        int(k): float(v) for k, v in arrival_min.items()}
+    factor = DEPARTURE_FACTOR if departure_factor is None else departure_factor
     u = np.asarray(urbanisation, dtype=float)
     arrival = np.zeros(u.shape)
-    for grade, minutes in PARKING_ARRIVAL_MIN.items():
+    for grade, minutes in table.items():
         arrival[u == grade] = minutes
-    return arrival, arrival * DEPARTURE_FACTOR
+    return arrival, arrival * factor
 
 
 def car_time_and_cost(
@@ -92,6 +111,8 @@ def car_time_and_cost(
     origin_urbanisation=None,
     dest_urbanisation=None,
     dest_parking_cost_eur=None,
+    parking_arrival_min=None,
+    departure_factor=None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """(time, cost) matrices origins x destinations.
 
@@ -108,10 +129,12 @@ def car_time_and_cost(
                          f"differ in shape.")
     time = drive.copy()
     if origin_urbanisation is not None:
-        _, dep = parking_times(origin_urbanisation)
+        _, dep = parking_times(origin_urbanisation, parking_arrival_min,
+                               departure_factor)
         time = time + dep[:, None]
     if dest_urbanisation is not None:
-        arr, _ = parking_times(dest_urbanisation)
+        arr, _ = parking_times(dest_urbanisation, parking_arrival_min,
+                               departure_factor)
         time = time + arr[None, :]
     cost = (model.variable_eur_per_km + model.road_pricing_eur_per_km) * dist
     if dest_parking_cost_eur is not None:
@@ -165,13 +188,13 @@ class DetourModel:
         return cls(tuple(d["km"]), tuple(d["factor"]), d.get("meta", {}))
 
     @classmethod
-    def constant(cls, factor: float = 1.3) -> "DetourModel":
+    def constant(cls, factor: float = DEFAULTS.car.detour_constant) -> "DetourModel":
         return cls((0.0,), (float(factor),), {"source": "constant"})
 
 
 def calibrate_detour(crow_km, route_km,
-                     edges=(0.0, 1.0, 3.0, 8.0, 20.0, 50.0, 1e9),
-                     min_pairs: int = 20) -> DetourModel:
+                     edges=tuple(DEFAULTS.distance.calibration_edges_km),
+                     min_pairs: int = DEFAULTS.distance.calibration_min_pairs) -> DetourModel:
     """Median route/crow-fly ratio per crow-fly distance band from routed
     pairs. Bands with fewer than `min_pairs` pairs are dropped (the
     neighbours interpolate over them)."""

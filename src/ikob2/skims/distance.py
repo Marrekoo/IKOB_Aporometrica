@@ -16,6 +16,7 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
 from ikob2.skims.car import DetourModel, crowfly_km
 from ikob2.skims.store import SkimStore
 
@@ -38,9 +39,9 @@ def build_car_distance(
     detour: DetourModel,
     matrix_fn: MatrixFn,
     *,
-    radius_km: float = 30.0,
-    origin_batch: int = 10,
-    dest_batch: int = 100,
+    radius_km: float = DEFAULTS.distance.radius_km,
+    origin_batch: int = DEFAULTS.distance.origin_batch,
+    dest_batch: int = DEFAULTS.distance.dest_batch,
     variable: str = "distance",
     mode: str = "car",
 ) -> dict:

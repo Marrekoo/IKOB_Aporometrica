@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
+
 
 @dataclass(frozen=True)
 class IpfResult:
@@ -15,8 +17,9 @@ class IpfResult:
     max_diff: np.ndarray    # (B,)
 
 
-def ipf_batch(seed, row_targets, col_targets, *, tol: float = 1e-8,
-              max_iter: int = 200) -> IpfResult:
+def ipf_batch(seed, row_targets, col_targets, *,
+              tol: float = DEFAULTS.segments.ipf_tol,
+              max_iter: int = DEFAULTS.segments.ipf_max_iter) -> IpfResult:
     """
     Rake B seed tables (B, R, C) to row targets (B, R) and column
     targets (B, C), independently per table.

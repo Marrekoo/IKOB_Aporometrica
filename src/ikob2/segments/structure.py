@@ -16,12 +16,13 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
 from ikob2.segments.config import SegmentConfig
 
 logger = logging.getLogger(__name__)
 
-_MIN_ROWS = 10
-_MIN_GEMEENTEN = 10
+_MIN_ROWS = DEFAULTS.segments.structure_min_rows
+_MIN_GEMEENTEN = DEFAULTS.segments.structure_min_gemeenten
 
 
 @dataclass(frozen=True)

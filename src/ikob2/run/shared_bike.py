@@ -44,6 +44,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
 from ikob2.run.accessibility import (LegOption, LegOptionSet, MixedMode,
                                      ModeMatrices, OptionSet)
 
@@ -52,9 +53,9 @@ VARIANTS = ("v0", "v1", "v2", "v3")
 
 @dataclass(frozen=True)
 class SharedBikeTariffs:
-    ovfiets_eur: float = 4.80            # per rental period (egress)
-    dockless_unlock_eur: float = 1.00
-    dockless_per_min_eur: float = 0.20
+    ovfiets_eur: float = DEFAULTS.shared_bike.ovfiets_eur   # per rental (egress)
+    dockless_unlock_eur: float = DEFAULTS.shared_bike.dockless_unlock_eur
+    dockless_per_min_eur: float = DEFAULTS.shared_bike.dockless_per_min_eur
 
     def __post_init__(self):
         if min(self.ovfiets_eur, self.dockless_unlock_eur,
@@ -72,7 +73,8 @@ def _option(store_mode: dict, fare: np.ndarray, *, extra=0.0,
 def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
                       tariffs: SharedBikeTariffs = SharedBikeTariffs(),
                       variants=("v0", "v1", "v2"),
-                      bike_fixed_min: float = 1.0) -> dict:
+                      bike_fixed_min: float = DEFAULTS.bike_leg.fixed_minutes
+                      ) -> dict:
     """{'pt_v0': ..., 'pt_v1': ..., 'pt_v2': ...} for the requested variants.
 
     chains : mode -> {'time': matrix, 'access_min': matrix (bicycle
@@ -147,7 +149,8 @@ def _legwise(chains, fares, p, tariffs, dock, dock_bb, fixed):
 
 def dockless_mode(bike_time: np.ndarray, bike_share: np.ndarray,
                   tariffs: SharedBikeTariffs = SharedBikeTariffs(),
-                  fixed_min: float = 1.0) -> MixedMode:
+                  fixed_min: float = DEFAULTS.bike_leg.fixed_minutes
+                  ) -> MixedMode:
     """v4: bicycle accessibility of the whole population when residents
     without a private bicycle can rent a dockless one door to door (unlock
     fee plus rate per minute of riding, `fixed_min` to unlock)."""

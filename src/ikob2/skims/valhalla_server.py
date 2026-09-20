@@ -27,11 +27,13 @@ from pathlib import Path
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
 from ikob2.utils.paths import DataLayout
 
 logger = logging.getLogger(__name__)
 
-PORT = 8002
+_SRV = DEFAULTS.servers
+PORT = _SRV.valhalla_port
 COSTINGS = {"car": "auto", "bike": "bicycle", "walk": "pedestrian"}
 # Local limits. The default matrix limits are small; raising them is
 # right for a local server, but a matrix over long distances needs a lot
@@ -40,12 +42,14 @@ COSTINGS = {"car": "auto", "bike": "bicycle", "walk": "pedestrian"}
 # matrix distance stays bounded: pairs further apart than 80 km crow-fly
 # are rejected instead of run, and long distances come from the detour
 # model. Keep batches small (about 5 x 50) and concurrency low.
-_LIMITS = {"max_distance": 5_000_000.0, "max_locations": 20_000,
-           "max_matrix_distance": 80_000.0,
-           "max_matrix_location_pairs": 20_000}
+_LIMITS = {"max_distance": _SRV.valhalla_max_distance,
+           "max_locations": _SRV.valhalla_max_locations,
+           "max_matrix_distance": _SRV.valhalla_max_matrix_distance,
+           "max_matrix_location_pairs": _SRV.valhalla_max_matrix_location_pairs}
 
 
-def make_config(layout: DataLayout, *, concurrency: int = 6,
+def make_config(layout: DataLayout, *,
+                concurrency: int = _SRV.valhalla_concurrency,
                 port: int = PORT) -> dict:
     import valhalla
 
@@ -98,7 +102,8 @@ def _valhalla(*args: str, log: Path | None = None, wait: bool = True):
     return proc
 
 
-def build(layout: DataLayout, osm_pbf: str | Path, *, concurrency: int = 6):
+def build(layout: DataLayout, osm_pbf: str | Path, *,
+          concurrency: int = _SRV.valhalla_concurrency):
     """Admin database and routing tiles from an OSM extract (long: the
     national extract takes tens of minutes and a few GB of memory)."""
     cfg = write_config(layout, concurrency=concurrency)
@@ -113,8 +118,9 @@ def pid_file(layout: DataLayout) -> Path:
     return layout.valhalla_dir() / "server.pid"
 
 
-def start(layout: DataLayout, *, concurrency: int = 4,
-          wait_seconds: float = 120.0) -> int:
+def start(layout: DataLayout, *,
+          concurrency: int = _SRV.valhalla_start_concurrency,
+          wait_seconds: float = _SRV.valhalla_wait_seconds) -> int:
     """Start valhalla_service in the background; returns its pid."""
     if status(layout, port=_port(layout)):
         raise RuntimeError("A Valhalla server already answers on the port.")

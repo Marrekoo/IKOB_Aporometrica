@@ -28,13 +28,14 @@ import time
 import urllib.request
 from pathlib import Path
 
+from ikob2.params import DEFAULTS
 from ikob2.utils.paths import DataLayout
 
 logger = logging.getLogger(__name__)
 
-PORT = 8080
+PORT = DEFAULTS.servers.otp_port
 # 2.9 and later are compiled for Java 25; 2.8.x runs on Java 21
-JAR_VERSION = "2.8.1"
+JAR_VERSION = DEFAULTS.servers.otp_version
 JAR_URL = ("https://repo1.maven.org/maven2/org/opentripplanner/otp-shaded/"
            "{v}/otp-shaded-{v}.jar")
 
@@ -102,7 +103,7 @@ def status(*, port: int = PORT) -> bool:
         return False
 
 
-def start(layout: DataLayout, *, heap: str = "8G", port: int = PORT,
+def start(layout: DataLayout, *, heap: str = DEFAULTS.servers.otp_heap, port: int = PORT,
           version: str = JAR_VERSION, wait_seconds: float = 600.0) -> int:
     if status(port=port):
         raise RuntimeError("An OTP server already answers on the port.")

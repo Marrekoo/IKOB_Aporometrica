@@ -229,7 +229,9 @@ def compose_filters(
                 )
             composed = get_copula(family)(u, v)
 
-        if check_frechet:
+        # independence, comonotone and countermonotone satisfy the bounds
+        # by construction; only the parametric families need the check
+        if check_frechet and family in _PARAMETRIC_COPULAS:
             viol = frechet_violation(u, v, composed)
             if viol > frechet_atol:
                 raise AssertionError(

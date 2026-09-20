@@ -11,13 +11,16 @@ from __future__ import annotations
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
+
 # Mean distance between two uniform random points: 0.5214 * sqrt(A) for
 # a square, 0.5109 * sqrt(A) for a disc.
-MEAN_INTRAZONAL_FACTOR = 0.52
+MEAN_INTRAZONAL_FACTOR = DEFAULTS.skims.intrazonal_factor
 
 
-def intrazonal_distance_m(area_m2) -> np.ndarray:
-    return MEAN_INTRAZONAL_FACTOR * np.sqrt(np.asarray(area_m2, dtype=float))
+def intrazonal_distance_m(area_m2, factor: float | None = None) -> np.ndarray:
+    f = MEAN_INTRAZONAL_FACTOR if factor is None else factor
+    return f * np.sqrt(np.asarray(area_m2, dtype=float))
 
 
 def walk_time_matrix(
@@ -27,9 +30,10 @@ def walk_time_matrix(
     origin_codes=None,
     dest_codes=None,
     origin_area_m2=None,
-    speed_kmh: float = 4.8,
-    detour: float = 1.3,
-    max_minutes: float | None = 30.0,
+    speed_kmh: float = DEFAULTS.skims.walk_kmh,
+    detour: float = DEFAULTS.skims.walk_detour,
+    max_minutes: float | None = DEFAULTS.skims.walk_max_minutes,
+    intrazonal_factor: float | None = None,
 ) -> np.ndarray:
     """Walking minutes (n_origins x n_dest, float32); NaN beyond
     `max_minutes`. Coordinates are projected metres (RD New).
@@ -50,7 +54,7 @@ def walk_time_matrix(
             if origin_area_m2 is None:
                 raise ValueError("origin_area_m2 is needed for intrazonal "
                                  "walking times.")
-            intra = intrazonal_distance_m(origin_area_m2)
+            intra = intrazonal_distance_m(origin_area_m2, intrazonal_factor)
             dist = np.where(same, intra[:, None] * detour, dist)
     minutes = dist / (speed_kmh * 1000.0 / 60.0)
     if max_minutes is not None:

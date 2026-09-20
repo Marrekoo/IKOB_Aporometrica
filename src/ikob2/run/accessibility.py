@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Mapping, Sequence
 
 import numpy as np
@@ -29,6 +29,7 @@ import pandas as pd
 
 from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec
 from ikob2.engine.runner import SegmentedRunner, evaluate_marginal
+from ikob2.params import DEFAULTS
 from ikob2.segments.bridge import (
     build_segments,
     envelope_segment_names,
@@ -42,7 +43,7 @@ from ikob2.segments.wfh import split_jobs_by_wfh
 
 logger = logging.getLogger(__name__)
 
-WFH_TYPES = ("no_wfh", "wfh_possible")
+WFH_TYPES = tuple(DEFAULTS.accessibility.wfh_types)
 
 
 @dataclass(frozen=True)
@@ -156,10 +157,10 @@ def run_accessibility(
     time_margins: Mapping,
     matrices: Mapping[str, ModeMatrices],
     copula: CopulaSpec = INDEPENDENCE,
-    epsilon: float | None = 1e-9,
-    unreachable_minutes: float = 1e4,
+    epsilon: float | None = DEFAULTS.accessibility.epsilon,
+    unreachable_minutes: float = DEFAULTS.accessibility.unreachable_minutes,
     segment_names: Sequence[str] | None = None,
-    spec: str = "m2",
+    spec: str = DEFAULTS.accessibility.spec,
     theta: float | None = None,
     vot: Mapping[str, float] | None = None,
     availability: Mapping[str, pd.DataFrame] | None = None,
@@ -238,6 +239,9 @@ def run_accessibility(
                 cost_id = f"{cost_id}@vot"
             cost_matrices[cost_id] = _finite(cost, unreachable_minutes)
         total = {n: np.zeros(n_o) for n in names}
+        # both job types in ONE engine call: the cost marginals do not
+        # depend on the job type, so the engine computes them once
+        all_segs, opportunities = [], {}
         for wfh in WFH_TYPES:
             margin = time_margins.get((margin_mode, wfh))
             if margin is None:
@@ -251,13 +255,18 @@ def run_accessibility(
                 pool_by="income_class", only=names,
                 cost_curve=(cost_curve_factory(spec, margin, mode_vot)
                             if gated else None))
-            per = runner.run_hansen(None, segs, cost_matrices=cost_matrices,
-                                    opportunities=pools[wfh])
+            all_segs += [replace(s, name=f"{wfh}|{s.name}",
+                                 pool=f"{wfh}|{s.pool}") for s in segs]
+            opportunities.update({f"{wfh}|{c}": v
+                                  for c, v in pools[wfh].items()})
+        per = runner.run_hansen(None, all_segs, cost_matrices=cost_matrices,
+                                opportunities=opportunities)
+        for wfh in WFH_TYPES:
             for n in names:
-                total[n] += per[n].astype(np.float64)
-            logger.info("mode %s, %s: %d segments, %d composed filters",
-                        margin_mode, wfh, len(segs),
-                        len({s.weight_key for s in segs}))
+                total[n] += per[f"{wfh}|{n}"].astype(np.float64)
+        logger.info("mode %s: %d segments, %d composed filters",
+                    margin_mode, len(all_segs),
+                    len({s.weight_key for s in all_segs}))
         return total
 
     def check(mm, label):

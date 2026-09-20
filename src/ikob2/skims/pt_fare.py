@@ -30,6 +30,8 @@ from pathlib import Path
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
+
 
 def load_ns_table(path: str | Path | None = None
                   ) -> tuple[tuple[float, float], ...]:
@@ -65,14 +67,14 @@ NS_RAIL_TABLE = load_ns_table()
 
 @dataclass(frozen=True)
 class PtFareModel:
-    rail_eur_per_km_at_1km: float = 2.60
-    rail_eur_per_km_at_100km: float = 0.20
+    rail_eur_per_km_at_1km: float = DEFAULTS.pt_fare.rail_eur_per_km_at_1km
+    rail_eur_per_km_at_100km: float = DEFAULTS.pt_fare.rail_eur_per_km_at_100km
     rail_table: tuple[tuple[float, float], ...] | None = NS_RAIL_TABLE
-    rail_beyond_table: str = "cap"       # "cap" or "linear" (last slope)
-    rail_discount: float = 0.0           # e.g. 0.2 / 0.4 for NS discounts
-    regional_boarding_eur: float = 1.08
-    regional_eur_per_km: float = 0.18
-    boardings: str = "single"            # "single" or "count"
+    rail_beyond_table: str = DEFAULTS.pt_fare.rail_beyond_table  # cap, linear
+    rail_discount: float = DEFAULTS.pt_fare.rail_discount   # NS 0.2 / 0.4
+    regional_boarding_eur: float = DEFAULTS.pt_fare.regional_boarding_eur
+    regional_eur_per_km: float = DEFAULTS.pt_fare.regional_eur_per_km
+    boardings: str = DEFAULTS.pt_fare.boardings   # single, count"
 
     def __post_init__(self):
         for name in ("rail_eur_per_km_at_1km", "rail_eur_per_km_at_100km",
@@ -99,6 +101,26 @@ class PtFareModel:
             if eur != sorted(eur) or min(eur) < 0:
                 raise ValueError("rail_table fares must be non-decreasing "
                                  "and non-negative.")
+
+    @classmethod
+    def from_params(cls, p) -> "PtFareModel":
+        """From the `pt_fare` parameters: a rail table CSV (km, eur)
+        replaces the NS table; `rail_anchors` selects the power law."""
+        import pandas as pd
+
+        table = NS_RAIL_TABLE
+        if p.rail_anchors:
+            table = None
+        elif p.rail_table:
+            df = pd.read_csv(p.rail_table)
+            table = tuple(zip(df["km"].astype(float), df["eur"].astype(float)))
+        return cls(
+            rail_eur_per_km_at_1km=p.rail_eur_per_km_at_1km,
+            rail_eur_per_km_at_100km=p.rail_eur_per_km_at_100km,
+            rail_table=table, rail_beyond_table=p.rail_beyond_table,
+            rail_discount=p.rail_discount,
+            regional_boarding_eur=p.regional_boarding_eur,
+            regional_eur_per_km=p.regional_eur_per_km, boardings=p.boardings)
 
     @property
     def matrix_id(self) -> str:

@@ -6,6 +6,7 @@ import logging
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
 from ikob2.skims.gtfs_pt import LegSpec, PtRouter
 from ikob2.skims.store import SkimStore
 
@@ -20,7 +21,8 @@ EGRESS_VARIABLE = "egress_min"
 def build_pt_layer(store: SkimStore, router: PtRouter, origin_xy: np.ndarray,
                    dest_codes, dest_xy: np.ndarray, *, layer: str = "all",
                    mode: str = "pt", variable: str = "time",
-                   max_minutes: float = 180.0, block_size: int = 10,
+                   max_minutes: float = DEFAULTS.pt.max_minutes,
+                   block_size: int = DEFAULTS.pt.block_size,
                    fare_inputs: bool = True, access: LegSpec | None = None,
                    egress: LegSpec | None = None) -> None:
     """Door-to-door PT minutes for every store origin to every destination

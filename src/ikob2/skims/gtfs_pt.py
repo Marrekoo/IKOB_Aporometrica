@@ -50,9 +50,13 @@ from scipy import sparse
 from scipy.sparse import csgraph
 from scipy.spatial import cKDTree
 
+from ikob2.params import DEFAULTS
+
 logger = logging.getLogger(__name__)
 
-WAIT_CAP_MIN = 7.5
+_PT = DEFAULTS.pt
+_BIKE = DEFAULTS.bike_leg
+WAIT_CAP_MIN = _PT.wait_cap_min
 
 
 def is_rail(route_type) -> bool:
@@ -78,10 +82,10 @@ class LegSpec:
     hubs_only   : the leg can only start/end at hub stops (rail stops:
         where OV-fiets is available); otherwise at any stop.
     """
-    kmh: float = 16.0
-    detour: float = 1.3
-    max_minutes: float = 20.0
-    fixed_minutes: float = 1.0
+    kmh: float = _BIKE.kmh
+    detour: float = _BIKE.detour
+    max_minutes: float = _BIKE.max_minutes
+    fixed_minutes: float = _BIKE.fixed_minutes
     hubs_only: bool = False
 
     def __post_init__(self):
@@ -136,8 +140,9 @@ def active_services(zf: zipfile.ZipFile, date: str) -> set[str]:
     return active
 
 
-def load_peak_timetable(gtfs_zip, date: str, *, window_h=(7.0, 9.0),
-                        chunksize: int = 2_000_000) -> PeakTimetable:
+def load_peak_timetable(gtfs_zip, date: str, *,
+                        window_h=tuple(_PT.window_h),
+                        chunksize: int = _PT.gtfs_chunksize) -> PeakTimetable:
     """Read one weekday of a GTFS feed and reduce it to line headways
     and in-vehicle times in the window (hours, local time)."""
     w0, w1 = window_h[0] * 3600, window_h[1] * 3600
@@ -242,12 +247,14 @@ def reduce_stop_times(st: pd.DataFrame, stops: pd.DataFrame,
 class PtRouter:
     """Frequency-model public transport router over a PeakTimetable."""
 
-    def __init__(self, tt: PeakTimetable, *, walk_kmh: float = 4.0,
-                 walk_detour: float = 1.3, max_access_min: float = 20.0,
-                 transfer_radius_m: float = 300.0,
+    def __init__(self, tt: PeakTimetable, *, walk_kmh: float = _PT.walk_kmh,
+                 walk_detour: float = _PT.walk_detour,
+                 max_access_min: float = _PT.max_access_min,
+                 transfer_radius_m: float = _PT.transfer_radius_m,
                  wait_cap_min: float = WAIT_CAP_MIN,
-                 boarding_penalty_min: float = 0.0,
-                 rail_detour: float = 1.15, other_detour: float = 1.25):
+                 boarding_penalty_min: float = _PT.boarding_penalty_min,
+                 rail_detour: float = _PT.rail_detour,
+                 other_detour: float = _PT.other_detour):
         if walk_kmh <= 0 or walk_detour <= 0:
             raise ValueError("walk_kmh and walk_detour must be positive.")
         if rail_detour < 1 or other_detour < 1:
@@ -419,7 +426,7 @@ class PtRouter:
             ride = d * leg.detour / (leg.kmh * 1000.0 / 60.0)
         return indptr, stop_idx, ride + fixed, ride
 
-    def time_matrix(self, origin_xy, dest_xy, *, max_minutes: float = 180.0,
+    def time_matrix(self, origin_xy, dest_xy, *, max_minutes: float = _PT.max_minutes,
                     chunk: int = 8) -> np.ndarray:
         """Door-to-door PT minutes (origins x destinations, float32, NaN
         where not reachable within `max_minutes`). Coordinates: RD New
@@ -427,7 +434,7 @@ class PtRouter:
         return self.journeys(origin_xy, dest_xy, max_minutes=max_minutes,
                              chunk=chunk, track=False)["time"]
 
-    def journeys(self, origin_xy, dest_xy, *, max_minutes: float = 180.0,
+    def journeys(self, origin_xy, dest_xy, *, max_minutes: float = _PT.max_minutes,
                  chunk: int = 8, track: bool = True,
                  access: LegSpec | None = None,
                  egress: LegSpec | None = None) -> dict:

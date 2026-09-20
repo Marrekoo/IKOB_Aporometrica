@@ -5,9 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from ikob2.params import DEFAULTS
+
 HOUSEHOLD_TYPES = ("single", "couple", "single_parent", "couple_children")
 INCOME_CLASSES = tuple(f"D{i}" for i in range(1, 11)) + ("onbekend",)
-LOW_INCOME_CLASSES = ("D1", "D2", "D3", "D4")
+LOW_INCOME_CLASSES = tuple(DEFAULTS.segments.low_income_classes)
+_SEG = DEFAULTS.segments
 
 
 def _default_kwb_vars() -> dict[str, str]:
@@ -60,22 +63,19 @@ class SegmentConfig:
     # ── model ────────────────────────────────────────────────────────
     household_types: tuple[str, ...] = HOUSEHOLD_TYPES
     income_classes: tuple[str, ...] = INCOME_CLASSES
-    hh_size: dict = field(default_factory=lambda: {
-        "single": 1.0, "couple": 2.0,
-        "single_parent": 2.4, "couple_children": 3.6,
-    })
-    fallback_single_parent_share_of_with_children: float = 0.20
+    hh_size: dict = field(default_factory=lambda: _SEG.hh_size.to_dict())
+    fallback_single_parent_share_of_with_children: float = \
+        _SEG.single_parent_fallback_share
     # KWB "zonder kinderen" excludes one-person households (FALSE gave
     # a plausible distribution in the R run).
-    kwb_no_child_includes_single: bool = False
-    fallback_hh_composition: dict = field(default_factory=lambda: {
-        "single": 0.40, "couple": 0.30,
-        "single_parent": 0.06, "couple_children": 0.24,
-    })
-    local_income_calibration: Literal["laagste40", "none"] = "laagste40"
+    kwb_no_child_includes_single: bool = _SEG.kwb_no_child_includes_single
+    fallback_hh_composition: dict = field(
+        default_factory=lambda: _SEG.fallback_hh_composition.to_dict())
+    local_income_calibration: Literal["laagste40", "none"] = \
+        _SEG.local_income_calibration
 
-    ipf_tol: float = 1e-8
-    ipf_max_iter: int = 200
+    ipf_tol: float = _SEG.ipf_tol
+    ipf_max_iter: int = _SEG.ipf_max_iter
 
     @property
     def segment_columns(self) -> list[str]:

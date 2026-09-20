@@ -1,5 +1,6 @@
 """
-The data folder layout (default: /home/marco/IKOB data).
+The data folder layout. The root is never built in: it comes from --data-root,
+$IKOB_DATA_ROOT or `paths.data_root` (ikob2.params.data_root).
 
     <root>/
       README.md                  what lives where (written by `create`)
@@ -36,7 +37,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_ROOT = Path("/home/marco/IKOB data")
+from ikob2.params import DEFAULTS
 
 INPUT_DIRS = ("kwb", "lisa", "osm", "gtfs", "legacy_ikob", "survey", "odin")
 CACHE_DIRS = ("statline",)
@@ -71,7 +72,7 @@ can be deleted and rebuilt from inputs/ and the repository.
 
 @dataclass(frozen=True)
 class DataLayout:
-    root: Path = DEFAULT_ROOT
+    root: Path
 
     def __post_init__(self):
         object.__setattr__(self, "root", Path(self.root))
@@ -113,19 +114,21 @@ class DataLayout:
         return created
 
     # ── conventional paths ───────────────────────────────────────────
-    def kwb(self, year: int = 2022, version: str = "v3") -> Path:
+    def kwb(self, year: int = DEFAULTS.accessibility.kwb_year,
+            version: str = DEFAULTS.paths.kwb_version) -> Path:
         return self.inputs / "kwb" / f"wijkenbuurten_{year}_{version}.gpkg"
 
     def skim_dir(self, study: str) -> Path:
         return self.intermediate / "skims" / study
 
     def bike_ownership(self) -> Path:
-        return self.inputs / "veh_owners" / "bike_ownership_buurten.csv"
+        return self.inputs / "veh_owners" / DEFAULTS.paths.bike_ownership
 
-    def car_availability(self, study: str = "utrecht") -> Path:
+    def car_availability(
+            self, study: str = DEFAULTS.paths.car_availability_study) -> Path:
         return self.intermediate / "ownership" / f"car_availability_{study}.csv"
 
-    def sector_jobs(self, year: int = 2022) -> Path:
+    def sector_jobs(self, year: int = DEFAULTS.accessibility.jobs_year) -> Path:
         return self.intermediate / "jobs" / f"sector_jobs_{year}.csv"
 
     def valhalla_dir(self) -> Path:

@@ -10,6 +10,9 @@ from typing import Protocol, Sequence
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
+
+_S = DEFAULTS.skims
 MODES = ("car", "bike", "walk", "pt")
 
 
@@ -17,13 +20,13 @@ MODES = ("car", "bike", "walk", "pt")
 class TimeRequest:
     """One travel-time matrix request (times in minutes)."""
     mode: str
-    max_minutes: int = 120
+    max_minutes: int = _S.max_minutes.car
     departure: dt.datetime | None = None      # public transport only
-    window_minutes: int = 60                  # departures sampled after it
-    percentile: int = 50
-    walk_kmh: float = 4.8
-    cycle_kmh: float = 16.0
-    max_rides: int = 4
+    window_minutes: int = _S.window_minutes                  # departures sampled after it
+    percentile: int = _S.percentile
+    walk_kmh: float = _S.walk_kmh
+    cycle_kmh: float = _S.cycle_kmh
+    max_rides: int = _S.max_rides
 
     def __post_init__(self):
         if self.mode not in MODES:

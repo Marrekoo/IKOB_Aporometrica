@@ -14,7 +14,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from ikob2.utils.paths import DEFAULT_ROOT, INPUT_DIRS, DataLayout
+from ikob2 import params as params_mod
+from ikob2.utils.paths import INPUT_DIRS, DataLayout
 
 
 def link_input(layout: DataLayout, target: Path, subfolder: str,
@@ -37,7 +38,8 @@ def link_input(layout: DataLayout, target: Path, subfolder: str,
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument("--root", default=str(DEFAULT_ROOT))
+    params_mod.add_arguments(p)
+    p.add_argument("--root", default=None)
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("create")
     lk = sub.add_parser("link")
@@ -45,7 +47,8 @@ def main(argv=None) -> None:
     lk.add_argument("subfolder", choices=INPUT_DIRS)
     lk.add_argument("--name")
     args = p.parse_args(argv)
-    layout = DataLayout(Path(args.root))
+    layout = DataLayout(params_mod.data_root(args.root,
+                                             params_mod.from_args(args)))
     if args.command == "create":
         created = layout.ensure()
         print(f"{len(created)} folder(s) created under {layout.root}")

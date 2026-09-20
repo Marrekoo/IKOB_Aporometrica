@@ -22,6 +22,7 @@ import numpy as np
 
 from ikob2.core.families import mean_threshold
 from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec, CurveSpec
+from ikob2.params import DEFAULTS
 
 SPECS = ("m1", "m1p", "m2", "m3")
 
@@ -30,7 +31,7 @@ SPECS = ("m1", "m1p", "m2", "m3")
 # transport is priced at `pt` (rail) and `pt_other` per journey in proportion
 # to the rail share of its kilometres. Bicycle (10.50-11.00) and walking
 # (12.50-13.00) have no cost and need no VoT.
-DEFAULT_VOT = {"car": 12.05, "pt": 15.10, "pt_other": 10.80}
+DEFAULT_VOT = DEFAULTS.vot.to_dict()
 
 # Rate of an exponential with (effectively) zero mean: acceptable only at c = 0.
 _ZERO_MEAN_RATE = 1e6

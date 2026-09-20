@@ -11,6 +11,8 @@ copy-pasted throughout the old codebase.
 
 import numpy as np
 
+from ikob2.params import DEFAULTS
+
 try:
     from scipy import sparse as _sp
     HAVE_SCIPY = True
@@ -20,7 +22,8 @@ except ImportError:  # pragma: no cover
 
 # ── Performance knobs ────────────────────────────────────────────────
 DTYPE = np.float32       # float32 halves memory; switch to float64 if needed
-USE_SPARSE = True        # derived weight/decay matrices stored as CSR
+USE_SPARSE = DEFAULTS.numerics.use_sparse   # weight matrices as CSR when sparse
+SPARSE_MAX_DENSITY = DEFAULTS.numerics.sparse_max_density
 # ─────────────────────────────────────────────────────────────────────
 
 IKOB_INFINITE = 9999.0   # sentinel generalized cost for unreachable OD pairs
@@ -41,12 +44,19 @@ def is_sparse(x) -> bool:
     return HAVE_SCIPY and _sp.issparse(x)
 
 
-def maybe_to_sparse(arr):
-    """Convert a dense array to CSR if the sparsity policy is enabled."""
+def maybe_to_sparse(arr, max_density: float | None = None):
+    """Convert a dense array to CSR if the sparsity policy is enabled and
+    the array is sparse enough (share of non-zeros below `max_density`,
+    default numerics.sparse_max_density). A nearly full matrix is faster
+    as a dense array: building a CSR copy costs more than the products it
+    would save."""
     if not USE_SPARSE or not HAVE_SCIPY:
         return arr
     if _sp.issparse(arr):
         return arr.tocsr()
+    limit = SPARSE_MAX_DENSITY if max_density is None else max_density
+    if arr.size and np.count_nonzero(arr) >= limit * arr.size:
+        return arr
     return _sp.csr_matrix(arr)
 
 

@@ -13,18 +13,21 @@ from pathlib import Path
 import pandas as pd
 
 from ikob2.run.compare import compare_runs
-from ikob2.utils.paths import DEFAULT_ROOT, DataLayout
+from ikob2 import params as params_mod
+from ikob2.utils.paths import DataLayout
 
 
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument("--data-root", default=str(DEFAULT_ROOT))
+    params_mod.add_arguments(p)
+    p.add_argument("--data-root", default=None)
     p.add_argument("--value", default="accessibility")
     p.add_argument("run_a")
     p.add_argument("run_b")
     args = p.parse_args(argv)
-    lay = DataLayout(Path(args.data_root))
+    lay = DataLayout(params_mod.data_root(args.data_root,
+                                          params_mod.from_args(args)))
     a = pd.read_csv(lay.run_dir(args.run_a) / "accessibility.csv")
     b = pd.read_csv(lay.run_dir(args.run_b) / "accessibility.csv")
     res = compare_runs(a, b, value=args.value)

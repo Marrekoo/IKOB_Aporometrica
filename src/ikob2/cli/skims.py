@@ -22,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ikob2 import params as params_mod
 from ikob2.skims.build import build_time_skims
 from ikob2.skims.router import MODES, R5Router, TimeRequest
 from ikob2.skims.store import SkimStore
@@ -30,11 +31,45 @@ from ikob2.skims.zones import coarse_cells, zone_points
 
 logger = logging.getLogger("ikob2.cli.skims")
 
-DEFAULT_MAX_MINUTES = {"car": 120, "bike": 90, "walk": 30, "pt": 180}
+# command-line flag -> parameter it overrides (flags default to None)
+BUILD_FLAGS = {"near_km": "skims.near_km", "far_cells": "skims.far_cells",
+               "walk_model": "skims.walk_model", "departure": "skims.departure",
+               "window": "skims.window_minutes",
+               "block_size": "skims.block_size"}
+CALIBRATE_FLAGS = {"osrm_url": "distance.osrm_url",
+                   "origins": "distance.calibration_origins",
+                   "far": "distance.calibration_far",
+                   "near": "distance.calibration_near",
+                   "seed": "distance.calibration_seed"}
+DISTANCE_FLAGS = {"port": "servers.valhalla_port",
+                  "radius_km": "distance.radius_km",
+                  "origin_batch": "distance.origin_batch"}
+PT_FLAGS = {"date": "pt.date", "walk_kmh": "pt.walk_kmh",
+            "walk_detour": "pt.walk_detour",
+            "max_access_min": "pt.max_access_min",
+            "transfer_radius_m": "pt.transfer_radius_m",
+            "wait_cap_min": "pt.wait_cap_min",
+            "boarding_penalty_min": "pt.boarding_penalty_min",
+            "rail_detour": "pt.rail_detour", "other_detour": "pt.other_detour",
+            "max_minutes": "pt.max_minutes", "egress_hubs": "pt.egress_hubs",
+            "bike_kmh": "bike_leg.kmh", "bike_detour": "bike_leg.detour",
+            "bike_max_min": "bike_leg.max_minutes",
+            "bike_fixed_min": "bike_leg.fixed_minutes"}
+
+
+def resolve(args, flags):
+    """Parameters of a command: file, --set and flags; the flag attributes
+    on `args` are filled with the resolved values."""
+    prm = params_mod.from_args(args, flags)
+    for name, key in flags.items():
+        setattr(args, name, prm.get(key))
+    return prm
 
 
 def cmd_build(args) -> None:
     from ikob2.data.geopackage import load_cbs_buurten
+
+    prm = resolve(args, BUILD_FLAGS)
 
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     zones, _ = load_cbs_buurten(args.kwb)
@@ -75,7 +110,7 @@ def cmd_build(args) -> None:
     departure = dt.datetime.fromisoformat(args.departure)
     requests = {
         m: TimeRequest(
-            m, max_minutes=args.max_minutes or DEFAULT_MAX_MINUTES[m],
+            m, max_minutes=args.max_minutes or prm.skims.max_minutes[m],
             departure=departure if m == "pt" else None,
             window_minutes=args.window)
         for m in modes}
@@ -100,6 +135,9 @@ def cmd_build(args) -> None:
                     sub[["x", "y"]].to_numpy(), dests[["x", "y"]].to_numpy(),
                     origin_codes=sub["id"], dest_codes=dests["id"],
                     origin_area_m2=sub["area_m2"],
+                    speed_kmh=prm.skims.walk_kmh,
+                    detour=prm.skims.walk_detour,
+                    intrazonal_factor=prm.skims.intrazonal_factor,
                     max_minutes=requests["walk"].max_minutes)
                 store.write_rows(name, "walk", "time", start, t)
     if routed:
@@ -113,6 +151,9 @@ def cmd_build(args) -> None:
 def cmd_calibrate_detour(args) -> None:
     from ikob2.data.geopackage import load_cbs_buurten
     from ikob2.skims import osrm
+
+    prm = resolve(args, CALIBRATE_FLAGS)
+    args.out = args.out or prm.paths.detour_model_out
 
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     zones, _ = load_cbs_buurten(args.kwb)
@@ -140,6 +181,7 @@ def cmd_build_distance(args) -> None:
     from ikob2.skims import valhalla_server
     from ikob2.skims.car import DetourModel
 
+    resolve(args, DISTANCE_FLAGS)
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     store = SkimStore.open(args.store)
     zones, _ = load_cbs_buurten(args.kwb)
@@ -181,6 +223,8 @@ def cmd_build_pt(args) -> None:
     from ikob2.skims.gtfs_pt import LegSpec, PtRouter, load_peak_timetable
     from ikob2.skims.pt_build import build_pt_layer
 
+    prm = resolve(args, PT_FLAGS)
+    args.window = args.window or prm.pt.window_h
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     store = SkimStore.open(args.store)
     zones, _ = load_cbs_buurten(args.kwb)
@@ -240,6 +284,7 @@ def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--log-level", default="INFO")
+    params_mod.add_arguments(p)
     sub = p.add_subparsers(dest="command", required=True)
 
     b = sub.add_parser("build", help="compute a skim store")
@@ -251,29 +296,29 @@ def main(argv=None) -> None:
     b.add_argument("--modes", nargs="+", default=["car", "bike", "walk"],
                    choices=MODES)
     b.add_argument("--out", required=True)
-    b.add_argument("--near-km", type=float, default=50.0)
+    b.add_argument("--near-km", type=float, default=None)
     b.add_argument("--far-cells", choices=["municipality", "none"],
-                   default="municipality")
-    b.add_argument("--walk-model", choices=["zone", "router"], default="zone")
-    b.add_argument("--departure", default="2026-09-01T08:00:00")
-    b.add_argument("--window", type=int, default=60,
+                   default=None)
+    b.add_argument("--walk-model", choices=["zone", "router"], default=None)
+    b.add_argument("--departure", default=None)
+    b.add_argument("--window", type=int, default=None,
                    help="PT departure window in minutes")
     b.add_argument("--max-minutes", type=int, default=None)
     b.add_argument("--max-memory", default=None, help="JVM heap, e.g. 11G")
-    b.add_argument("--block-size", type=int, default=25)
+    b.add_argument("--block-size", type=int, default=None)
     b.set_defaults(func=cmd_build)
 
     c = sub.add_parser("calibrate-detour",
                        help="fit crow-fly -> route distance factors via OSRM")
     c.add_argument("--kwb", required=True)
     c.add_argument("--study", nargs="+", required=True, metavar="GMxxxx")
-    c.add_argument("--out", default="data/calibration/car_detour.json")
-    c.add_argument("--osrm-url", default="https://router.project-osrm.org",
+    c.add_argument("--out", default=None)
+    c.add_argument("--osrm-url", default=None,
                    help="demo server: light use only; self-host for more")
-    c.add_argument("--origins", type=int, default=20)
-    c.add_argument("--far", type=int, default=80)
-    c.add_argument("--near", type=int, default=80)
-    c.add_argument("--seed", type=int, default=0)
+    c.add_argument("--origins", type=int, default=None)
+    c.add_argument("--far", type=int, default=None)
+    c.add_argument("--near", type=int, default=None)
+    c.add_argument("--seed", type=int, default=None)
     c.set_defaults(func=cmd_calibrate_detour)
 
     d = sub.add_parser("build-distance",
@@ -281,9 +326,9 @@ def main(argv=None) -> None:
     d.add_argument("store")
     d.add_argument("--kwb", required=True)
     d.add_argument("--detour", required=True, help="DetourModel JSON")
-    d.add_argument("--port", type=int, default=8002)
-    d.add_argument("--radius-km", type=float, default=30.0)
-    d.add_argument("--origin-batch", type=int, default=10)
+    d.add_argument("--port", type=int, default=None)
+    d.add_argument("--radius-km", type=float, default=None)
+    d.add_argument("--origin-batch", type=int, default=None)
     d.set_defaults(func=cmd_build_distance)
 
     m = sub.add_parser("make-peak",
@@ -297,35 +342,35 @@ def main(argv=None) -> None:
     t.add_argument("store")
     t.add_argument("--kwb", required=True)
     t.add_argument("--gtfs", required=True)
-    t.add_argument("--date", default="2026-09-15",
+    t.add_argument("--date", default=None,
                    help="a weekday inside the feed's validity")
-    t.add_argument("--window", nargs=2, type=float, default=[7.0, 9.0],
+    t.add_argument("--window", nargs=2, type=float, default=None,
                    metavar=("FROM_H", "TO_H"))
-    t.add_argument("--walk-kmh", type=float, default=4.0)
-    t.add_argument("--walk-detour", type=float, default=1.3)
-    t.add_argument("--max-access-min", type=float, default=20.0)
-    t.add_argument("--transfer-radius-m", type=float, default=300.0)
-    t.add_argument("--wait-cap-min", type=float, default=7.5)
-    t.add_argument("--boarding-penalty-min", type=float, default=0.0)
-    t.add_argument("--rail-detour", type=float, default=1.15,
+    t.add_argument("--walk-kmh", type=float, default=None)
+    t.add_argument("--walk-detour", type=float, default=None)
+    t.add_argument("--max-access-min", type=float, default=None)
+    t.add_argument("--transfer-radius-m", type=float, default=None)
+    t.add_argument("--wait-cap-min", type=float, default=None)
+    t.add_argument("--boarding-penalty-min", type=float, default=None)
+    t.add_argument("--rail-detour", type=float, default=None,
                    help="rail km = crow-fly between stops x this")
-    t.add_argument("--other-detour", type=float, default=1.25,
+    t.add_argument("--other-detour", type=float, default=None,
                    help="bus/tram/metro km = crow-fly between stops x this")
-    t.add_argument("--max-minutes", type=float, default=180.0)
+    t.add_argument("--max-minutes", type=float, default=None)
     t.add_argument("--mode-name", default="pt",
                    help="name of the mode in the store: 'pt' for the plain "
                         "walk-walk journey, e.g. pt_bw (bicycle access, walk "
                         "egress), pt_wb, pt_bb")
     t.add_argument("--access", choices=["walk", "bike"], default="walk")
     t.add_argument("--egress", choices=["walk", "bike"], default="walk")
-    t.add_argument("--egress-hubs", choices=["rail", "all"], default="rail",
+    t.add_argument("--egress-hubs", choices=["rail", "all"], default=None,
                    help="where a bicycle egress can start: rail stops "
                         "(OV-fiets) or every stop")
-    t.add_argument("--bike-kmh", type=float, default=16.0)
-    t.add_argument("--bike-detour", type=float, default=1.3)
-    t.add_argument("--bike-max-min", type=float, default=20.0,
+    t.add_argument("--bike-kmh", type=float, default=None)
+    t.add_argument("--bike-detour", type=float, default=None)
+    t.add_argument("--bike-max-min", type=float, default=None,
                    help="longest bicycle leg (ride minutes)")
-    t.add_argument("--bike-fixed-min", type=float, default=1.0,
+    t.add_argument("--bike-fixed-min", type=float, default=None,
                    help="unlock/park/return minutes added to a bicycle leg")
     t.set_defaults(func=cmd_build_pt)
 

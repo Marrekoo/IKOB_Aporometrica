@@ -19,11 +19,13 @@ import argparse
 import datetime as dt
 import json
 import logging
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from ikob2 import params as params_mod
 from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec, CurveSpec
 from ikob2.run.accessibility import ModeMatrices, run_accessibility
 from ikob2.segments import statline
@@ -39,8 +41,7 @@ from ikob2.segments.wfh import (
     wfh_incidence_by_education,
 )
 from ikob2.skims.car import (
-    ELECTRIC_CAR,
-    FOSSIL_CAR,
+    CarCostModel,
     DetourModel,
     car_time_and_cost,
     crowfly_km,
@@ -51,7 +52,36 @@ from ikob2.utils.paths import DataLayout
 
 logger = logging.getLogger("ikob2.cli.accessibility")
 
-CAR_MODELS = {"fossil": FOSSIL_CAR, "electric": ELECTRIC_CAR}
+# command-line flag -> parameter it overrides (flags default to None)
+FLAGS = {
+    "kwb_year": "accessibility.kwb_year", "jobs_year": "accessibility.jobs_year",
+    "budgets": "paths.budgets", "modes": "accessibility.modes",
+    "time_shape": "accessibility.time_shape", "cutoff": "accessibility.cutoff",
+    "exp_calibration": "accessibility.exp_calibration",
+    "cost_gate": "accessibility.cost_gate",
+    "legs_per_tour": "accessibility.legs_per_tour",
+    "censored": "accessibility.censored",
+    "population_basis": "accessibility.population_basis",
+    "copula": "accessibility.copula", "theta": "accessibility.theta",
+    "spec": "accessibility.spec", "epsilon": "accessibility.epsilon",
+    "wage_period": "accessibility.wage_period",
+    "wfh_period": "accessibility.wfh_period",
+    "ownership": "accessibility.ownership",
+    "shared_bike": "accessibility.shared_bike",
+    "bike_fixed_min": "bike_leg.fixed_minutes",
+    "ovfiets_eur": "shared_bike.ovfiets_eur",
+    "dockless_unlock_eur": "shared_bike.dockless_unlock_eur",
+    "dockless_per_min_eur": "shared_bike.dockless_per_min_eur",
+    "car_model": "car.default_model", "parking_search": "car.parking_search",
+    "pt_rail_table": "pt_fare.rail_table",
+    "pt_rail_discount": "pt_fare.rail_discount",
+    "pt_rail_anchors": "pt_fare.rail_anchors",
+    "pt_rail_1km": "pt_fare.rail_eur_per_km_at_1km",
+    "pt_rail_100km": "pt_fare.rail_eur_per_km_at_100km",
+    "pt_regional_boarding": "pt_fare.regional_boarding_eur",
+    "pt_regional_km": "pt_fare.regional_eur_per_km",
+    "pt_boardings": "pt_fare.boardings",
+}
 
 
 def _sector_tables(statline_dir: Path, wage_period: str, wfh_period: str):
@@ -76,7 +106,8 @@ def _sector_tables(statline_dir: Path, wage_period: str, wfh_period: str):
 
 
 def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
-                   distance_store=None, pt_fare_model=None):
+                   distance_store=None, pt_fare_model=None,
+                   parking_arrival_min=None, departure_factor=None):
     """Mode -> ModeMatrices over (store origins, all zones).
 
     distance_store : optional second store holding the car `distance`
@@ -138,31 +169,19 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
             time, cost = car_time_and_cost(
                 t, dist, car_model,
                 origin_urbanisation=urb[o_idx] if parking_search else None,
-                dest_urbanisation=urb if parking_search else None)
+                dest_urbanisation=urb if parking_search else None,
+                parking_arrival_min=parking_arrival_min,
+                departure_factor=departure_factor)
             out[mode] = ModeMatrices(time, cost, car_model.matrix_id)
         elif mode == "bike":
             out[mode] = ModeMatrices(t)
     return out, codes
 
 
-def pt_fare_model(args) -> PtFareModel:
-    """Fare model from the command line (rail anchors, regional charge,
-    optional rail tariff table CSV with columns km, eur)."""
-    from ikob2.skims.pt_fare import NS_RAIL_TABLE
-
-    table = NS_RAIL_TABLE
-    if args.pt_rail_anchors:
-        table = None
-    elif args.pt_rail_table:
-        df = pd.read_csv(args.pt_rail_table)
-        table = tuple(zip(df["km"].astype(float), df["eur"].astype(float)))
-    return PtFareModel(
-        rail_eur_per_km_at_1km=args.pt_rail_1km,
-        rail_eur_per_km_at_100km=args.pt_rail_100km,
-        rail_table=table,
-        rail_discount=args.pt_rail_discount,
-        regional_boarding_eur=args.pt_regional_boarding,
-        regional_eur_per_km=args.pt_regional_km, boardings=args.pt_boardings)
+def pt_fare_model(prm) -> PtFareModel:
+    """Fare model from the `pt_fare` parameters (rail anchors, regional
+    charge, optional rail tariff table CSV with columns km, eur)."""
+    return PtFareModel.from_params(prm.pt_fare)
 
 
 def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpec:
@@ -180,14 +199,11 @@ def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpe
     raise ValueError(f"Unknown time shape {shape!r}.")
 
 
-from ikob2.segments.specs import DEFAULT_VOT  # noqa: E402
-
-
 def codes_all(zones) -> list[str]:
     return [str(c) for c in zones.codes]
 
 
-def shared_bike_matrices(args, store, codes, model, matrices):
+def shared_bike_matrices(prm, args, store, codes, model, matrices):
     """The requested shared-bicycle variants as chain modes (needs the
     store modes pt, pt_wb, pt_bw and pt_bb from `cli.skims build-pt`)."""
     from ikob2.run.shared_bike import (SharedBikeTariffs, dockless_mode,
@@ -211,17 +227,19 @@ def shared_bike_matrices(args, store, codes, model, matrices):
         fares[mode] = chains[mode]["fare"]
     share = load_bike_ownership(args.bike_ownership,
                                 store.origins).to_numpy()
-    tariffs = SharedBikeTariffs(args.ovfiets_eur, args.dockless_unlock_eur,
-                                args.dockless_per_min_eur)
-    variants = [v for v in args.shared_bike if v != "v4"]
+    tariffs = SharedBikeTariffs(prm.shared_bike.ovfiets_eur,
+                                prm.shared_bike.dockless_unlock_eur,
+                                prm.shared_bike.dockless_per_min_eur)
+    fixed = prm.bike_leg.fixed_minutes
+    variants = [v for v in prm.accessibility.shared_bike if v != "v4"]
     out = shared_bike_modes(chains, fares, share, tariffs, variants=variants,
-                            bike_fixed_min=args.bike_fixed_min)
-    if "v4" in args.shared_bike:
+                            bike_fixed_min=fixed)
+    if "v4" in prm.accessibility.shared_bike:
         if "bike" not in matrices:
             raise SystemExit("v4 needs the bicycle mode: add 'bike' to "
                              "--modes.")
         out["bike_v4"] = dockless_mode(matrices["bike"].time, share, tariffs,
-                                       args.bike_fixed_min)
+                                       fixed)
     return out
 
 
@@ -234,11 +252,27 @@ def parse_vot(items) -> dict[str, float]:
     return out
 
 
-def resolve_paths(args) -> None:
-    """Fill unset paths from the data folder layout (--data-root)."""
-    if args.data_root:
-        lay = DataLayout(Path(args.data_root))
-        args.kwb = args.kwb or str(lay.kwb(args.kwb_year))
+def resolve(args) -> params_mod.Params:
+    """Parameters of the run (file, --set, flags, --vot); the flag
+    attributes of `args` are filled with the resolved values."""
+    prm = params_mod.from_args(args, FLAGS)
+    if args.vot:
+        prm = prm.with_values({f"vot.{m}": v
+                               for m, v in parse_vot(args.vot).items()})
+    for name, key in FLAGS.items():
+        setattr(args, name, prm.get(key))
+    return prm
+
+
+def resolve_paths(args, prm) -> None:
+    """Fill unset paths from the data folder layout (--data-root, else
+    $IKOB_DATA_ROOT, else paths.data_root); explicit paths need no root."""
+    root = (args.data_root or os.environ.get(params_mod.ENV_ROOT)
+            or prm.paths.data_root)
+    if root:
+        lay = DataLayout(Path(root))
+        args.kwb = args.kwb or str(lay.kwb(args.kwb_year,
+                                           prm.paths.kwb_version))
         args.skims = args.skims or str(lay.skim_dir(args.study))
         args.sector_jobs = args.sector_jobs or str(
             lay.sector_jobs(args.jobs_year))
@@ -249,11 +283,11 @@ def resolve_paths(args) -> None:
             lay.car_availability())
         if not args.detour and lay.detour_model().exists():
             args.detour = str(lay.detour_model())
-        survey = lay.inputs / "survey" / "S_T_work.csv"
+        survey = lay.inputs / "survey" / prm.paths.survey_margins
         if not args.margins and survey.exists():
             args.margins = str(survey)
-    args.statline = args.statline or "data/statline"
-    args.margins = args.margins or "data/margins/S_T_work.csv"
+    args.statline = args.statline or prm.paths.statline_fallback
+    args.margins = args.margins or prm.paths.margins_fallback
     missing = [n for n in ("kwb", "skims", "sector_jobs", "out")
                if not getattr(args, n)]
     if missing:
@@ -264,7 +298,8 @@ def resolve_paths(args) -> None:
 def cmd_run(args) -> None:
     from ikob2.data.geopackage import load_cbs_buurten
 
-    resolve_paths(args)
+    prm = resolve(args)
+    resolve_paths(args, prm)
 
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     out_dir = Path(args.out)
@@ -277,15 +312,18 @@ def cmd_run(args) -> None:
         dist_store = SkimStore.open(
             Path(args.skims).parent / args.distance_study)
     detour = (DetourModel.load(args.detour) if args.detour
-              else DetourModel.constant(1.3))
+              else DetourModel.constant(prm.car.detour_constant))
     if not args.detour:
-        logger.warning("No calibrated detour model: using a constant 1.3 "
-                       "route/crow-fly factor for car distances.")
+        logger.warning("No calibrated detour model: using a constant %g "
+                       "route/crow-fly factor for car distances.",
+                       prm.car.detour_constant)
     matrices, dest_codes = build_matrices(
         store, zones, args.modes, detour=detour,
-        car_model=CAR_MODELS[args.car_model],
-        parking_search=not args.no_parking_search,
-        distance_store=dist_store, pt_fare_model=pt_fare_model(args))
+        car_model=CarCostModel.from_params(prm.car.models.get(args.car_model)),
+        parking_search=args.parking_search,
+        distance_store=dist_store, pt_fare_model=pt_fare_model(prm),
+        parking_arrival_min=prm.car.parking_arrival_min.to_dict(),
+        departure_factor=prm.car.departure_factor)
 
     seg_cfg = SegmentConfig()
     segs = run_pipeline(args.kwb, args.statline, seg_cfg)
@@ -304,15 +342,15 @@ def cmd_run(args) -> None:
         margins = {(m, w): time_curve(args.time_shape, args.cutoff,
                                       args.exp_calibration)
                    for m in args.modes for w in ("no_wfh", "wfh_possible")}
-    if args.no_cost_gate:
+    if not args.cost_gate:
         envelope_arg = None
     copula = (INDEPENDENCE if args.copula == "independence"
               else CopulaSpec(args.copula, args.theta
                               if args.copula == "gumbel" else None))
 
     if args.shared_bike:
-        matrices.update(shared_bike_matrices(args, store, codes_all(zones),
-                                             pt_fare_model(args), matrices))
+        matrices.update(shared_bike_matrices(prm, args, store, codes_all(zones),
+                                             pt_fare_model(prm), matrices))
     availability = None
     if args.ownership:
         from ikob2.segments.ownership import (availability_frames,
@@ -329,7 +367,7 @@ def cmd_run(args) -> None:
         envelope=envelope_arg, time_margins=margins, matrices=matrices,
         copula=copula, epsilon=args.epsilon,
         segment_names=envelope_segment_names(envelope),
-        spec=args.spec, theta=args.theta, vot={**DEFAULT_VOT, **parse_vot(args.vot)},
+        spec=args.spec, theta=args.theta, vot=prm.vot.to_dict(),
         availability=availability)
 
     t = result.table
@@ -340,7 +378,7 @@ def cmd_run(args) -> None:
             result.summary(by, "accessibility_expected").to_csv(
                 out_dir / f"summary_{by.split('_')[0]}_expected.csv")
     result.summary("household_type").to_csv(out_dir / "summary_household.csv")
-    meta = {**result.meta, "created": dt.datetime.now().isoformat(
+    meta = {**result.meta, "parameters": prm.to_dict(), "created": dt.datetime.now().isoformat(
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
                                       if k != "func"},
             "detour": detour.meta, "skim_meta": store.meta}
@@ -354,6 +392,7 @@ def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--log-level", default="INFO")
+    params_mod.add_arguments(p)
     p.add_argument("--data-root", default=None,
                    help="data folder (utils.paths.DataLayout); fills the "
                         "paths below from --study, --run and the years")
@@ -364,53 +403,55 @@ def main(argv=None) -> None:
     p.add_argument("--distance-study", default=None,
                    help="skim store (sibling folder) with the car distances, "
                         "e.g. utrecht_nl when --study is the peak store")
-    p.add_argument("--kwb-year", type=int, default=2022)
-    p.add_argument("--jobs-year", type=int, default=2022)
+    p.add_argument("--kwb-year", type=int, default=None)
+    p.add_argument("--jobs-year", type=int, default=None)
     p.add_argument("--kwb", default=None)
     p.add_argument("--skims", default=None, help="skim store directory")
     p.add_argument("--sector-jobs", default=None,
                    help="CSV from `cli.segments jobs`")
     p.add_argument("--out", default=None)
     p.add_argument("--statline", default=None)
-    p.add_argument("--budgets", default="data/envelope/reference_budgets.csv")
+    p.add_argument("--budgets", default=None)
     p.add_argument("--margins", default=None)
-    p.add_argument("--modes", nargs="+", default=["car", "bike"])
+    p.add_argument("--modes", nargs="+", default=None)
     p.add_argument("--time-shape", choices=["weibull", "exponential", "step"],
-                   default="weibull",
+                   default=None,
                    help="weibull: the survey fits by mode and job type; "
                         "exponential / step: one common curve (impedance-"
                         "shape comparison)")
-    p.add_argument("--cutoff", type=float, default=45.0,
+    p.add_argument("--cutoff", type=float, default=None,
                    help="cut-off minutes for --time-shape step / exponential")
     p.add_argument("--exp-calibration", choices=["mean", "half"],
-                   default="mean",
+                   default=None,
                    help="exponential calibrated to the cut-off: same mean "
                         "(rate 1/cutoff) or 50%% acceptance at the cut-off")
-    p.add_argument("--no-cost-gate", action="store_true",
+    p.add_argument("--no-cost-gate", dest="cost_gate", action="store_const",
+                   const=False, default=None,
                    help="time-only accessibility (ignore the cost margin)")
-    p.add_argument("--legs-per-tour", type=float, default=1.0)
-    p.add_argument("--censored", choices=["atom", "drop"], default="atom")
-    p.add_argument("--population-basis", default="population_scaled",
+    p.add_argument("--legs-per-tour", type=float, default=None)
+    p.add_argument("--censored", choices=["atom", "drop"], default=None)
+    p.add_argument("--population-basis", default=None,
                    choices=["population_scaled", "household_based"])
     p.add_argument("--copula", choices=["independence", "gumbel", "comonotone",
                             "countermonotone"],
-                   default="independence")
-    p.add_argument("--theta", type=float, default=1.5,
+                   default=None)
+    p.add_argument("--theta", type=float, default=None,
                    help="Gumbel-Hougaard theta (--copula gumbel, or --spec "
                         "m3); inf is the comonotone limit")
     p.add_argument("--spec", choices=["m1", "m1p", "m2", "m3"],
-                   default="m2",
+                   default=None,
                    help="impedance specification (docs/model_theory.md): "
                         "m1/m1p exponential generalised cost, m2 gates, "
                         "m3 gates with dependence (--theta)")
     p.add_argument("--vot", nargs="*", default=[], metavar="MODE=EUR_PER_HOUR",
                    help="value of time (EUR/hour) for --spec m1, overriding the "
-                        "defaults car=12.05 pt=15.10 (rail) pt_other=10.80 "
-                        "(bus/tram/metro); public transport is priced by "
+                        "vot.* of the parameters (car, pt = rail, pt_other = "
+                        "bus/tram/metro); public transport is priced by "
                         "the rail share of its kilometres. Drop pt_other "
                         "by giving --vot pt_other=<same as pt> for one "
                         "value")
-    p.add_argument("--ownership", action="store_true",
+    p.add_argument("--ownership", action="store_const", const=True,
+                   default=None,
                    help="weight modes by availability: car (ODiN, per "
                         "segment) and private bicycle (per buurt); adds "
                         "`availability` and `accessibility_expected`")
@@ -418,7 +459,7 @@ def main(argv=None) -> None:
                    help="CSV from inputs/veh_owners (default: data folder)")
     p.add_argument("--car-availability", default=None,
                    help="CSV from `cli.segments car-availability`")
-    p.add_argument("--shared-bike", nargs="*", default=[],
+    p.add_argument("--shared-bike", nargs="*", default=None,
                    choices=["v0", "v1", "v2", "v3", "v4"],
                    help="add shared-bicycle modes: pt_v0 (own bicycle "
                         "only), pt_v1 (OV-fiets egress), pt_v2 (access and "
@@ -427,38 +468,41 @@ def main(argv=None) -> None:
                         "without a bicycle; needs --modes bike); needs the "
                         "store modes pt_wb, pt_bw, pt_bb and the bicycle "
                         "ownership table")
-    p.add_argument("--bike-fixed-min", type=float, default=1.0,
+    p.add_argument("--bike-fixed-min", type=float, default=None,
                    help="fixed minutes per bicycle leg (as used when the "
                         "store modes were built)")
-    p.add_argument("--ovfiets-eur", type=float, default=4.80,
+    p.add_argument("--ovfiets-eur", type=float, default=None,
                    help="OV-fiets charge per rental period (egress)")
-    p.add_argument("--dockless-unlock-eur", type=float, default=1.00)
-    p.add_argument("--dockless-per-min-eur", type=float, default=0.20)
-    p.add_argument("--car-model", choices=list(CAR_MODELS), default="fossil")
-    p.add_argument("--no-parking-search", action="store_true")
+    p.add_argument("--dockless-unlock-eur", type=float, default=None)
+    p.add_argument("--dockless-per-min-eur", type=float, default=None)
+    p.add_argument("--car-model", default=None,
+                   help="a table of car.models in the parameters")
+    p.add_argument("--no-parking-search", dest="parking_search",
+                   action="store_const", const=False, default=None)
     p.add_argument("--pt-rail-table", default=None,
                    help="CSV km,eur of a rail tariff (default: the NS "
                         "official NS 2026 price list, capped beyond 200 km)")
-    p.add_argument("--pt-rail-discount", type=float, default=0.0,
+    p.add_argument("--pt-rail-discount", type=float, default=None,
                    help="share off the rail fare (NS 20%% / 40%% discount)")
-    p.add_argument("--pt-rail-anchors", action="store_true",
+    p.add_argument("--pt-rail-anchors", action="store_const", const=True,
+                   default=None,
                    help="use the tapering power law through the paper's "
                         "anchors instead of a tariff table")
-    p.add_argument("--pt-rail-1km", type=float, default=2.60,
+    p.add_argument("--pt-rail-1km", type=float, default=None,
                    help="anchors: rail fare per km over 1 km (EUR)")
-    p.add_argument("--pt-rail-100km", type=float, default=0.20,
+    p.add_argument("--pt-rail-100km", type=float, default=None,
                    help="anchors: rail fare per km over 100 km (EUR)")
-    p.add_argument("--pt-regional-boarding", type=float, default=1.08)
-    p.add_argument("--pt-regional-km", type=float, default=0.18)
+    p.add_argument("--pt-regional-boarding", type=float, default=None)
+    p.add_argument("--pt-regional-km", type=float, default=None)
     p.add_argument("--pt-boardings", choices=["single", "count"],
-                   default="single",
+                   default=None,
                    help="regional boarding charge once per journey or per "
                         "boarding")
     p.add_argument("--detour", default=None,
                    help="calibrated DetourModel JSON (default: 1.3)")
-    p.add_argument("--wage-period", default="2022JJ00")
-    p.add_argument("--wfh-period", default="2024JJ00")
-    p.add_argument("--epsilon", type=float, default=1e-9)
+    p.add_argument("--wage-period", default=None)
+    p.add_argument("--wfh-period", default=None)
+    p.add_argument("--epsilon", type=float, default=None)
     p.set_defaults(func=cmd_run)
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level,

@@ -33,6 +33,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
 from ikob2.segments.ipf import ipf_batch
 from ikob2.segments.lisa import SECTOR_TO_KWB_GROUP, SECTORS
 
@@ -171,9 +172,9 @@ def impute_sector_jobs(
     cov: pd.DataFrame,
     *,
     establishments: pd.DataFrame | None = None,
-    establishment_weight: float = 0.25,
-    tol: float = 1e-8,
-    max_iter: int = 500,
+    establishment_weight: float = DEFAULTS.jobs.establishment_weight,
+    tol: float = DEFAULTS.jobs.tol,
+    max_iter: int = DEFAULTS.jobs.max_iter,
 ) -> SectorJobs:
     """Rake each municipality's buurt x sector table to its marginals.
 
