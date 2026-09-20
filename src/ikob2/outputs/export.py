@@ -50,6 +50,13 @@ DICTIONARY = [
     ("origins.gpkg:origins", "acc_<mode>", "population-weighted mean accessibility of the mode", "jobs"),
     ("origins.gpkg:origins", "accx_<mode>", "the same with availability (accessibility_expected)", "jobs"),
     ("origins.gpkg:origins", "population", "persons in the modelled segments", "persons"),
+    ("money_gate_curves.csv", "survival", "aggregated survival S_bar(c) of the cost threshold of the origin (population-weighted mixture of the segments)", "share"),
+    ("money_gate_curves.csv", "hazard", "-d log S_bar / dc where S_bar is above 5% of S_bar(0+)", "1/EUR"),
+    ("money_gate_ttt.csv", "phi", "total-time-on-test transform of the aggregate at u = F(c); diagonal = exponential, above = increasing hazard", "-"),
+    ("money_gate_summary.csv", "ttt_shift", "TTT area of the aggregate minus that of the segments alone; negative: aggregation moves the curve toward decreasing hazard", "-"),
+    ("money_gate_summary.csv", "cv", "coefficient of variation of the aggregate cost threshold", "-"),
+    ("money_gate_summary.csv", "hazard_class", "increasing / mixed / decreasing hazard of the aggregate", "-"),
+    ("origins.gpkg:origins", "mg_<column>", "money_gate_summary.csv columns joined on the origin polygons", "-"),
     ("interchange_pairs.csv", "R", "gain of intervention A over gain of B, per origin and segment", "-"),
 ]
 
@@ -88,8 +95,8 @@ def _origin_layer(kwb_path: str | Path, codes) -> "gpd.GeoDataFrame":
 
 def write_products(out_dir: str | Path, table: pd.DataFrame, *, envelope,
                    price_scale: dict | None, time_margins: dict,
-                   kwb_path: str | Path | None, hubs: pd.DataFrame | None = None
-                   ) -> list[str]:
+                   kwb_path: str | Path | None, hubs: pd.DataFrame | None = None,
+                   populations: pd.DataFrame | None = None) -> list[str]:
     """Write the products; returns the file names written."""
     out = Path(out_dir)
     written = []
@@ -111,6 +118,17 @@ def write_products(out_dir: str | Path, table: pd.DataFrame, *, envelope,
         hubs[["hub", "kind", "lat", "lon", "source"]].to_csv(
             out / "hubs.csv", index=False)
         written.append("hubs.csv")
+
+    gate = None
+    if populations is not None:
+        from ikob2.outputs.diagnostics import money_gate
+
+        gate = money_gate(envelope, populations)
+        gate["curves"].to_csv(out / "money_gate_curves.csv", index=False)
+        gate["ttt"].to_csv(out / "money_gate_ttt.csv", index=False)
+        gate["summary"].to_csv(out / "money_gate_summary.csv", index=False)
+        written += ["money_gate_curves.csv", "money_gate_ttt.csv",
+                    "money_gate_summary.csv"]
 
     try:
         table.to_parquet(out / "accessibility.parquet", index=False)
@@ -135,6 +153,11 @@ def write_products(out_dir: str | Path, table: pd.DataFrame, *, envelope,
         pop = table[table["mode"] == table["mode"].iloc[0]].groupby(
             "buurtcode")["population"].sum()
         g["population"] = g["buurtcode"].map(pop)
+        if gate is not None:
+            s = gate["summary"].set_index("buurtcode")
+            for col in ("atom", "mean_threshold", "cv", "ttt_shift",
+                        "share_hazard_increasing", "hazard_class"):
+                g[f"mg_{col}"] = g["buurtcode"].map(s[col])
         g.to_file(gpkg, layer="origins", driver="GPKG")
         if hubs is not None and len(hubs):
             pts = gpd.GeoDataFrame(

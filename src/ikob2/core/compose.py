@@ -139,6 +139,17 @@ _COPULAS = {
 }
 
 
+def apply_copula(u: np.ndarray, v: np.ndarray, family: str,
+                 theta: float | None = None) -> np.ndarray:
+    """C(u, v) of a copula family by name (theta for the parametric ones),
+    on marginal survival arrays in [0, 1]."""
+    if family in _PARAMETRIC_COPULAS:
+        if theta is None:
+            raise ValueError(f"family='{family}' requires theta.")
+        return _PARAMETRIC_COPULAS[family](u, v, theta)
+    return get_copula(family)(u, v)
+
+
 def get_copula(family: str):
     if family in _PARAMETRIC_COPULAS:
         raise ValueError(f"Copula '{family}' is parametric; pass theta "

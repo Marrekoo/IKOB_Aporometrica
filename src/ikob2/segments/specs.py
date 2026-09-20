@@ -96,6 +96,16 @@ def time_margin_for(spec: str, time_margin: CurveSpec) -> CurveSpec:
         else time_margin
 
 
+def vot_factor(rail_share: np.ndarray, vot_rail: float,
+               vot_other: float) -> np.ndarray:
+    """vot_rail / VoT_ij with VoT_ij = share * vot_rail + (1 - share) *
+    vot_other (unknown shares count as rail): the factor that puts a cost
+    in units of the rail value of time."""
+    share = np.where(np.isfinite(rail_share), rail_share, 1.0)
+    return (vot_rail / (share * vot_rail + (1.0 - share) * vot_other)
+            ).astype(np.float32)
+
+
 def vot_weighted_cost(cost: np.ndarray, rail_share: np.ndarray,
                       vot_rail: float, vot_other: float) -> np.ndarray:
     """Cost matrix in units of the rail value of time: c * vot_rail / VoT_ij

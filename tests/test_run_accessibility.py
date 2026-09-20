@@ -260,12 +260,21 @@ def test_mixed_mode_weights_the_option_sets_per_origin():
             + w[i] * piv["b"].loc[o], rtol=1e-4, atol=1e-3)
 
 
-def test_option_sets_reject_m1_and_bad_weights():
+@pytest.mark.parametrize("spec,extra", [
+    ("m1", {"vot": {"car": 12.0}}), ("m1p", {}), ("m2", {}),
+    ("m3", {"theta": 2.0})])
+def test_one_option_equals_the_plain_mode_under_every_specification(spec, extra):
     pop, jobs, wfh, wage, time, cost = world()
     a = ModeMatrices(time, cost, "fare")
-    with pytest.raises(ValueError, match="M1"):
-        run(pop, jobs, wfh, wage, {"x": OptionSet((a,), "car")}, spec="m1",
-            vot={"car": 12.0})
+    res = run(pop, jobs, wfh, wage, {"car": a, "set": OptionSet((a,), "car")},
+              spec=spec, **extra)
+    np.testing.assert_allclose(acc(res, "set"), acc(res, "car"),
+                               rtol=1e-4, atol=1e-2)
+
+
+def test_option_set_bad_weights():
+    pop, jobs, wfh, wage, time, cost = world()
+    a = ModeMatrices(time, cost, "fare")
     with pytest.raises(ValueError, match="share"):
         run(pop, jobs, wfh, wage, {"x": MixedMode(
             ((np.array([2.0, 0, 0]), OptionSet((a,), "car")),))})
@@ -314,8 +323,15 @@ def test_legwise_union_inclusion_exclusion_and_identical_options():
         rtol=2e-4, atol=1e-2)
 
 
-def test_legwise_needs_m2_independence():
+@pytest.mark.parametrize("spec,extra", [
+    ("m1", {"vot": {"car": 12.0}}), ("m1p", {}), ("m3", {"theta": 2.0}),
+    ("m3", {"theta": float("inf")})])
+def test_legwise_single_leg_equals_the_plain_gate_under_every_specification(
+        spec, extra):
     pop, jobs, wfh, wage, time, cost = world()
-    leg = LegOptionSet((LegOption((time,), cost, "fare"),), ("car",))
-    with pytest.raises(ValueError, match="independent"):
-        run(pop, jobs, wfh, wage, {"x": leg}, spec="m3", theta=2.0)
+    res = run(pop, jobs, wfh, wage, {
+        "car": ModeMatrices(time, cost, "fare"),
+        "leg": LegOptionSet((LegOption((time,), cost, "fare"),), ("car",))},
+        spec=spec, **extra)
+    np.testing.assert_allclose(acc(res, "leg"), acc(res, "car"),
+                               rtol=2e-4, atol=1e-2)

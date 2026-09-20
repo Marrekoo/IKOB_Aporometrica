@@ -38,9 +38,10 @@ from ikob2.segments.bridge import (
     segment_name,
 )
 from ikob2.segments.jobs import sector_income_weights, sector_pools
+from ikob2.core.compose import apply_copula
 from ikob2.segments.specs import (
     SPECS, atom_reported, cost_curve_factory, spec_copula, time_margin_for,
-    vot_weighted_cost)
+    vot_factor, vot_weighted_cost)
 from ikob2.segments.wfh import split_jobs_by_wfh
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,7 @@ class LegOption:
     cost_id: str | None = None
     lime: np.ndarray | None = None
     lime_rentals: float = 0.0
+    rail_share: np.ndarray | None = None    # share of km by rail (for M1)
 
 
 @dataclass(frozen=True)
@@ -170,7 +172,7 @@ def _single_threaded_blas():
 
 
 def prepare_inputs(origins, destinations, populations, sector_jobs, wfh_share,
-                   sector_wage, envelope, segment_names):
+                   sector_wage, envelope, segment_names, common_jobs=False):
     """(segment names, populations by origin, job pools by job type and
     income class) of a run; shared by the accessibility run and the
     scenario calibration."""
@@ -197,6 +199,14 @@ def prepare_inputs(origins, destinations, populations, sector_jobs, wfh_share,
                  sector_pools(jobs_by_type[w], destinations, W).items()
                  if c in used}                 # 'onbekend' has no segment
              for w in WFH_TYPES}
+    if common_jobs:
+        # controlled comparison: every segment reaches the same jobs, the
+        # income matching of the opportunities is switched off
+        for w in WFH_TYPES:
+            everything = sum(np.asarray(v, dtype=np.float64)
+                             for v in sector_pools(jobs_by_type[w],
+                                                   destinations, W).values())
+            pools[w] = {c: everything for c in pools[w]}
     return names, pop, pools
 
 
@@ -220,6 +230,7 @@ def run_accessibility(
     vot: Mapping[str, float] | None = None,
     availability: Mapping[str, pd.DataFrame] | None = None,
     price_scale: Mapping[str, float] | None = None,
+    common_jobs: bool = False,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -246,6 +257,9 @@ def run_accessibility(
     price_scale : segment name -> multiplier on the shared-bicycle operator
         part (`lime`) of the journey cost, for segments with a concessionary
         price (default 1). Segments with equal scales share cost matrices.
+    common_jobs : every segment reaches all jobs (no income matching): the
+        controlled comparison of the paper, in which R does not vary by
+        segment under M1.
     """
     if spec not in SPECS:
         raise ValueError(f"Unknown specification {spec!r}; use {SPECS}.")
@@ -258,7 +272,7 @@ def run_accessibility(
     n_o, n_d = len(origins), len(destinations)
     names, pop, pools = prepare_inputs(
         origins, destinations, populations, sector_jobs, wfh_share,
-        sector_wage, envelope, segment_names)
+        sector_wage, envelope, segment_names, common_jobs)
 
     runner = SegmentedRunner(decay_epsilon=epsilon)
 
@@ -308,6 +322,18 @@ def run_accessibility(
                     len({s.weight_key for s in all_segs}))
         return total
 
+    def _vot_factors(options, margin_mode):
+        """(K, o, d) factors putting each option's cost in units of the rail
+        value of time (M1): by the option's rail share of kilometres; options
+        without a share keep their cost."""
+        v = vot or {}
+        if f"{margin_mode}_other" not in v or margin_mode not in v:
+            return np.ones((len(options), n_o, n_d), dtype=np.float32)
+        return np.stack([
+            vot_factor(o.rail_share, v[margin_mode], v[f"{margin_mode}_other"])
+            if o.rail_share is not None
+            else np.ones((n_o, n_d), dtype=np.float32) for o in options])
+
     def scale_groups(has_lime):
         """(scale, segment names) with equal price scales."""
         if not has_lime or not price_scale:
@@ -316,6 +342,13 @@ def run_accessibility(
         for n in names:
             groups.setdefault(float(price_scale.get(n, 1.0)), []).append(n)
         return sorted(groups.items())
+
+    def _joint_function():
+        """Joint survival of the time block and the money threshold: the
+        product (independent thresholds) or the copula of M3."""
+        if copula.family == "independence":
+            return lambda u, v: u * v
+        return lambda u, v: apply_copula(u, v, copula.family, copula.theta)
 
     def check(mm, label):
         if mm.time.shape != (n_o, n_d):
@@ -326,9 +359,6 @@ def run_accessibility(
     def option_total(margin_mode, options):
         """Union of alternative journeys for one person (staircase of
         joint survival, see `union_terms`)."""
-        if spec == "m1":
-            raise ValueError("Option sets are not defined for M1 (its "
-                             "value of time is per journey).")
         for o in options:
             check(o, margin_mode)
         priced = envelope is not None and any(o.cost is not None
@@ -341,6 +371,9 @@ def run_accessibility(
         ls = np.stack([_finite(o.lime if o.lime is not None
                                else np.zeros_like(o.time), 0.0)
                        for o in options])
+        if spec == "m1":                 # cost in units of the rail value of time
+            f = _vot_factors(options, margin_mode)
+            cs, ls = cs * f, ls * f
         total = {n: np.zeros(n_o) for n in names}
         for scale, group in scale_groups(any(o.lime is not None
                                              for o in options)):
@@ -361,9 +394,6 @@ def run_accessibility(
         options of the subset that have that leg, so it is cached by that
         key; segments are evaluated in parallel threads (numpy releases the
         GIL on these array operations)."""
-        if spec != "m2" or copula.family != "independence":
-            raise ValueError("Leg-wise gates are defined for M2 with "
-                             "independent thresholds.")
         opts = oset.options
         n_leg, n_opt = len(oset.margin_modes), len(opts)
         for o in opts:
@@ -380,6 +410,10 @@ def run_accessibility(
         lime = np.stack([_finite(o.lime if o.lime is not None
                                  else np.zeros((n_o, n_d)), 0.0)
                          for o in opts])
+        pt_leg = oset.margin_modes[-1]
+        if spec == "m1":                 # cost in units of the rail value of time
+            f = _vot_factors(opts, pt_leg)
+            costs, lime = costs * f, lime * f
         groups = [(group, costs + (scale - 1.0) * lime)
                   for scale, group in scale_groups(
                       any(o.lime is not None for o in opts))]
@@ -394,20 +428,28 @@ def run_accessibility(
         level, quiet.level = quiet.level, logging.WARNING
         total = {n: np.zeros(n_o) for n in names}
         try:
-            segs = build_segments(time_margins[(oset.margin_modes[0],
-                                                WFH_TYPES[0])],
-                                  envelope=envelope if priced else None,
-                                  money_cost_id="c" if priced else None,
-                                  pool_by="income_class", only=names)
-            by_name = {sg.name: sg for sg in segs}
+            # cost margins per job type (the exponential specifications tie
+            # the mean acceptable cost to the mean acceptable time of the PT
+            # margin, which differs by job type)
+            by_name = {}
+            for wfh in WFH_TYPES:
+                m_pt = time_margins[(pt_leg, wfh)]
+                by_name[wfh] = {sg.name: sg for sg in build_segments(
+                    time_margin_for(spec, m_pt),
+                    envelope=envelope if priced else None,
+                    money_cost_id="c" if priced else None,
+                    pool_by="income_class", only=names,
+                    cost_curve=(cost_curve_factory(
+                        spec, m_pt, (vot or {}).get(pt_leg))
+                        if priced else None))}
 
             def leg_weight(leg, wfh, key, t_leg):
                 cache_it = len(active[leg]) < n_opt
                 ck = (leg, wfh, key)
                 if cache_it and ck in leg_cache:
                     return leg_cache[ck]
-                f = evaluate_marginal(
-                    t_leg, time_margins[(oset.margin_modes[leg], wfh)])
+                f = evaluate_marginal(t_leg, time_margin_for(
+                    spec, time_margins[(oset.margin_modes[leg], wfh)]))
                 if cache_it:
                     leg_cache[ck] = f
                 return f
@@ -425,13 +467,18 @@ def run_accessibility(
                     tw[wfh] = w
                 return tw
 
+            joint = _joint_function()
+
             def segment_term(name, c, tw, sign):
-                sg = by_name[name]
-                sm = (evaluate_marginal(c, sg.class_filter.cost)
-                      if priced else None)
                 acc = 0.0
+                sm_cache = {}
                 for wfh in WFH_TYPES:
-                    wgt = tw[wfh] if sm is None else tw[wfh] * sm
+                    sg = by_name[wfh][name]
+                    curve = sg.class_filter.cost
+                    if priced and curve not in sm_cache:
+                        sm_cache[curve] = evaluate_marginal(c, curve)
+                    wgt = tw[wfh] if not priced else joint(tw[wfh],
+                                                           sm_cache[curve])
                     acc = acc + wgt @ pool32[wfh][sg.pool]
                 total[name] += sign * np.asarray(acc, dtype=np.float64)
 

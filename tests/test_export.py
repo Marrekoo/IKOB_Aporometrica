@@ -52,3 +52,29 @@ def test_dictionary_documents_the_main_table_columns():
     cols = {c for f, c, *_ in DICTIONARY if f == "accessibility.csv"}
     assert {"buurtcode", "mode", "segment", "population", "accessibility",
             "atom", "availability", "accessibility_expected"} <= cols
+
+
+def test_money_gate_products_and_map_columns(tmp_path):
+    gpd = pytest.importorskip("geopandas")
+    from shapely.geometry import box
+
+    kwb = tmp_path / "kwb.gpkg"
+    gpd.GeoDataFrame({"buurtcode": ["BU1"], "buurtnaam": ["a"]},
+                     geometry=[box(0, 0, 1, 1)], crs="EPSG:28992").to_file(
+        kwb, layer="buurten")
+    table = pd.DataFrame({
+        "buurtcode": ["BU1", "BU1"], "mode": "pt", "segment":
+        ["single_D2", "single_D9"], "household_type": "single",
+        "income_class": ["D2", "D9"], "population": [50.0, 50.0],
+        "accessibility": [1.0, 2.0], "accessibility_expected": [1.0, 2.0]})
+    env = pd.DataFrame({"household_type": ["single", "single"],
+                        "income_class": ["D2", "D9"], "low": [0.0, 0.0],
+                        "high": [10.0, 400.0], "atom": [0.0, 0.0]})
+    pop = pd.DataFrame({"single_D2": [50.0], "single_D9": [50.0]},
+                       index=["BU1"])
+    written = write_products(tmp_path, table, envelope=env, price_scale=None,
+                             time_margins={}, kwb_path=kwb, populations=pop)
+    assert {"money_gate_curves.csv", "money_gate_ttt.csv",
+            "money_gate_summary.csv"} <= set(written)
+    g = gpd.read_file(tmp_path / "origins.gpkg", layer="origins")
+    assert g.loc[0, "mg_ttt_shift"] < 0 and g.loc[0, "mg_hazard_class"]

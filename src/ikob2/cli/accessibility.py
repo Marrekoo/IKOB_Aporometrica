@@ -67,6 +67,7 @@ FLAGS = {
     "wage_period": "accessibility.wage_period",
     "wfh_period": "accessibility.wfh_period",
     "ownership": "accessibility.ownership",
+    "common_jobs": "accessibility.common_jobs",
     "shared_bike": "accessibility.shared_bike",
     "bike_fixed_min": "bike_leg.fixed_minutes",
     "ovfiets_eur": "shared_bike.ovfiets_eur",
@@ -249,6 +250,10 @@ def load_chains(prm, args, store, codes, model):
             chains[mode]["egress_min"] = blk("egress_min")
         chains[mode]["fare"] = model.fare(blk("rail_km"), blk("other_km"),
                                           blk("other_boardings"))
+        rail, other = blk("rail_km"), blk("other_km")
+        tot = rail + other
+        chains[mode]["rail_share"] = np.where(
+            tot > 0, rail / np.where(tot > 0, tot, 1.0), 1.0).astype(np.float32)
         fares[mode] = chains[mode]["fare"]
     share = load_bike_ownership(args.bike_ownership,
                                 store.origins).to_numpy()
@@ -504,7 +509,8 @@ def cmd_run(args) -> None:
         copula=copula, epsilon=args.epsilon,
         segment_names=envelope_segment_names(envelope),
         spec=args.spec, theta=args.theta, vot=prm.vot.to_dict(),
-        availability=availability, price_scale=price_scale)
+        availability=availability, price_scale=price_scale,
+        common_jobs=prm.accessibility.common_jobs)
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
@@ -622,6 +628,10 @@ def main(argv=None) -> None:
                    help="multipliers on the Lime price by household type and "
                         "income class (concessions); default "
                         "paths.lime_price_scales")
+    p.add_argument("--common-jobs", action="store_const", const=True,
+                   default=None,
+                   help="controlled comparison: every segment reaches all jobs "
+                        "(no income matching)")
     p.add_argument("--report-usage", action="store_const", const=True,
                    default=None,
                    help="record the Lime revenue and rentals (v2) in run.json")
