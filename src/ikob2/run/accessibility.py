@@ -34,6 +34,8 @@ from ikob2.segments.bridge import (
     segment_name,
 )
 from ikob2.segments.jobs import sector_income_weights, sector_pools
+from ikob2.segments.specs import (
+    SPECS, atom_reported, cost_curve_factory, spec_copula, time_margin_for)
 from ikob2.segments.wfh import split_jobs_by_wfh
 
 logger = logging.getLogger(__name__)
@@ -89,6 +91,9 @@ def run_accessibility(
     epsilon: float | None = 1e-9,
     unreachable_minutes: float = 1e4,
     segment_names: Sequence[str] | None = None,
+    spec: str = "m2",
+    theta: float | None = None,
+    vot: Mapping[str, float] | None = None,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -103,7 +108,17 @@ def run_accessibility(
         run.
     time_margins : {(mode, wfh): CurveSpec} (segments.time_margins).
     matrices : mode -> ModeMatrices over (origins, destinations).
+    spec : 'm1', 'm1p', 'm2' (default) or 'm3' (segments.specs). M3 uses a
+        Gumbel-Hougaard copula with `theta` (inf: comonotone); `copula`
+        applies to M2 only. M1 needs `vot`: mode -> value of time in
+        EUR/hour.
     """
+    if spec not in SPECS:
+        raise ValueError(f"Unknown specification {spec!r}; use {SPECS}.")
+    if spec == "m3":
+        copula = spec_copula(spec, theta)
+    elif spec != "m2":
+        copula = INDEPENDENCE
     origins = [str(o) for o in origins]
     destinations = [str(d) for d in destinations]
     n_o, n_d = len(origins), len(destinations)
@@ -146,16 +161,19 @@ def run_accessibility(
             cost_matrices[mm.cost_id] = _finite(mm.cost, unreachable_minutes)
         total = {n: np.zeros(n_o) for n in names}
         for wfh in WFH_TYPES:
-            spec = time_margins.get((mode, wfh))
-            if spec is None:
+            margin = time_margins.get((mode, wfh))
+            if margin is None:
                 raise KeyError(f"No time margin for ({mode}, {wfh}); "
                                f"have {sorted(time_margins)}.")
             segs = build_segments(
-                spec,
+                time_margin_for(spec, margin),
                 envelope=envelope if gated else None,
                 money_cost_id=mm.cost_id if gated else None,
                 copula=copula if gated else INDEPENDENCE,
-                pool_by="income_class", only=names)
+                pool_by="income_class", only=names,
+                cost_curve=(cost_curve_factory(spec, margin,
+                                               (vot or {}).get(mode))
+                            if gated else None))
             per = runner.run_hansen(None, segs, cost_matrices=cost_matrices,
                                     opportunities=pools[wfh])
             for n in names:
@@ -164,11 +182,12 @@ def run_accessibility(
                         mode, wfh, len(segs),
                         len({s.weight_key for s in segs}))
         rows.append(_long(mode, origins, names, total, pop, envelope,
-                          priced=gated))
+                          priced=gated and atom_reported(spec)))
     table = pd.concat(rows, ignore_index=True)
     meta = {"origins": n_o, "destinations": n_d, "segments": len(names),
             "modes": list(matrices), "epsilon": epsilon,
             "copula": copula.family, "theta": copula.theta,
+            "spec": spec, "vot_eur_per_hour": dict(vot or {}),
             "jobs_total": float(sector_jobs.sum().sum())}
     return AccessibilityResult(table, meta)
 

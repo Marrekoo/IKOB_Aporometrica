@@ -210,6 +210,7 @@ def build_segments(
     household_types: Sequence[str] = HOUSEHOLD_TYPES,
     income_classes: Sequence[str] = INCOME_CLASSES,
     only: Iterable[str] | None = None,
+    cost_curve: Callable | None = None,
 ) -> list[Segment]:
     """One engine Segment per household-type x income-class cell.
 
@@ -223,6 +224,8 @@ def build_segments(
         "income_class" (pool = income class, e.g. for income-matched
         jobs), or a callable (household_type, income_class) -> pool.
     only : restrict to these segment names.
+    cost_curve : optional function envelope row -> CurveSpec replacing the
+        uniform cost margin (the exponential specifications M1, M1').
     """
     if envelope is not None and money_cost_id is None:
         raise ValueError("An envelope needs money_cost_id (the key of "
@@ -270,8 +273,9 @@ def build_segments(
         cost = None
         if rows is not None:
             r = rows[(t, c)]
-            cost = CurveSpec("uniform", (float(r.low), float(r.high)),
-                             atom=float(r.atom))
+            cost = (cost_curve(r) if cost_curve is not None else
+                    CurveSpec("uniform", (float(r.low), float(r.high)),
+                              atom=float(r.atom)))
         cf = ClassFilter(time=time_curve, cost=cost, copula=copula,
                          scaling=scaling)
         segments.append(Segment(

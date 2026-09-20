@@ -174,6 +174,15 @@ def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpe
     raise ValueError(f"Unknown time shape {shape!r}.")
 
 
+def parse_vot(items) -> dict[str, float]:
+    """['car=10', 'pt=9'] -> {'car': 10.0, 'pt': 9.0} (EUR per hour)."""
+    out = {}
+    for item in items or []:
+        mode, _, value = item.partition("=")
+        out[mode.strip()] = float(value)
+    return out
+
+
 def resolve_paths(args) -> None:
     """Fill unset paths from the data folder layout (--data-root)."""
     if args.data_root:
@@ -251,7 +260,8 @@ def cmd_run(args) -> None:
         sector_jobs=sector_jobs, wfh_share=wfh, sector_wage=wage,
         envelope=envelope_arg, time_margins=margins, matrices=matrices,
         copula=copula, epsilon=args.epsilon,
-        segment_names=envelope_segment_names(envelope))
+        segment_names=envelope_segment_names(envelope),
+        spec=args.spec, theta=args.theta, vot=parse_vot(args.vot))
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
@@ -311,7 +321,17 @@ def main(argv=None) -> None:
                    choices=["population_scaled", "household_based"])
     p.add_argument("--copula", choices=["independence", "gumbel"],
                    default="independence")
-    p.add_argument("--theta", type=float, default=1.5)
+    p.add_argument("--theta", type=float, default=1.5,
+                   help="Gumbel-Hougaard theta (--copula gumbel, or --spec "
+                        "m3); inf is the comonotone limit")
+    p.add_argument("--spec", choices=["m1", "m1p", "m2", "m3"],
+                   default="m2",
+                   help="impedance specification (docs/model_theory.md): "
+                        "m1/m1p exponential generalised cost, m2 gates, "
+                        "m3 gates with dependence (--theta)")
+    p.add_argument("--vot", nargs="*", default=[], metavar="MODE=EUR_PER_HOUR",
+                   help="value of time per priced mode for --spec m1, "
+                        "e.g. car=10 pt=9 (LMS/NRM values)")
     p.add_argument("--car-model", choices=list(CAR_MODELS), default="fossil")
     p.add_argument("--no-parking-search", action="store_true")
     p.add_argument("--pt-rail-table", default=None,
