@@ -202,24 +202,22 @@ only, 199 km); median over reachable pairs 19.8 EUR. The fare goes to the
 run as the PT cost matrix, gated by the segments' cost margins like the
 car cost.
 
-## National network (feasibility)
+## National network
 
 The national OSM extract (`netherlands-260822.osm.pbf`, 1.4 GB) builds
 in 453 s with an 11 GB heap and peaks at 10.6 GB resident on the 15 GB
-development machine, so a national OSM-only network works (GTFS on top
-is untested). Free-flow car times from Utrecht: Amsterdam 41, Rotterdam
-48, Groningen 126, Maastricht 128 minutes.
+development machine, so a national OSM-only network works for R5 and
+Valhalla. Free-flow car times from Utrecht: Amsterdam 41, Rotterdam 48,
+Groningen 126, Maastricht 128 minutes. National public transport is
+computed by the GTFS frequency model (no street graph needed beyond
+walking access); OpenTripPlanner is used as an independent check on it and
+runs on a walking-network extract, see `servers.md`.
 
 ## Not yet built
 
-* **Distances and fares.** r5py's travel-time matrix has no distance.
-  Fares by distance (NS tariff units, regional per-boarding plus
-  per-km) need leg distances from detailed itineraries; the existing R
-  project (`PT skim generator`) plans this for the reachable coarse
-  pairs only.
 * **List-type skim** for cheap/slow versus expensive/fast options per
   OD pair (the shared-bicycle case).
 * **Shared-bicycle legs** (hubs, dockless supply) and the scenario
   variants S1-S4, which need their own networks.
-* PT on the national GTFS feed (memory), and the choice of departure
-  windows and percentile.
+* The choice of departure windows and percentile for PT (the frequency
+  model uses none; OTP validation is in `servers.md`).

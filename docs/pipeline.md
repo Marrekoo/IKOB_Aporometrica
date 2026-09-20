@@ -160,7 +160,7 @@ mean agreement on the distribution across groups.
 
 ## Not covered yet
 
-Walking (no time margin), a validated rail tariff (the fare shape between the paper's anchors is assumed),
+Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),
 the shared-bicycle chains and scenarios S1-S4, specifications M1, M1' and
 M3 (the copula option covers M3 for priced modes), the interchangeability
 ratio and other paper outputs, congestion.
