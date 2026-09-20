@@ -8,3 +8,7 @@ __pycache__/
 data/skim_dev/
 data/skims/
 data/calibration/*.routes.csv
+
+# draft paper: results and text stay local
+docs/paper/
+docs/paper_status.md
