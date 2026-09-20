@@ -62,11 +62,14 @@ class SharedBikeTariffs:
     lime_tiers: tuple = tuple(tuple(t) for t in DEFAULTS.shared_bike.lime_tiers)
     hub_tariffs: tuple = tuple(DEFAULTS.shared_bike.hub_tariffs)
     dockless_model: str = DEFAULTS.shared_bike.dockless_model
+    lime_scale: float = DEFAULTS.shared_bike.lime_scale
 
     def __post_init__(self):
         if min(self.ovfiets_eur, self.dockless_unlock_eur,
                self.dockless_per_min_eur) < 0:
             raise ValueError("Tariffs must be >= 0.")
+        if not self.lime_scale >= 0:
+            raise ValueError("lime_scale must be >= 0.")
         if self.dockless_model not in DOCKLESS_MODELS:
             raise ValueError(f"dockless_model must be one of "
                              f"{DOCKLESS_MODELS}, got {self.dockless_model!r}.")
@@ -80,7 +83,7 @@ class SharedBikeTariffs:
         beyond the last bound); NaN stays NaN."""
         m = np.asarray(minutes, dtype=float)
         bounds = np.array([b for b, _ in self.lime_tiers])
-        price = np.array([p for _, p in self.lime_tiers])
+        price = np.array([p for _, p in self.lime_tiers]) * self.lime_scale
         idx = np.minimum(np.searchsorted(bounds, m, side="left"),
                          len(price) - 1)
         return np.where(np.isfinite(m), price[idx], np.nan)

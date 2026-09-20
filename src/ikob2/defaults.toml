@@ -113,6 +113,7 @@ dockless_per_min_eur = 0.20
 # how a dockless (access) rental is priced: "lime_tiers" (baseline, from Jan 2026)
 # or "unlock_per_minute" (unlock fee + rate per riding minute, the earlier structure)
 dockless_model = "lime_tiers"
+lime_scale = 1.0           # multiplier on every Lime tier price (S1: 0.5)
 # Lime (municipal hubs, from Jan 2026, RTV Utrecht 2025-11-03): price by rental
 # duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
 lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]

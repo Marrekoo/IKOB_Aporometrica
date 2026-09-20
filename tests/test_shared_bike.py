@@ -149,3 +149,13 @@ def test_dockless_door_to_door_uses_the_same_model():
     lime = dockless_mode(bike_t, np.array([.9, .8, .5]), SharedBikeTariffs(), 1.0)
     (_, _), (_, rent) = lime.parts
     assert rent.options[0].cost[0, 0] == 4.0          # 21 min rented
+
+
+def test_lime_scale_scales_every_tier_for_access_and_lime_hubs_not_ovfiets():
+    half = SharedBikeTariffs(lime_scale=0.5)
+    assert list(half.lime_eur([10.0, 25.0, 35.0])) == [1.5, 2.0, 2.5]
+    assert half.egress_eur([10.0], "lime", 1.0)[0] == 1.5
+    assert half.egress_eur([10.0], "ovfiets", 1.0)[0] == half.ovfiets_eur
+    assert half.dockless_eur([10.0], 1.0)[0] == 1.5
+    with pytest.raises(ValueError, match="lime_scale"):
+        SharedBikeTariffs(lime_scale=-1)
