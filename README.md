@@ -30,7 +30,7 @@ home-working type. Full statement: [docs/model_theory.md](docs/model_theory.md).
 ## Install and test
 
     pip install -e ".[test,routing,legacy]"     # Java 21 for R5 and OpenTripPlanner
-    pytest                                      # about 460 tests, ~10 s
+    pytest                                      # about 490 tests, ~15 s
 
 ## Reproduce a run (summary; details in docs/pipeline.md)
 
@@ -51,9 +51,12 @@ are recomputed from `inputs/`; each run writes `run.json` with its parameters.
 
 Implemented: segments, jobs imputation, Weibull/uniform margins, atom,
 copulas, car/bike/PT skims with peak load and fares, the shape-comparison
-experiment, validation of the PT router against OpenTripPlanner.
-Not implemented: shared-bicycle chains and scenarios S1-S4, specifications
-M1/M1'/M3 as named in the paper, the interchangeability ratio and the
+experiment, validation of the PT router against OpenTripPlanner, the
+specifications M1, M1', M2 and M3 (`segments/specs.py`), availability
+weighting by car and bicycle ownership, and shared-bicycle chains as
+alternative journeys (bicycle access/egress in the PT router; variants v0-v4
+in `run/shared_bike.py`, including leg-wise gates for v3).
+Not implemented: scenarios S1-S4, the interchangeability ratio and the
 reachability gap, NDW floating-car congestion. Results in `docs/pipeline.md`
 are preliminary.
 
