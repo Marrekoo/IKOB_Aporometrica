@@ -68,8 +68,7 @@ def load_hubs(paths: Iterable[str | Path], inputs: Path | None = None,
               tariffs: Iterable[str] | None = None) -> pd.DataFrame:
     """All hubs of the listed files, and their RD New coordinates (x, y).
     `kinds` (one per file) names the tariff of a file's hubs and `tariffs`
-    the known tariff names; the column `tariff` holds the index of the
-    kind in `tariffs`."""
+    the known tariff names (a kind outside them is an error)."""
     from pyproj import Transformer
 
     paths = list(paths)
@@ -89,9 +88,6 @@ def load_hubs(paths: Iterable[str | Path], inputs: Path | None = None,
         if unknown:
             raise ValueError(f"Unknown hub kind(s) {unknown}; tariffs: "
                              f"{known}.")
-        df["tariff"] = df["kind"].map({k: i for i, k in enumerate(known)})
-    else:
-        df["tariff"] = 0
     x, y = Transformer.from_crs("EPSG:4326", "EPSG:28992",
                                 always_xy=True).transform(
         df["lon"].to_numpy(), df["lat"].to_numpy())

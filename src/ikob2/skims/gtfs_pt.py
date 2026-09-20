@@ -256,7 +256,6 @@ class PtRouter:
                  rail_detour: float = _PT.rail_detour,
                  other_detour: float = _PT.other_detour,
                  hubs_xy: np.ndarray | None = None,
-                 hubs_kind: np.ndarray | None = None,
                  hub_walk_radius_m: float = _PT.hub_walk_radius_m):
         if walk_kmh <= 0 or walk_detour <= 0:
             raise ValueError("walk_kmh and walk_detour must be positive.")
@@ -274,8 +273,6 @@ class PtRouter:
         # hub locations from a file (RD New metres); None: the rail stops
         self.hubs_xy = None if hubs_xy is None else np.asarray(
             hubs_xy, dtype=float).reshape(-1, 2)
-        self.hubs_kind = (None if hubs_kind is None
-                          else np.asarray(hubs_kind, dtype=float))
         self.hub_walk_radius_m = hub_walk_radius_m
         self._build()
 
@@ -421,8 +418,7 @@ class PtRouter:
             fixed = leg.fixed_minutes
         if tree is None:                              # no hubs at all
             z = np.zeros(0)
-            return (np.zeros(len(xy) + 1, dtype=int), np.zeros(0, dtype=int),
-                    z, z, z)
+            return np.zeros(len(xy) + 1, dtype=int), np.zeros(0, dtype=int), z, z
         near = tree.query_ball_point(xy, radius)
         counts = np.array([len(n) for n in near])
         indptr = np.concatenate([[0], np.cumsum(counts)])
@@ -436,7 +432,7 @@ class PtRouter:
             ride = self.walk_min(d)
         else:
             ride = d * leg.detour / (leg.kmh * 1000.0 / 60.0)
-        return indptr, stop_idx, ride + fixed, ride, np.zeros(len(stop_idx))
+        return indptr, stop_idx, ride + fixed, ride
 
     def _hub_links(self, xy, leg: LegSpec):
         """Egress links through hubs from a file: a stop within
@@ -446,9 +442,7 @@ class PtRouter:
         fixed minutes) and the ride minutes; the fastest hub per stop."""
         xy = np.asarray(xy, dtype=float)
         empty = (np.zeros(len(xy) + 1, dtype=int), np.zeros(0, dtype=int),
-                 np.zeros(0), np.zeros(0), np.zeros(0))
-        kinds = (np.zeros(len(self.hubs_xy)) if self.hubs_kind is None
-                 else self.hubs_kind)
+                 np.zeros(0), np.zeros(0))
         if not len(self.hubs_xy):
             return empty
         hub_stops = self.stop_tree.query_ball_point(self.hubs_xy,
@@ -476,18 +470,17 @@ class PtRouter:
         pos = h_ptr[hub][rep] + (np.arange(k.sum()) - first)
         p_pt, p_stop = pt[rep], h_stop[pos]
         p_ride = ride[rep]
-        p_kind = kinds[hub][rep]
         p_min = p_ride + leg.fixed_minutes + h_walk[pos]
         order = np.lexsort((p_min, p_stop, p_pt))      # fastest hub per stop
-        p_pt, p_stop, p_min, p_ride, p_kind = (
-            a[order] for a in (p_pt, p_stop, p_min, p_ride, p_kind))
+        p_pt, p_stop, p_min, p_ride = (a[order] for a in
+                                       (p_pt, p_stop, p_min, p_ride))
         keep = np.ones(len(p_pt), dtype=bool)
         keep[1:] = (p_pt[1:] != p_pt[:-1]) | (p_stop[1:] != p_stop[:-1])
-        p_pt, p_stop, p_min, p_ride, p_kind = (
-            a[keep] for a in (p_pt, p_stop, p_min, p_ride, p_kind))
+        p_pt, p_stop, p_min, p_ride = (a[keep] for a in
+                                       (p_pt, p_stop, p_min, p_ride))
         indptr = np.concatenate([[0], np.cumsum(np.bincount(
             p_pt, minlength=len(xy)))])
-        return indptr, p_stop, p_min, p_ride, p_kind
+        return indptr, p_stop, p_min, p_ride
 
     def time_matrix(self, origin_xy, dest_xy, *, max_minutes: float = _PT.max_minutes,
                     chunk: int = 8) -> np.ndarray:
@@ -519,7 +512,7 @@ class PtRouter:
         o = np.asarray(origin_xy, dtype=float)
         d = np.asarray(dest_xy, dtype=float)
         n_nodes = 2 * self.n_stops + self.n_line_stops
-        o_ptr, o_idx, o_w, o_ride, _ = self._links(o, access)
+        o_ptr, o_idx, o_w, o_ride = self._links(o, access)
         u, v, w = self._edges
         origin_nodes = n_nodes + np.arange(len(o))
         rep = np.repeat(np.arange(len(o)), np.diff(o_ptr))
@@ -528,9 +521,9 @@ class PtRouter:
             (np.concatenate([w, o_w]),
              (np.concatenate([u, origin_nodes[rep]]),
               np.concatenate([v, o_idx]))), shape=(total, total))
-        e_ptr, e_idx, e_w, e_ride, e_kind = self._links(d, egress)
+        e_ptr, e_idx, e_w, e_ride = self._links(d, egress)
         names = ["time", "rail_km", "other_km", "other_boardings",
-                 "access_min", "egress_min", "egress_kind"] if track else ["time"]
+                 "access_min", "egress_min"] if track else ["time"]
         out = {k: np.full((len(o), len(d)), np.nan, dtype=np.float32)
                for k in names}
         has = np.diff(e_ptr) > 0
@@ -575,8 +568,6 @@ class PtRouter:
                 if egress is not None:                # bicycle egress ride
                     out["egress_min"][s0 + r, z[good]] = \
                         e_ride[pos[first]][good]
-                    out["egress_kind"][s0 + r, z[good]] = \
-                        e_kind[pos[first]][good]
         return out
 
     def _path_attributes(self, pred: np.ndarray, total: int,

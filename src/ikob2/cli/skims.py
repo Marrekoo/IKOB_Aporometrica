@@ -259,8 +259,12 @@ def cmd_build_pt(args) -> None:
         hubs = hubs_mod.load_hubs(prm.pt.hub_files, inputs,
                                   kinds=prm.pt.hub_kinds,
                                   tariffs=prm.shared_bike.hub_tariffs)
+        if args.hub_kind:            # one tariff class per skim mode
+            hubs = hubs[hubs["kind"] == args.hub_kind].reset_index(drop=True)
+            if hubs.empty:
+                raise SystemExit(f"No hubs of kind '{args.hub_kind}' in "
+                                 f"{prm.pt.hub_files} ({prm.pt.hub_kinds}).")
         router.hubs_xy = hubs_mod.hub_xy(hubs)
-        router.hubs_kind = hubs["tariff"].to_numpy(dtype=float)
         hub_files = sorted(set(hubs["source"]))
         logger.info("egress from %d hubs (%s)", len(hubs), ", ".join(hub_files))
     egress = (LegSpec(**{**leg.__dict__, "hubs_only": args.egress_hubs
@@ -284,7 +288,7 @@ def cmd_build_pt(args) -> None:
                  "fixed_min": args.bike_fixed_min,
                  "egress_hubs": args.egress_hubs,
                  "hub_files": hub_files,
-                 "hub_kinds": list(prm.pt.hub_kinds),
+                 "hub_kind": args.hub_kind,
                  "hub_walk_radius_m": prm.pt.hub_walk_radius_m},
         "gtfs": str(args.gtfs), "date": args.date, "window_h": args.window,
         "walk_kmh": args.walk_kmh, "walk_detour": args.walk_detour,
@@ -403,6 +407,10 @@ def main(argv=None) -> None:
                    help="hub locations (CSV with lat, lon, or the OV-fiets "
                         "JSON), relative to <data root>/inputs; repeatable; "
                         "replaces pt.hub_files")
+    t.add_argument("--hub-kind", default=None,
+                   help="use only the hub files of this kind (pt.hub_kinds: "
+                        "lime, ovfiets); the tariff differs by kind, so each "
+                        "kind is its own skim mode (pt_wb_<kind>)")
     t.add_argument("--data-root", default=None)
     t.add_argument("--bike-kmh", type=float, default=None)
     t.add_argument("--bike-detour", type=float, default=None)

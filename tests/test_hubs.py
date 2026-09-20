@@ -97,36 +97,24 @@ def test_lime_price_by_rental_duration():
         SharedBikeTariffs(lime_tiers=((30.0, 4.0), (20.0, 3.0)))
 
 
-def test_egress_price_follows_the_hub_tariff_class():
+def test_egress_price_follows_the_hub_tariff():
     t = SharedBikeTariffs()
-    lime = t.hub_tariffs.index("lime")
-    ov = t.hub_tariffs.index("ovfiets")
-    p = t.egress_eur([10.0, 10.0, 19.5, np.nan], [lime, ov, lime, lime], 1.0)
-    assert p[0] == 3.0 and p[1] == t.ovfiets_eur
-    assert p[2] == 4.0                       # 19.5 + 1 min fixed > 20 min
-    assert np.isnan(p[3])
+    assert t.egress_eur([10.0, np.nan], "lime", 1.0)[0] == 3.0
+    assert t.egress_eur([19.5], "lime", 1.0)[0] == 4.0   # 20.5 min rented
+    assert t.egress_eur([10.0], "ovfiets", 1.0)[0] == t.ovfiets_eur
+    assert np.isnan(t.egress_eur([np.nan], "lime", 1.0)[0])
+    with pytest.raises(ValueError, match="Unknown hub tariff"):
+        t.egress_eur([1.0], "taxi", 1.0)
 
 
-def test_hub_kinds_are_checked_and_mapped(tmp_path):
+def test_hub_kinds_are_checked(tmp_path):
     (tmp_path / "a.csv").write_text("lat,lon\n52.0,5.0\n")
     (tmp_path / "b.csv").write_text("lat,lon\n52.1,5.1\n")
     h = load_hubs([tmp_path / "a.csv", tmp_path / "b.csv"],
                   kinds=["lime", "ovfiets"], tariffs=["ovfiets", "lime"])
-    assert list(h["tariff"]) == [1, 0]
+    assert list(h["kind"]) == ["lime", "ovfiets"]
     with pytest.raises(ValueError, match="Unknown hub kind"):
         load_hubs([tmp_path / "a.csv"], kinds=["taxi"],
                   tariffs=["ovfiets", "lime"])
     with pytest.raises(ValueError, match="hub kind"):
         load_hubs([tmp_path / "a.csv", tmp_path / "b.csv"], kinds=["lime"])
-
-
-def test_the_router_reports_the_kind_of_the_hub_used(tmp_path):
-    far = [xy(15000, 2500)]
-    tt = load_peak_timetable(gtfs_zip(tmp_path), "2026-09-15")
-    router = PtRouter(tt, hubs_xy=np.array([xy(15000, 100)]),
-                      hubs_kind=np.array([1.0]))
-    j = router.journeys(np.array([xy(0, 200)]), np.array(far),
-                        egress=LegSpec(hubs_only=True))
-    assert j["egress_kind"][0, 0] == 1.0
-    plain = router.journeys(np.array([xy(0, 200)]), np.array([xy(5000, 100)]))
-    assert np.isnan(plain["egress_kind"]).all()          # no bicycle egress

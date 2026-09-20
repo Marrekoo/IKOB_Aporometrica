@@ -114,7 +114,7 @@ dockless_per_min_eur = 0.20
 # duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
 lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]
 hub_tariffs = ["ovfiets", "lime"]      # tariff class ids of skim variable egress_kind
-egress_mode_suffix = "_hub"            # skim modes pt_wb / pt_bb + suffix (hubs from files)
+egress_hub_kinds = ["lime", "ovfiets"]   # egress skim modes pt_wb_<kind>, pt_bb_<kind>; [] = plain pt_wb, pt_bb
 
 [skims]
 near_km = 50.0

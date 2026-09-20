@@ -238,22 +238,39 @@ runs on a walking-network extract, see `servers.md`.
 
 `cli.skims build-pt --egress bike --egress-hubs file` lets a rider take a
 shared bicycle only at the hubs listed in files (`pt.hub_files`, or
-`--hub-file` once per file, relative to `<data root>/inputs`):
+`--hub-file` once per file, relative to `<data root>/inputs`; `pt.hub_kinds`
+gives the tariff kind of each file):
 
-* `hubs/utrecht_hubs.csv`: the 27 municipal hubs (hub, lat, lon, precision,
-  source); stations from the OV-fiets coordinates, streets from PDOK road
-  geometries, corrected with the user's descriptions;
-* `ovfiets/locaties.json`: the OV-fiets feed, http://fiets.openov.nl/locaties.json
-  (301 locations).
+* `hubs/utrecht_hubs.csv` (kind `lime`): the 27 municipal hubs (hub, lat, lon,
+  precision, source); stations from the OV-fiets coordinates, streets from
+  PDOK road geometries, corrected with descriptions;
+* `ovfiets/locaties.json` (kind `ovfiets`): the OV-fiets feed,
+  http://fiets.openov.nl/locaties.json (301 locations).
 
 The journey is: alight at a stop within `pt.hub_walk_radius_m` (300 m) of a
 hub, walk to it, ride to the destination (`bike_leg` speed, detour, limit,
 fixed minutes). The fastest hub per stop counts; the reported egress minutes
-are the ride only. `--egress-hubs rail` (every rail stop) and `all` (every
-stop) remain. A store mode built with other hubs is refused: give a new
-`--mode-name`, because finished blocks are not recomputed.
+are the ride only.
 
-Hub set as skim modes, for example (own names keep the rail-stop modes):
+**One skim mode per hub kind.** The tariffs differ (OV-fiets a flat charge,
+Lime EUR 3 / 4 / 5 for up to 20 / 30 / 40 minutes, `shared_bike.lime_tiers`),
+so a slower hub can be the affordable one. The fastest journey per kind is its
+own alternative and a person accepts a pair if any option clears both gates,
+so the kinds are separate modes, built with `--hub-kind`:
 
-    python -m ikob2.cli.skims build-pt <store> --kwb <gpkg> --gtfs <zip> \
-        --egress bike --egress-hubs file --mode-name pt_wb_hub
+    for kind in lime ovfiets; do
+      python -m ikob2.cli.skims build-pt <store> --kwb <gpkg> --gtfs <zip> \
+          --data-root <root> --egress bike --egress-hubs file \
+          --hub-kind $kind --mode-name pt_wb_$kind
+      python -m ikob2.cli.skims build-pt <store> ... --access bike \
+          --egress bike --egress-hubs file --hub-kind $kind --mode-name pt_bb_$kind
+    done
+
+`cli.accessibility --shared-bike` reads `pt_wb_<kind>` and `pt_bb_<kind>` for
+the kinds in `shared_bike.egress_hub_kinds` (empty: the plain `pt_wb`, `pt_bb`
+at the OV-fiets charge). A store mode built with other hubs is refused: give a
+new `--mode-name`, because finished blocks are not recomputed.
+
+Limit: within a kind the fastest hub is taken; a slower hub of the same kind
+that is cheaper (a Lime ride just below a duration tier) is not an option.
+Off-peak public transport discounts do not apply (peak window, commuting).

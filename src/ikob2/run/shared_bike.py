@@ -78,14 +78,16 @@ class SharedBikeTariffs:
                          len(price) - 1)
         return np.where(np.isfinite(m), price[idx], np.nan)
 
-    def egress_eur(self, ride_min, kind, fixed_min: float) -> np.ndarray:
-        """Price of a bicycle egress from the ride minutes and the tariff
-        class of the hub used (`hub_tariffs`: OV-fiets flat, Lime by
-        duration)."""
+    def egress_eur(self, ride_min, kind: str, fixed_min: float) -> np.ndarray:
+        """Price of a bicycle egress of `ride_min` minutes from a hub of
+        tariff `kind`: OV-fiets a flat charge, Lime by rental duration
+        (ride plus fixed minutes)."""
+        if kind not in self.hub_tariffs:
+            raise ValueError(f"Unknown hub tariff {kind!r}; use "
+                             f"{self.hub_tariffs}.")
         ride = np.asarray(ride_min, dtype=float)
-        lime = np.asarray(kind) == self.hub_tariffs.index("lime")
-        price = np.where(lime, self.lime_eur(ride + fixed_min),
-                         self.ovfiets_eur)
+        price = (self.lime_eur(ride + fixed_min) if kind == "lime"
+                 else np.full(ride.shape, self.ovfiets_eur))
         return np.where(np.isfinite(ride), price, np.nan).astype(np.float32)
 
 
@@ -116,21 +118,30 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
     if p.ndim != 1 or (p < 0).any() or (p > 1).any():
         raise ValueError("bike_share: one share in [0, 1] per origin.")
 
-    def egress_cost(mode):
-        """Egress price of a chain: by hub tariff class when the skim has
-        it, else the OV-fiets flat charge."""
-        ch = chains[mode]
-        if "egress_kind" in ch and "egress_min" in ch:
-            return tariffs.egress_eur(ch["egress_min"], ch["egress_kind"],
-                                      bike_fixed_min)
-        return tariffs.ovfiets_eur
+    # Egress chains, one per hub kind (skim modes pt_wb_<kind>, pt_bb_<kind>):
+    # the tariffs differ, so each kind is its own alternative journey and a
+    # person accepts the pair if ANY of them clears both gates (a slower hub
+    # may be the one that is affordable). Without kinds: pt_wb / pt_bb at the
+    # OV-fiets flat charge.
+    kinds = [k for k in tariffs.hub_tariffs
+             if f"pt_wb_{k}" in chains or f"pt_bb_{k}" in chains]
+    egress = [(f"pt_wb_{k}", f"pt_bb_{k}", k) for k in kinds] \
+        or [("pt_wb", "pt_bb", None)]
+    # the bicycle access leg is the same in every egress kind
+    bb0 = next((bb for _, bb, _k in egress if bb in chains), None)
+    dock_bb = None if bb0 is None else (
+        tariffs.dockless_unlock_eur
+        + tariffs.dockless_per_min_eur * chains[bb0]["access_min"])
+
+    def egress_cost(mode, kind):
+        if kind is None or kind == "ovfiets":
+            return tariffs.ovfiets_eur
+        return tariffs.egress_eur(chains[mode]["egress_min"], kind,
+                                  bike_fixed_min)
 
     dock = (tariffs.dockless_unlock_eur
             + tariffs.dockless_per_min_eur * chains["pt_bw"]["access_min"]) \
         if "pt_bw" in chains else None
-    dock_bb = (tariffs.dockless_unlock_eur
-               + tariffs.dockless_per_min_eur * chains["pt_bb"]["access_min"]) \
-        if "pt_bb" in chains else None
 
     def opt(mode, extra=0.0):
         return _option(chains[mode], fares[mode], extra=extra)
@@ -141,27 +152,32 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
         owners = OptionSet((plain, opt("pt_bw")), "pt")
         out["pt_v0"] = MixedMode(((p, owners), (1 - p, OptionSet((plain,), "pt"))))
     if "v1" in variants:
-        out["pt_v1"] = OptionSet((plain, opt("pt_wb", egress_cost("pt_wb"))),
-                                  "pt")
+        out["pt_v1"] = OptionSet(
+            (plain, *(opt(wb, egress_cost(wb, k)) for wb, _, k in egress
+                      if wb in chains)), "pt")
     if "v2" in variants:
-        ov_wb, ov_bb = egress_cost("pt_wb"), egress_cost("pt_bb")
-        owners = OptionSet((plain, opt("pt_bw"), opt("pt_bb", ov_bb),
-                            opt("pt_wb", ov_wb)), "pt")
+        owners = OptionSet((plain, opt("pt_bw"),
+                            *(opt(bb, egress_cost(bb, k))
+                              for _, bb, k in egress),
+                            *(opt(wb, egress_cost(wb, k))
+                              for wb, _, k in egress)), "pt")
         others = OptionSet((plain, opt("pt_bw", dock),
-                            opt("pt_bb", dock_bb + ov_bb),
-                            opt("pt_wb", ov_wb)), "pt")
+                            *(opt(bb, dock_bb + egress_cost(bb, k))
+                              for _, bb, k in egress),
+                            *(opt(wb, egress_cost(wb, k))
+                              for wb, _, k in egress)), "pt")
         out["pt_v2"] = MixedMode(((p, owners), (1 - p, others)))
     if "v3" in variants:
-        for need in ("access_min", "egress_min"):
-            if need not in chains.get("pt_bb", {}):
-                raise ValueError(f"v3 needs '{need}' in the pt_bb chain.")
-        out["pt_v3"] = _legwise(chains, fares, p, tariffs, dock, dock_bb,
-                                bike_fixed_min, egress_cost("pt_wb"),
-                                egress_cost("pt_bb"))
+        for _, bb, _k in egress:
+            for need in ("access_min", "egress_min"):
+                if need not in chains.get(bb, {}):
+                    raise ValueError(f"v3 needs '{need}' in the {bb} chain.")
+        out["pt_v3"] = _legwise(chains, fares, p, dock, dock_bb,
+                                bike_fixed_min, egress, egress_cost)
     return out
 
 
-def _legwise(chains, fares, p, tariffs, dock, dock_bb, fixed, ov_wb, ov_bb):
+def _legwise(chains, fares, p, dock, dock_bb, fixed, egress, egress_cost):
     """v2's options with the times split into (bicycle access, bicycle
     egress, public transport) legs."""
     zero = np.zeros_like(chains["pt"]["time"])
@@ -176,12 +192,15 @@ def _legwise(chains, fares, p, tariffs, dock, dock_bb, fixed, ov_wb, ov_bb):
             + np.asarray(extra, dtype=np.float32)
         return LegOption((a, b, pt), cost, "pt_chain")
 
-    owners = LegOptionSet((leg("pt"), leg("pt_bw", access=True),
-                           leg("pt_bb", ov_bb, True, True),
-                           leg("pt_wb", ov_wb, False, True)))
-    others = LegOptionSet((leg("pt"), leg("pt_bw", dock, access=True),
-                           leg("pt_bb", dock_bb + ov_bb, True, True),
-                           leg("pt_wb", ov_wb, False, True)))
+    owners = LegOptionSet((
+        leg("pt"), leg("pt_bw", access=True),
+        *(leg(bb, egress_cost(bb, k), True, True) for _, bb, k in egress),
+        *(leg(wb, egress_cost(wb, k), False, True) for wb, _, k in egress)))
+    others = LegOptionSet((
+        leg("pt"), leg("pt_bw", dock, access=True),
+        *(leg(bb, dock_bb + egress_cost(bb, k), True, True)
+          for _, bb, k in egress),
+        *(leg(wb, egress_cost(wb, k), False, True) for wb, _, k in egress)))
     return MixedMode(((p, owners), (1 - p, others)))
 
 

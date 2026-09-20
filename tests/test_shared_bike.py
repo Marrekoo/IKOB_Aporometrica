@@ -82,3 +82,46 @@ def test_v3_splits_times_into_legs_and_v4_prices_dockless():
     with pytest.raises(ValueError, match="egress_min"):
         c2, f2 = chains()
         shared_bike_modes(c2, f2, np.array([.9, .8, .5]), variants=("v3",))
+
+
+def kind_chains():
+    """Egress chains per hub kind: Lime is faster but a different price."""
+    c, f = chains()
+    for kind, wb, bb in (("lime", 48.0, 33.0), ("ovfiets", 50.0, 35.0)):
+        for mode, tm in ((f"pt_wb_{kind}", wb), (f"pt_bb_{kind}", bb)):
+            c[mode] = {"time": np.full(SHAPE, tm, dtype=np.float32),
+                       "egress_min": np.full(SHAPE, 10.0, dtype=np.float32)}
+            f[mode] = np.full(SHAPE, 8.0, dtype=np.float32)
+        c[f"pt_bb_{kind}"]["access_min"] = np.full(SHAPE, 12.0, np.float32)
+    return c, f
+
+
+def test_each_hub_kind_is_its_own_option_with_its_own_price():
+    c, f = kind_chains()
+    out = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v1",))
+    plain, *egress = out["pt_v1"].options
+    assert len(egress) == 2
+    by_time = {o.time[0, 0]: o.cost[0, 0] for o in egress}
+    assert by_time[48.0] == pytest.approx(8.0 + 3.0)      # Lime, 11 min rental
+    assert by_time[50.0] == pytest.approx(8.0 + 4.8)      # OV-fiets flat
+
+
+def test_a_slower_cheaper_hub_can_be_the_one_that_passes():
+    """OV-fiets is faster (48 min, EUR 12.8) but Lime is slower (50 min) and
+    cheaper (EUR 11.0). A person with a budget of EUR 12 can only use the
+    Lime option: choosing the fastest hub would lose the pair."""
+    from ikob2.run.accessibility import union_terms
+    c, f = kind_chains()
+    c["pt_wb_ovfiets"]["time"][:] = 48.0
+    c["pt_wb_lime"]["time"][:] = 50.0
+    out = shared_bike_modes(c, f, np.array([1.0, 1.0, 1.0]), variants=("v1",))
+    opts = out["pt_v1"].options
+    ts = np.stack([o.time for o in opts]); cs = np.stack([o.cost for o in opts])
+    kept = {(float(t[0, 0]), round(float(cc[0, 0]), 2))
+            for t, cc, _ in union_terms(ts, cs)}
+    assert (50.0, 11.0) in kept and (48.0, 12.8) in kept    # both survive
+    # a budget of EUR 12 (threshold) accepts (50 min, 11.0) but not (48, 12.8)
+    budget = 12.0
+    acceptable = [(t, cc) for t, cc in ((50.0, 11.0), (48.0, 12.8))
+                  if cc <= budget]
+    assert acceptable == [(50.0, 11.0)]
