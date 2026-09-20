@@ -35,7 +35,8 @@ from ikob2.segments.bridge import (
 )
 from ikob2.segments.jobs import sector_income_weights, sector_pools
 from ikob2.segments.specs import (
-    SPECS, atom_reported, cost_curve_factory, spec_copula, time_margin_for)
+    SPECS, atom_reported, cost_curve_factory, spec_copula, time_margin_for,
+    vot_weighted_cost)
 from ikob2.segments.wfh import split_jobs_by_wfh
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ class ModeMatrices:
     time: np.ndarray
     cost: np.ndarray | None = None
     cost_id: str | None = None
+    rail_share: np.ndarray | None = None   # share of km by rail (PT, for M1)
 
     def __post_init__(self):
         if self.cost is not None:
@@ -163,8 +165,16 @@ def run_accessibility(
                              f"destinations.")
         gated = mm.cost is not None and envelope is not None
         cost_matrices = {"time": _finite(mm.time, unreachable_minutes)}
+        cost_id = mm.cost_id
+        mode_vot = (vot or {}).get(mode)
         if gated:
-            cost_matrices[mm.cost_id] = _finite(mm.cost, unreachable_minutes)
+            cost = mm.cost
+            if (spec == "m1" and mm.rail_share is not None
+                    and f"{mode}_other" in (vot or {})):
+                cost = vot_weighted_cost(cost, mm.rail_share, vot[mode],
+                                         vot[f"{mode}_other"])
+                cost_id = f"{mm.cost_id}@vot"
+            cost_matrices[cost_id] = _finite(cost, unreachable_minutes)
         total = {n: np.zeros(n_o) for n in names}
         for wfh in WFH_TYPES:
             margin = time_margins.get((mode, wfh))
@@ -174,11 +184,11 @@ def run_accessibility(
             segs = build_segments(
                 time_margin_for(spec, margin),
                 envelope=envelope if gated else None,
-                money_cost_id=mm.cost_id if gated else None,
+                money_cost_id=cost_id if gated else None,
                 copula=copula if gated else INDEPENDENCE,
                 pool_by="income_class", only=names,
                 cost_curve=(cost_curve_factory(spec, margin,
-                                               (vot or {}).get(mode))
+                                               mode_vot)
                             if gated else None))
             per = runner.run_hansen(None, segs, cost_matrices=cost_matrices,
                                     opportunities=pools[wfh])

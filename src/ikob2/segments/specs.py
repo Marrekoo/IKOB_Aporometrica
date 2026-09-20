@@ -25,6 +25,13 @@ from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec, CurveSpec
 
 SPECS = ("m1", "m1p", "m2", "m3")
 
+# Values of time (EUR per hour) of the M1 benchmark, from the Dutch national
+# value-of-time study (LMS/NRM): car driver, train, bus/tram/metro. Public
+# transport is priced at `pt` (rail) and `pt_other` per journey in proportion
+# to the rail share of its kilometres. Bicycle (10.50-11.00) and walking
+# (12.50-13.00) have no cost and need no VoT.
+DEFAULT_VOT = {"car": 12.05, "pt": 15.10, "pt_other": 10.80}
+
 # Rate of an exponential with (effectively) zero mean: acceptable only at c = 0.
 _ZERO_MEAN_RATE = 1e6
 
@@ -86,6 +93,19 @@ def time_margin_for(spec: str, time_margin: CurveSpec) -> CurveSpec:
     """M1 and M1' use an exponential time margin with the Weibull's mean."""
     return exponential_time(time_margin) if spec in ("m1", "m1p") \
         else time_margin
+
+
+def vot_weighted_cost(cost: np.ndarray, rail_share: np.ndarray,
+                      vot_rail: float, vot_other: float) -> np.ndarray:
+    """Cost matrix in units of the rail value of time: c * vot_rail / VoT_ij
+    with VoT_ij = share * vot_rail + (1 - share) * vot_other. Under M1 the
+    cost gate exp(-c/(beta VoT_ij)) then has the single rate 1/(beta
+    vot_rail) on this matrix (equal to the generalised-cost form
+    exp(-(t + c/VoT_ij)/beta)). Unknown shares use the rail value."""
+    share = np.where(np.isfinite(rail_share), rail_share, 1.0)
+    vot = share * vot_rail + (1.0 - share) * vot_other
+    return (np.asarray(cost, dtype=np.float64) * (vot_rail / vot)
+            ).astype(np.float32)
 
 
 def atom_reported(spec: str) -> bool:

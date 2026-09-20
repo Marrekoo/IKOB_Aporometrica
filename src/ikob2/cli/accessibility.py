@@ -113,7 +113,13 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
                     store.block("all", "pt", "other_km", destinations=codes),
                     store.block("all", "pt", "other_boardings",
                                 destinations=codes))
-                out[mode] = ModeMatrices(t, fare, model.matrix_id)
+                rail = store.block("all", "pt", "rail_km", destinations=codes)
+                other = store.block("all", "pt", "other_km", destinations=codes)
+                tot = rail + other
+                share = np.where(tot > 0, rail / np.where(tot > 0, tot, 1.0),
+                                 1.0).astype(np.float32)
+                out[mode] = ModeMatrices(t, fare, model.matrix_id,
+                                         rail_share=share)
             else:
                 logger.warning("PT store has no fare inputs (rebuild with "
                                "build-pt): time-only gate.")
@@ -172,6 +178,9 @@ def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpe
                 else float(np.log(2.0) / cutoff))
         return CurveSpec("exponential", (rate,))
     raise ValueError(f"Unknown time shape {shape!r}.")
+
+
+from ikob2.segments.specs import DEFAULT_VOT  # noqa: E402
 
 
 def parse_vot(items) -> dict[str, float]:
@@ -274,7 +283,7 @@ def cmd_run(args) -> None:
         envelope=envelope_arg, time_margins=margins, matrices=matrices,
         copula=copula, epsilon=args.epsilon,
         segment_names=envelope_segment_names(envelope),
-        spec=args.spec, theta=args.theta, vot=parse_vot(args.vot),
+        spec=args.spec, theta=args.theta, vot={**DEFAULT_VOT, **parse_vot(args.vot)},
         availability=availability)
 
     t = result.table
@@ -348,8 +357,12 @@ def main(argv=None) -> None:
                         "m1/m1p exponential generalised cost, m2 gates, "
                         "m3 gates with dependence (--theta)")
     p.add_argument("--vot", nargs="*", default=[], metavar="MODE=EUR_PER_HOUR",
-                   help="value of time per priced mode for --spec m1, "
-                        "e.g. car=10 pt=9 (LMS/NRM values)")
+                   help="value of time (EUR/hour) for --spec m1, overriding the "
+                        "defaults car=12.05 pt=15.10 (rail) pt_other=10.80 "
+                        "(bus/tram/metro); public transport is priced by "
+                        "the rail share of its kilometres. Drop pt_other "
+                        "by giving --vot pt_other=<same as pt> for one "
+                        "value")
     p.add_argument("--ownership", action="store_true",
                    help="weight modes by availability: car (ODiN, per "
                         "segment) and private bicycle (per buurt); adds "

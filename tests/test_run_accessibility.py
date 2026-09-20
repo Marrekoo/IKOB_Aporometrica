@@ -181,3 +181,17 @@ def test_availability_out_of_range_rejected():
     with pytest.raises(ValueError, match="within"):
         run(pop, jobs, wfh, wage, {"bike": ModeMatrices(time)},
             availability={"bike": bad})
+
+
+def test_m1_public_transport_vot_weighted_by_rail_share():
+    pop, jobs, wfh, wage, time, cost = world()
+    share = np.full(time.shape, 0.5, dtype=np.float32)
+    mm = ModeMatrices(time, cost, "ptfare", rail_share=share)
+    mixed = {"pt": 15.0, "pt_other": 10.0}
+    weighted = run(pop, jobs, wfh, wage, {"pt": mm}, spec="m1",
+                   vot=mixed).table["accessibility"]
+    # a uniform share of 0.5 is the same as one VoT of 12.5
+    single = run(pop, jobs, wfh, wage,
+                 {"pt": ModeMatrices(time, cost, "ptfare")}, spec="m1",
+                 vot={"pt": 12.5}).table["accessibility"]
+    np.testing.assert_allclose(weighted, single, rtol=1e-4)

@@ -106,6 +106,31 @@ sandwich `max(u+v-1,0) <= C <= min(u,v)` is verified on every composed
 matrix. With `S_M = 1` every copula reduces to the time filter, so
 time-only runs need no separate code path.
 
+### Impedance specifications (`segments.specs`, `--spec`)
+
+| Spec | Gate | Notes |
+|---|---|---|
+| M1 | `exp(-(t + c/VoT)/beta)` | benchmark: exponential, `beta` = mean acceptable time of the Weibull (per mode and job type), one VoT per mode; no atom |
+| M1' | `exp(-t/beta) exp(-c/mu_s)` | as M1 but the VoT of each segment is set so that the mean acceptable cost `mu_s = beta VoT_s` equals the segment's mean envelope `(1-pi)(low+high)/2` |
+| M2 | `S_T(t) S_M(c)` | Weibull time margin, uniform cost margin with an atom (default) |
+| M3 | Gumbel-Hougaard copula of the M2 margins | `--theta`; 1 is M2, infinity is the comonotone limit |
+
+M1' and M2 share the first moment of both margins, so the M1' to M2 contrast
+is the shape of the thresholds and M2 to M3 is dependence.
+
+**M1 values of time** (EUR per hour, national value-of-time study, LMS/NRM):
+car driver 12.05, train 15.10, bus/tram/metro 10.80 (bicycle 10.50-11.00 and
+walking 12.50-13.00 are not needed: no cost). Public transport is priced per
+journey at the rail value for the rail share of its kilometres and the
+bus/tram/metro value for the rest, `VoT_ij = s_ij 15.10 + (1 - s_ij) 10.80`
+with `s_ij = rail_km / (rail_km + other_km)`. The cost is rescaled to the rail
+value, `c' = c 15.10/VoT_ij`, so that the single exponential cost gate equals
+the generalised-cost form. Implied mean acceptable cost `beta VoT`: about
+EUR 8 by car and EUR 10-11 by public transport, for every segment, against
+envelope means of EUR 14-586 (D2 about 20, D10 about 475). The consequence is
+in `pipeline.md` (M1 is lower than M2 because of the cost gate, not the time
+shape).
+
 ## 5. Diagnostics of a margin
 
 For any margin, `core.families` computes the hazard `h = -d log S/dz`, the

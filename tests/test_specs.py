@@ -61,3 +61,17 @@ def test_build_segments_uses_cost_curve_override():
                           cost_curve=specs.cost_curve_factory("m1p", W, None))
     means = [1.0 / s.class_filter.cost.params[0] for s in segs]
     assert means == pytest.approx([14.0, 39.0])
+
+
+def test_vot_weighted_cost_extremes_and_generalised_cost_identity():
+    c = np.array([[10.0, 10.0, 10.0]], dtype=np.float32)
+    share = np.array([[1.0, 0.0, 0.5]], dtype=np.float32)
+    w = specs.vot_weighted_cost(c, share, 15.0, 10.0)
+    assert w[0, 0] == pytest.approx(10.0)                    # all rail: unchanged
+    assert w[0, 1] == pytest.approx(10.0 * 15.0 / 10.0)      # all other
+    # gate exp(-w/(beta*15/60)) equals exp(-c/(beta*VoT_ij/60))
+    beta, vot_ij = 40.0, 0.5 * 15.0 + 0.5 * 10.0
+    assert np.exp(-w[0, 2] / (beta * 15.0 / 60)) == pytest.approx(
+        np.exp(-10.0 / (beta * vot_ij / 60)), rel=1e-5)
+    nan = specs.vot_weighted_cost(c, np.array([[np.nan] * 3]), 15.0, 10.0)
+    assert nan == pytest.approx(c)                           # unknown: rail value

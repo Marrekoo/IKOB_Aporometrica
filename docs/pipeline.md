@@ -158,6 +158,30 @@ mean agreement on the distribution across groups.
   (atom) and about a fifth of decile 2 (budget 5 to 24 EUR against median
   fares of 20 EUR); deciles 4 to 10 are hardly affected.
 
+## Impedance specifications and availability (preliminary)
+
+`--spec m1|m1p|m2|m3` with `--ownership` (runs `all_*`; population-weighted
+mean acceptable jobs by mode, conditional on having the mode):
+
+| Spec | Car | Public transport | Bike |
+|---|---|---|---|
+| M1 (VoT 12.05 car; PT rail-weighted 15.10 / 10.80) | 96,700 | 41,300 | 21,500 |
+| M1' | 183,500 | 86,300 | 21,500 |
+| M2 | 185,600 | 46,200 | 25,000 |
+| M3, theta 1.25 to infinity | 186,600 to 188,000 | 46,400 to 46,700 | 25,000 |
+
+M1 is lower than M2 for car because of the cost gate: its single mean
+acceptable cost (EUR 8) is far below the envelope means of deciles 3 to 10,
+so it removes 55-65% of accessibility in every decile (M2's gate barely
+binds there), and it has no atom, so decile 1 keeps 82,000 jobs by car
+against 159 under M2. The time shape alone raises car (+8%) and public
+transport (x2.1) because the exponential has a fat tail, and lowers bike
+(-14%). With PT priced at a single VoT of 15.10 (rail) M1 gives 43,900; at
+10.80 (bus/tram/metro) 33,200; weighting by the rail share of kilometres
+gives 41,300. Dependence (M3) changes accessibility by at most 1.3%.
+Ownership (car by household type and income from ODiN, bicycle by buurt)
+lowers expected accessibility by about 25% for car and 10% for bike.
+
 ## Not covered yet
 
 Walking (no time margin), a validated rail tariff (the fare shape between tariff units is linear),
