@@ -165,3 +165,18 @@ def test_nullable_extension_dtype_columns_do_not_crash(tmp_path, monkeypatch):
     values = zones.attributes["aantal_inwoners"]
     assert values[0] == 1200.0
     assert np.isnan(values[1])
+
+
+def test_every_negative_cbs_code_becomes_nan(tmp_path):
+    """The suppression code differs by vintage (-99999999, -99997, -99995)."""
+    import geopandas
+    gpkg = tmp_path / "cbs.gpkg"
+    gdf = make_buurten_gpkg(gpkg, with_water=False)
+    gdf["aantal_inwoners"] = [-99997, -99995, 500]
+    gdf.to_file(gpkg, driver="GPKG", layer="buurten")
+
+    zones, report = load_cbs_buurten(gpkg)
+
+    values = zones.attribute("aantal_inwoners")
+    assert np.isnan(values).sum() == 2 and 500 in values
+    assert any("suppressed CBS value" in w for w in report.warnings)

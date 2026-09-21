@@ -14,10 +14,14 @@ consumes zone-to-zone skims, not polygons. Centroids are computed in
 a projected CRS (native RD New, EPSG:28992, unless the file says
 otherwise) so "centre" means metres, not degrees.
 
-CBS suppresses small-count figures with the sentinel -99999999
-("geheim", secret) rather than leaving cells empty; every numeric
-attribute column is scanned for it and the count is reported so a
-silent -99999999 never leaks into a population or income figure.
+CBS suppresses small-count figures with negative sentinel codes
+("geheim", secret; not applicable) rather than leaving cells empty. The
+code differs between vintages and tables (-99999999 in older files,
+-99997 and -99995 in the 2022 Wijken en Buurten file). All attributes
+used here are counts, shares and averages, which are never negative, so
+every negative value in a numeric attribute column is treated as
+suppressed and set to NaN; the distinct codes found are reported so a
+silent sentinel never leaks into a population or income figure.
 """
 
 from __future__ import annotations
@@ -33,7 +37,7 @@ from ikob2.domain.zones import ZoneSet
 
 logger = logging.getLogger(__name__)
 
-CBS_SECRET_SENTINEL = -99999999
+CBS_SECRET_SENTINEL = -99999999  # the older code; any negative value counts as suppressed
 
 # Candidate column names, in priority order, case-insensitive.
 # Left entry wins when several are present in the same file.
@@ -227,14 +231,16 @@ def load_cbs_buurten(
     attributes: dict[str, np.ndarray] = {}
     for col in candidate_cols:
         values = gdf[col].to_numpy(dtype=np.float64)
-        n_secret = int(np.sum(values == CBS_SECRET_SENTINEL))
+        negative = values < 0  # NaN compares False
+        n_secret = int(negative.sum())
         if n_secret:
+            codes_found = sorted({int(v) for v in values[negative]})
             report.warning(
                 "%s: column '%s' has %d suppressed CBS value(s) "
-                "(sentinel %d) set to NaN.",
-                path, col, n_secret, CBS_SECRET_SENTINEL,
+                "(negative codes %s) set to NaN.",
+                path, col, n_secret, codes_found[:5],
             )
-            values = np.where(values == CBS_SECRET_SENTINEL, np.nan, values)
+            values = np.where(negative, np.nan, values)
         attributes[col] = values
 
     zones = ZoneSet(

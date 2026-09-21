@@ -82,7 +82,7 @@ def read_kwb(path: str | Path, cfg: SegmentConfig) -> pd.DataFrame:
 
     for name, role in (("stedelijkheid", "stedelijkheid"),
                        ("gem_woz", "avg_house_value")):
-        # CBS suppression codes are negative sentinels (-99999999);
+        # CBS suppression codes are negative sentinels (-99999999, -99997, -99995 by vintage);
         # left in, they would enter the municipal means and z-scores.
         out[name] = _nonneg(raw[v[role]])
 
