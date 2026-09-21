@@ -40,7 +40,7 @@ unreachable_minutes = 1e4  # fill for unreachable pairs
 time_shape = "weibull"     # weibull, exponential, step
 cutoff = 45.0              # minutes, for step / exponential
 exp_calibration = "mean"   # mean, half
-legs_per_tour = 1.0        # priced legs per ODiN tour (budget basis)
+legs_per_tour = 1.0        # 1: the budgets are per ODiN tour = one whole one-way journey (see docs/segments.md); >1 only as a sensitivity
 censored = "atom"          # atom, drop
 population_basis = "population_scaled"
 kwb_year = 2022

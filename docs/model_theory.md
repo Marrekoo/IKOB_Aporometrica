@@ -91,8 +91,9 @@ Decile 1 has no envelope row (censored): for that group no priced trip is
 acceptable. This is an *atom* `pi` of mass at zero cost, `S_M(c) = (1-pi)
 S_u(c)` for `c > 0` and `1` at `c = 0`, with `pi = 1` for decile 1 (the
 `atom` column of the output). Free modes have `S_M = 1`. Budgets are per
-one-way trip by default; `legs_per_tour` (default 1.0) rescales them because
-ODiN tours can consist of several legs (`segments.bridge.rescale_budgets`).
+ODiN tour, that is per one-way journey for a single purpose with all its legs, which is
+what the door-to-door cost of the model prices; `legs_per_tour` (default 1.0) can divide
+them as a sensitivity (`segments.bridge.rescale_budgets`).
 A note in `segments.md` explains why budgets can be non-monotone across
 deciles.
 

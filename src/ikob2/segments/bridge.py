@@ -111,14 +111,17 @@ def load_envelope(path: str | Path, **kwargs) -> pd.DataFrame:
 
 def rescale_budgets(envelope: pd.DataFrame,
                     legs_per_tour: float | Mapping[str, float]) -> pd.DataFrame:
-    """Convert per-TOUR budgets to per-one-way-TRIP budgets.
+    """Divide the per-tour budgets by a number of legs (a sensitivity).
 
-    The reference budgets come from ODiN tours, which are trip chains
-    (not necessarily round trips) of one or more legs, while the fare
-    matrix prices one one-way trip. A tour budget spread over
-    `legs_per_tour` priced legs gives the per-trip budget
-    low / legs, high / legs (the km equivalents likewise). 1.0 leaves
-    the table as it is: it is then read as a one-way trip budget.
+    The reference budgets are per ODiN tour. An ODiN tour (a
+    'verplaatsing') is one movement in one direction for a single purpose
+    and consists of one or more legs ('ritten', walking legs included;
+    it is not a round trip). The cost matrices price a whole door-to-door
+    journey, that is one tour, so the table applies as it is:
+    `legs_per_tour = 1.0`, the default. A larger number would divide the
+    budgets as if each leg were priced and gated separately
+    (low / legs, high / legs, the km equivalents likewise), which the
+    model does not do; use it as a sensitivity only.
 
     legs_per_tour : one number for all segments, or a mapping household
         type -> number (every type present in the envelope is needed).

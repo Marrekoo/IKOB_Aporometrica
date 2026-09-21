@@ -62,17 +62,23 @@ The 44 segments enter the accessibility engine as ordinary
   for whom no priced trip is acceptable, `"drop"` leaves it out. There
   is no row for `onbekend`; pass `only=envelope_segment_names(env)` to
   run the 40 ranked segments.
-  **Basis.** The budgets come from ODiN tours (trip chains of one or more
-  legs, not necessarily round trips), the fare matrix prices one one-way
-  trip. By default the table is read as a per-one-way-trip budget
-  (`legs_per_tour=1.0`, no conversion). The bounds already reflect the
+  **Basis.** The budgets are per ODiN tour. In the ODiN codebook a tour
+  ("verplaatsing") is one movement in one direction for a single purpose,
+  made of one or more legs ("ritten", walking legs included: the number is
+  `AantRit`); it is not a round trip (the ODiN variable `Toer` only flags a
+  trip whose start point is its end point). The door-to-door times and the
+  journey costs of the model (the whole fare plus the shared-bicycle rentals)
+  are those of one tour, so the table applies as it is (`legs_per_tour=1.0`,
+  no conversion). In the ODiN data 94.6% of the regular tours have one leg;
+  public transport tours (4.8% of tours) have 2.6 legs on average, of which
+  about half are walking or cycling and 1.3 are public-transport legs: dividing
+  by legs would price legs separately, which the gate does not do. The bounds already reflect the
   ODiN trips of each class (the per-trip budget is the residual envelope
   divided by that class's priced trips), so they are not monotone in
   income: a decile that travels more has a lower per-trip bound (single
   households: decile 6 low 25.26 against 34.58 in decile 5). That is a
-  property of the data, not an error. Pass the average number of priced
-  legs per tour, as a number or per household type, to divide the bounds
-  down: `load_reference_budgets(path, legs_per_tour={"single": 1.6, ...})`
+  property of the data, not an error. Pass a number of legs, as a number
+  or per household type, to divide the bounds down (a sensitivity): `load_reference_budgets(path, legs_per_tour={"single": 1.6, ...})`
   (or `rescale_budgets` on a loaded envelope). The atom does not change.
 * **Envelope table** (CSV): `household_type, income_class, low, high[, atom]`
   - the per-trip cost threshold is uniform on [low, high] EUR; `atom` is
