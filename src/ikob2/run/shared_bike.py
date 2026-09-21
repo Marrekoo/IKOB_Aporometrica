@@ -169,7 +169,8 @@ def _option(store_mode: dict, fare: np.ndarray, *, ov=0.0, lime=None,
             + (0.0 if lime_part is None else lime_part))
     return ModeMatrices(store_mode["time"], cost.astype(np.float32), cost_id,
                         rail_share=store_mode.get("rail_share"),
-                        lime=lime_part, lime_rentals=rentals)
+                        lime=lime_part, lime_rentals=rentals,
+                        fare=np.asarray(fare, dtype=np.float32))
 
 
 def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
@@ -272,7 +273,8 @@ def _legwise(chains, fares, p, dock, dock_bb, fixed, egress, egress_part):
                 + (0.0 if lime_part is None else lime_part))
         return LegOption((a, b, pt), cost.astype(np.float32), "pt_chain",
                          lime=lime_part, lime_rentals=rentals,
-                         rail_share=chains[mode].get("rail_share"))
+                         rail_share=chains[mode].get("rail_share"),
+                         fare=np.asarray(fares[mode], dtype=np.float32))
 
     def egress_leg(mode, kind, access=False, dockless=None, egress=True):
         ov, lime, n = egress_part(mode, kind)

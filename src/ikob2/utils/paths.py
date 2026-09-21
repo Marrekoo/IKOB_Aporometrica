@@ -124,6 +124,9 @@ class DataLayout:
     def bike_ownership(self) -> Path:
         return self.inputs / "veh_owners" / DEFAULTS.paths.bike_ownership
 
+    def pt_spend(self, study: str = DEFAULTS.paths.car_availability_study) -> Path:
+        return self.intermediate / "ownership" / f"pt_spend_{study}.csv"
+
     def car_availability(
             self, study: str = DEFAULTS.paths.car_availability_study) -> Path:
         return self.intermediate / "ownership" / f"car_availability_{study}.csv"

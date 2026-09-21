@@ -95,6 +95,19 @@ def cmd_car(args) -> None:
           f"({len(persons)} adult respondents).")
 
 
+def cmd_pt_spend(args) -> None:
+    from ikob2.segments.pt_spend import pt_spend_by_decile, read_odin
+    from ikob2.skims.pt_fare import PtFareModel
+
+    legs = read_odin(args.odin)
+    t = pt_spend_by_decile(legs, PtFareModel(), args.municipality, args.prior)
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    t.to_csv(args.out, index=False)
+    print(f"Wrote public transport fare spending by income decile to {args.out}.")
+    print(t[["income_class", "trips_per_year", "mean_fare_eur",
+             "spend_eur_year"]].round(2).to_string(index=False))
+
+
 def cmd_jobs(args) -> None:
     import pandas as pd
 
@@ -193,6 +206,17 @@ def main(argv=None) -> None:
     c.add_argument("--prior", type=float, default=30.0)
     c.add_argument("--out", default="output/car_availability.csv")
     c.set_defaults(func=cmd_car)
+
+    q = sub.add_parser("pt-spend",
+                       help="public transport fare spending per person and "
+                            "year by income decile from ODiN (cost of fare "
+                            "concessions)")
+    q.add_argument("--odin", required=True)
+    q.add_argument("--municipality", type=int, default=344)
+    q.add_argument("--prior", type=float, default=100.0,
+                   help="persons of prior weight for the national rate")
+    q.add_argument("--out", default="output/pt_spend.csv")
+    q.set_defaults(func=cmd_pt_spend)
 
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level,

@@ -98,3 +98,52 @@ def test_flat_model_charges_the_same_per_rental_at_any_duration():
     assert list(t.dockless_eur([2.0, 15.0, 39.0], 1.0)) == [1.75] * 3
     assert t.egress_eur([5.0], "lime", 1.0)[0] == pytest.approx(1.75)
     assert t.egress_eur([5.0], "ovfiets", 1.0)[0] == t.ovfiets_eur
+
+
+# ── fare concessions: a multiplier on the public transport fare part ───
+
+def test_a_fare_scale_reprices_only_that_segment_and_works_for_plain_modes():
+    pop, jobs, wfh, wage, time, cost = world()
+    fare = (cost * 0.8).astype(np.float32)               # most of the cost is fare
+    mm = ModeMatrices(time, cost, "c", fare=fare)
+    base = run(pop, jobs, wfh, wage, {"car": mm})
+    cheap = run(pop, jobs, wfh, wage, {"car": mm}, fare_scale={SEG: 0.0})
+    a0, a1 = acc(base, "car"), acc(cheap, "car")
+    assert a1[SEG] > a0[SEG]
+    others = [n for n in NAMES if n != SEG]
+    np.testing.assert_allclose(a1[others], a0[others])
+    # scale 0 equals the same journey priced without its fare
+    ref = run(pop, jobs, wfh, wage,
+              {"car": ModeMatrices(time, (cost - fare).astype(np.float32), "c")})
+    assert a1[SEG] == pytest.approx(acc(ref, "car")[SEG], rel=1e-5)
+
+
+def test_fare_and_lime_scales_combine_in_an_option_set():
+    pop, jobs, wfh, wage, *_ = world()
+    shape = (3, 4)
+    fare = np.full(shape, 30.0, np.float32)     # inside the budget interval of SEG
+    lime = np.full(shape, 15.0, np.float32)
+    opt = ModeMatrices(np.full(shape, 20.0, np.float32), fare + lime, "c",
+                       fare=fare, lime=lime, lime_rentals=1)
+    plain = run(pop, jobs, wfh, wage, {"m": OptionSet((opt,), "pt")})
+    both = run(pop, jobs, wfh, wage, {"m": OptionSet((opt,), "pt")},
+               price_scale={SEG: 0.0}, fare_scale={SEG: 0.0})
+    only_fare = run(pop, jobs, wfh, wage, {"m": OptionSet((opt,), "pt")},
+                    fare_scale={SEG: 0.0})
+    a0, ab, af = acc(plain, "m")[SEG], acc(both, "m")[SEG], acc(only_fare, "m")[SEG]
+    assert ab >= af >= a0 and ab > a0
+    free = ModeMatrices(np.full(shape, 20.0, np.float32), np.zeros(shape, np.float32), "c")
+    assert ab == pytest.approx(acc(run(pop, jobs, wfh, wage,
+                                       {"m": OptionSet((free,), "pt")}), "m")[SEG], rel=1e-5)
+
+
+def test_fare_scale_reaches_legwise_options():
+    pop, jobs, wfh, wage, *_ = world()
+    shape = (3, 4)
+    half = np.full(shape, 15.0, np.float32)
+    fare = np.full(shape, 30.0, np.float32)
+    opt = LegOption((half, half), fare, "c", fare=fare)
+    mk = lambda: {"m": LegOptionSet((opt,), ("car", "car"))}  # noqa: E731
+    base = acc(run(pop, jobs, wfh, wage, mk()), "m")
+    cheap = acc(run(pop, jobs, wfh, wage, mk(), fare_scale={SEG: 0.0}), "m")
+    assert cheap[SEG] > base[SEG] and cheap["couple_D5"] == pytest.approx(base["couple_D5"])

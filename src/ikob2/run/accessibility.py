@@ -64,6 +64,7 @@ class ModeMatrices:
     # scaled per segment (Lime), and the number of such rentals
     lime: np.ndarray | None = None
     lime_rentals: float = 0.0
+    fare: np.ndarray | None = None   # public transport fare part of `cost` (scalable per segment)
 
     def __post_init__(self):
         if self.cost is not None:
@@ -71,9 +72,10 @@ class ModeMatrices:
                 raise ValueError("time and cost must have the same shape.")
             if self.cost_id is None:
                 raise ValueError("A cost matrix needs a cost_id.")
-        if self.lime is not None and (self.cost is None or
-                                      np.shape(self.lime) != self.time.shape):
-            raise ValueError("lime needs a cost of the same shape.")
+        for part in (self.lime, self.fare):
+            if part is not None and (self.cost is None or
+                                     np.shape(part) != self.time.shape):
+                raise ValueError("lime and fare need a cost of the same shape.")
 
 
 @dataclass(frozen=True)
@@ -98,6 +100,7 @@ class LegOption:
     lime: np.ndarray | None = None
     lime_rentals: float = 0.0
     rail_share: np.ndarray | None = None    # share of km by rail (for M1)
+    fare: np.ndarray | None = None          # public transport fare part of `cost`
 
 
 @dataclass(frozen=True)
@@ -232,6 +235,7 @@ def run_accessibility(
     price_scale: Mapping[str, float] | None = None,
     common_jobs: bool = False,
     cost_mean_eur: float | None = None,
+    fare_scale: Mapping[str, float] | None = None,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -258,6 +262,8 @@ def run_accessibility(
     price_scale : segment name -> multiplier on the shared-bicycle operator
         part (`lime`) of the journey cost, for segments with a concessionary
         price (default 1). Segments with equal scales share cost matrices.
+    fare_scale : segment name -> multiplier on the public transport fare part
+        (`fare`) of the journey cost, for a fare concession (default 1).
     cost_mean_eur : M1c: the calibrated mean acceptable cost (EUR per trip)
         of the shared exponential cost margin.
     common_jobs : every segment reaches all jobs (no income matching): the
@@ -355,13 +361,18 @@ def run_accessibility(
             if o.rail_share is not None
             else np.ones((n_o, n_d), dtype=np.float32) for o in options])
 
-    def scale_groups(has_lime):
-        """(scale, segment names) with equal price scales."""
-        if not has_lime or not price_scale:
-            return [(1.0, list(names))]
+    def scale_groups(has_lime, has_fare=False):
+        """((lime scale, fare scale), segment names): segments with equal
+        price scales share cost matrices."""
+        use_l = bool(has_lime and price_scale)
+        use_f = bool(has_fare and fare_scale)
+        if not (use_l or use_f):
+            return [((1.0, 1.0), list(names))]
         groups: dict = {}
         for n in names:
-            groups.setdefault(float(price_scale.get(n, 1.0)), []).append(n)
+            key = (float(price_scale.get(n, 1.0)) if use_l else 1.0,
+                   float(fare_scale.get(n, 1.0)) if use_f else 1.0)
+            groups.setdefault(key, []).append(n)
         return sorted(groups.items())
 
     def _joint_function():
@@ -392,14 +403,19 @@ def run_accessibility(
         ls = np.stack([_finite(o.lime if o.lime is not None
                                else np.zeros_like(o.time), 0.0)
                        for o in options])
+        fa = np.stack([_finite(o.fare if o.fare is not None
+                               else np.zeros_like(o.time), 0.0)
+                       for o in options])
+        has_l = any(o.lime is not None for o in options)
+        has_f = any(o.fare is not None for o in options)
         if spec == "m0":
             # cumulative opportunities in generalised time: the alternative
             # with the least generalised time decides
             total = {n: np.zeros(n_o) for n in names}
-            for scale, group in scale_groups(any(o.lime is not None
-                                                 for o in options)):
+            for (sl, sf), group in scale_groups(has_l, has_f):
                 g = np.min(np.stack([
-                    ts[k] + (_cost_minutes(cs[k] + (scale - 1.0) * ls[k],
+                    ts[k] + (_cost_minutes(cs[k] + (sl - 1.0) * ls[k]
+                                           + (sf - 1.0) * fa[k],
                                            options[k].rail_share, margin_mode)
                              if priced else 0.0)
                     for k in range(len(options))]), axis=0)
@@ -409,11 +425,11 @@ def run_accessibility(
             return total, priced
         if spec == "m1":                 # cost in units of the rail value of time
             f = _vot_factors(options, margin_mode)
-            cs, ls = cs * f, ls * f
+            cs, ls, fa = cs * f, ls * f, fa * f
         total = {n: np.zeros(n_o) for n in names}
-        for scale, group in scale_groups(any(o.lime is not None
-                                             for o in options)):
-            for t, c, sign in union_terms(ts, cs + (scale - 1.0) * ls):
+        for (sl, sf), group in scale_groups(has_l, has_f):
+            for t, c, sign in union_terms(
+                    ts, cs + (sl - 1.0) * ls + (sf - 1.0) * fa):
                 part = hansen_total(margin_mode, t, c if priced else None,
                                     cid, seg_names=group)
                 for n in group:
@@ -446,13 +462,17 @@ def run_accessibility(
         lime = np.stack([_finite(o.lime if o.lime is not None
                                  else np.zeros((n_o, n_d)), 0.0)
                          for o in opts])
+        fare = np.stack([_finite(o.fare if o.fare is not None
+                                 else np.zeros((n_o, n_d)), 0.0)
+                         for o in opts])
         pt_leg = oset.margin_modes[-1]
         if spec == "m1":                 # cost in units of the rail value of time
             f = _vot_factors(opts, pt_leg)
-            costs, lime = costs * f, lime * f
-        groups = [(group, costs + (scale - 1.0) * lime)
-                  for scale, group in scale_groups(
-                      any(o.lime is not None for o in opts))]
+            costs, lime, fare = costs * f, lime * f, fare * f
+        groups = [(group, costs + (sl - 1.0) * lime + (sf - 1.0) * fare)
+                  for (sl, sf), group in scale_groups(
+                      any(o.lime is not None for o in opts),
+                      any(o.fare is not None for o in opts))]
         # options that have a time on each leg (a leg that no option of a
         # subset uses has S_T(0) = 1 and is skipped)
         active = [tuple(k for k in range(n_opt) if (times[k, leg] > 0).any())
@@ -550,7 +570,7 @@ def run_accessibility(
                 ModeMatrices(sum(np.asarray(t, dtype=np.float32)
                                  for t in o.times), o.cost, o.cost_id,
                              lime=o.lime, lime_rentals=o.lime_rentals,
-                             rail_share=o.rail_share)
+                             rail_share=o.rail_share, fare=o.fare)
                 for o in oset.options))
         if isinstance(oset, LegOptionSet):
             return legwise_total(oset)
@@ -574,9 +594,14 @@ def run_accessibility(
             total, priced = set_total(mm)
         else:
             check(mm, mode)
-            total = hansen_total(mode, mm.time, mm.cost, mm.cost_id,
-                                 mm.rail_share)
-            priced = mm.cost is not None and envelope is not None
+            if (price_scale or fare_scale) and (mm.lime is not None
+                                                or mm.fare is not None):
+                # a single option with scalable parts: the option-set path
+                total, priced = option_total(mode, (mm,))
+            else:
+                total = hansen_total(mode, mm.time, mm.cost, mm.cost_id,
+                                     mm.rail_share)
+                priced = mm.cost is not None and envelope is not None
         avail = None
         if availability and mode in availability:
             avail = availability[mode].reindex(index=origins,

@@ -79,6 +79,7 @@ FLAGS = {
     "flat_method": "shared_bike.flat_method",
     "report_usage": "shared_bike.report_usage",
     "price_scales": "paths.lime_price_scales",
+    "pt_fare_scales": "paths.pt_fare_scales",
     "car_model": "car.default_model", "parking_search": "car.parking_search",
     "pt_rail_table": "pt_fare.rail_table",
     "pt_rail_discount": "pt_fare.rail_discount",
@@ -157,7 +158,7 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
                 share = np.where(tot > 0, rail / np.where(tot > 0, tot, 1.0),
                                  1.0).astype(np.float32)
                 out[mode] = ModeMatrices(t, fare, model.matrix_id,
-                                         rail_share=share)
+                                         rail_share=share, fare=fare)
             else:
                 logger.warning("PT store has no fare inputs (rebuild with "
                                "build-pt): time-only gate.")
@@ -276,6 +277,27 @@ def shared_bike_matrices(prm, chains, fares, share, matrices, tariffs=None):
         out["bike_v4"] = dockless_mode(matrices["bike"].time, share, tariffs,
                                        fixed)
     return out
+
+
+def _pt_cost(prm, args, store, pop, seg_names, fare_scale):
+    """Public cost per year of the fare concession at baseline volume, from
+    the ODiN fare spending by income decile (`cli.segments pt-spend`)."""
+    from ikob2.run.costs import pt_fare_cost
+
+    root = (args.data_root or os.environ.get(params_mod.ENV_ROOT)
+            or prm.paths.data_root)
+    f = DataLayout(Path(root)).pt_spend() if root else None
+    if f is None or not f.exists():
+        logger.warning("No PT fare spending table (%s): run `cli.segments "
+                       "pt-spend`; the cost of the concession is not reported.", f)
+        return {}
+    pop_o = (pop.set_index("buurtcode") if "buurtcode" in pop.columns
+             else pop).reindex(store.origins)
+    persons = pop_o[[n for n in seg_names if n in pop_o.columns]].sum().to_dict()
+    cost = pt_fare_cost(pd.read_csv(f), persons, fare_scale)
+    print(f"PT fare concession: public cost EUR {cost['eur_year']:,.0f} per year "
+          f"(low estimate EUR {cost['eur_year_national']:,.0f})")
+    return cost
 
 
 def _hubs_for_export(prm, args):
@@ -409,7 +431,16 @@ def cmd_run(args) -> None:
         if any(v != 1.0 for v in price_scale.values()):
             logger.info("Lime price scales differ from 1 for %d segments",
                         sum(v != 1.0 for v in price_scale.values()))
+    fare_scale = None
+    if prm.paths.pt_fare_scales:
+        from ikob2.run.shared_bike import (load_price_scales,
+                                           segment_price_scales)
+        fare_scale = segment_price_scales(seg_names, load_price_scales(
+            params_mod.repo_path(prm.paths.pt_fare_scales)))
     scenario = {}
+    if fare_scale and any(v != 1.0 for v in fare_scale.values()):
+        scenario["pt_cost"] = _pt_cost(prm, args, store, pop, seg_names,
+                                       fare_scale)
     cost_mean = None
     if args.spec == "m1c":
         # one value of time, calibrated: the implied mean acceptable cost is
@@ -525,7 +556,8 @@ def cmd_run(args) -> None:
         segment_names=envelope_segment_names(envelope),
         spec=args.spec, theta=args.theta, vot=prm.vot.to_dict(),
         availability=availability, price_scale=price_scale,
-        common_jobs=prm.accessibility.common_jobs, cost_mean_eur=cost_mean)
+        common_jobs=prm.accessibility.common_jobs, cost_mean_eur=cost_mean,
+        fare_scale=fare_scale)
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
@@ -536,7 +568,8 @@ def cmd_run(args) -> None:
                 out_dir / f"summary_{by.split('_')[0]}_expected.csv")
     result.summary("household_type").to_csv(out_dir / "summary_household.csv")
     meta = {**result.meta, "parameters": prm.to_dict(), "scenario": scenario,
-            "lime_price_scales": price_scale, "created": dt.datetime.now().isoformat(
+            "lime_price_scales": price_scale, "pt_fare_scales": fare_scale,
+            "created": dt.datetime.now().isoformat(
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
                                       if k != "func"},
             "detour": detour.meta, "skim_meta": store.meta}
@@ -641,6 +674,10 @@ def main(argv=None) -> None:
                    help="OV-fiets charge per rental period (egress)")
     p.add_argument("--dockless-unlock-eur", type=float, default=None)
     p.add_argument("--dockless-per-min-eur", type=float, default=None)
+    p.add_argument("--pt-fare-scales", default=None, metavar="CSV",
+                   help="multipliers on the public transport fare by household "
+                        "type and income class (fare concessions); default "
+                        "paths.pt_fare_scales")
     p.add_argument("--price-scales", default=None, metavar="CSV",
                    help="multipliers on the Lime price by household type and "
                         "income class (concessions); default "

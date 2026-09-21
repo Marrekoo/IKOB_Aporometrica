@@ -1,0 +1,5 @@
+household_type,income_class,scale
+*,*,1.0
+*,D2,0.25
+*,D3,0.25
+*,D4,0.25

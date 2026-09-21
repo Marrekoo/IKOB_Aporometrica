@@ -19,6 +19,10 @@ Division of cost and risk (assumptions, `costs` parameters):
 
 from __future__ import annotations
 
+from typing import Mapping
+
+import pandas as pd  # noqa: F401  (type of `spend`)
+
 
 def annuity_factor(years: float, rate: float) -> float:
     """Years of cost an up-front amount is spread over: `years` without
@@ -78,3 +82,33 @@ def s1_compensation(costs, revenue_base: float, revenue_new_at_base_volume: floa
 def hubs_for_budget(costs, budget_eur_year: float, view: str = "public") -> float:
     """How many extra hubs a yearly budget pays for."""
     return budget_eur_year / hub_annual_cost(costs, 1.0)[view]
+
+
+def pt_fare_cost(spend: "pd.DataFrame", persons: Mapping[str, float],
+                 fare_scale: Mapping[str, float]) -> dict:
+    """Public cost per year of a public transport fare concession, at baseline
+    volume: the fare revenue foregone,
+
+        sum over segments of persons_s x spend[decile_s] x (1 - scale_s),
+
+    with `spend` the ODiN table of `segments.pt_spend` (fare spending per person
+    and year by income decile) and `persons` the persons per segment
+    ('<household type>_<decile>'). The shrunk local estimate is the central
+    figure; the national-only estimate (trips and fares of all of the
+    Netherlands) is the low estimate."""
+    tab = spend.set_index("income_class")
+    central = low = 0.0
+    by_decile: dict[str, float] = {}
+    for seg, n in persons.items():
+        dec = seg.rsplit("_", 1)[1]
+        if dec not in tab.index:
+            continue
+        cut = 1.0 - float(fare_scale.get(seg, 1.0))
+        if cut == 0.0:
+            continue
+        c = n * float(tab.loc[dec, "spend_eur_year"]) * cut
+        nat = n * float(tab.loc[dec, "trips_national"] * tab.loc[dec, "fare_national"]) * cut
+        central += c
+        low += nat
+        by_decile[dec] = by_decile.get(dec, 0.0) + c
+    return {"eur_year": central, "eur_year_national": low, "by_decile": by_decile}

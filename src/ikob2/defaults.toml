@@ -15,6 +15,9 @@ budgets = "data/envelope/reference_budgets.csv"      # relative to the repositor
 # as the U-pas); rows "household_type,income_class,scale", "*" = all, later rows
 # override earlier ones; "" = none
 lime_price_scales = "data/tariffs/lime_price_scales.csv"
+# multipliers on the public transport FARE by household type / income class (concessions);
+# same layout; "" = none
+pt_fare_scales = ""
 margins_fallback = "data/margins/S_T_work.csv"
 statline_fallback = "data/statline"
 kwb_version = "v3"
