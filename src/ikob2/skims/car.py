@@ -40,7 +40,7 @@ import numpy as np
 from ikob2.params import DEFAULTS
 
 # KWB urbanisation class (1 = most urban) -> minutes to find parking on
-# arrival (legacy IKOB values).
+# arrival (the values of the IKOB model).
 PARKING_ARRIVAL_MIN = {int(k): float(v) for k, v in
                        DEFAULTS.car.parking_arrival_min.to_dict().items()}
 DEPARTURE_FACTOR = DEFAULTS.car.departure_factor
@@ -64,6 +64,8 @@ class CarCostModel:
 
     @property
     def matrix_id(self) -> str:
+        """Identity of the cost matrix this model produces (its rates), used as
+        the cost matrix key."""
         return (f"car(var={self.variable_eur_per_km:g},"
                 f"pricing={self.road_pricing_eur_per_km:g},"
                 f"min={self.per_minute_eur:g})")
@@ -173,22 +175,28 @@ class DetourModel:
                              "distance: factors must be >= 1.")
 
     def route_km(self, crow_km) -> np.ndarray:
+        """Route km from crow-fly km: the crow-fly distance times the factor
+        interpolated between the distance bands (the outermost factors
+        beyond them)."""
         crow = np.asarray(crow_km, dtype=float)
         f = np.interp(crow, self.km, self.factor)
         return crow * f
 
     def save(self, path: str | Path) -> None:
+        """Write the model as JSON (km, factor, meta)."""
         Path(path).write_text(json.dumps(
             {"km": list(self.km), "factor": list(self.factor),
              "meta": self.meta}, indent=1))
 
     @classmethod
     def load(cls, path: str | Path) -> "DetourModel":
+        """Read a model written by `save`."""
         d = json.loads(Path(path).read_text())
         return cls(tuple(d["km"]), tuple(d["factor"]), d.get("meta", {}))
 
     @classmethod
     def constant(cls, factor: float = DEFAULTS.car.detour_constant) -> "DetourModel":
+        """A model with one factor for every distance."""
         return cls((0.0,), (float(factor),), {"source": "constant"})
 
 

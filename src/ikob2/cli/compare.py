@@ -27,6 +27,9 @@ def _usage(run_dir):
 
 
 def main(argv=None) -> None:
+    """Compare two runs of the data folder: rank correlation, top-decile
+    overlap and level ratios, plus the effectiveness tables when both runs
+    recorded Lime usage; writes outputs/comparisons/<a>__vs__<b>/."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)

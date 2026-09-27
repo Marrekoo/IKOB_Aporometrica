@@ -149,6 +149,8 @@ def union_terms(times: np.ndarray, costs: np.ndarray):
 
 @dataclass(frozen=True)
 class AccessibilityResult:
+    """Result of `run_accessibility`: the long table (one row per origin x
+    segment x mode) and run metadata."""
     table: pd.DataFrame            # long: one row per origin x segment x mode
     meta: dict = field(default_factory=dict)
 

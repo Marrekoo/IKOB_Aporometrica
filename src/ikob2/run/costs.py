@@ -58,6 +58,8 @@ def annual_rentals(costs) -> float:
 
 
 def rides_per_bike_per_day(costs) -> float:
+    """Observed rides per shared bicycle and day: annual rentals over the
+    fleet."""
     return annual_rentals(costs) / costs.fleet / 365.0
 
 

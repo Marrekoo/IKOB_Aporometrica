@@ -21,6 +21,7 @@ charset-normalizer==3.5.1
 click==8.5.0
 cloudpickle==3.1.2
 ConfigArgParse==1.7.7
+coverage==7.16.1
 distlib==0.4.3
 et_xmlfile==2.0.0
 filelock==4.0.1
@@ -51,6 +52,7 @@ pyogrio==0.13.0
 pyparsing==3.3.2
 pyproj==3.8.0
 pytest==9.1.1
+pytest-cov==7.1.0
 python-dateutil==2.9.0.post0
 python-discovery==1.6.1
 pyvalhalla==3.9.0

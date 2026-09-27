@@ -141,11 +141,16 @@ inputs, the scenarios and cost model, and the server clients with mocked HTTP.
   (synthetic, and the 2022 KWB file when `IKOB_KWB_2022_GPKG` points to it).
 * **Skips:** a few tests need local data (set `IKOB_DATA_ROOT`) or routing
   inputs, and skip without them.
-* **Lint:** `ruff check` with pyflakes, the pycodestyle errors and bugbear
-  (`[tool.ruff]` in `pyproject.toml`).
+* **Coverage:** CI runs the tests with `--cov` and fails below 80% of the
+  statements of `ikob2` (`[tool.coverage.report]`).
+* **Lint:** `ruff check` with pyflakes, the pycodestyle errors and bugbear,
+  and docstrings on every public class and function of the API modules
+  (`run/`, `cli/`, `segments/specs`, `bridge`, `jobs`, `skims/pt_fare`, `car`;
+  `[tool.ruff]` in `pyproject.toml`).
 * **Environment:** `requirements-lock.txt` pins every package (Python 3.13;
   Java 21 for R5 and OTP). CI (`.github/workflows/tests.yml`) runs lint and
   tests on it on every push; `.pre-commit-config.yaml` runs ruff before each
   commit and pytest before each push.
 
-The routers are validated against independent engines (`servers.md`).
+The routers are validated against independent engines (`servers.md`); the
+scripts of the validation analyses are in `validation/`.

@@ -5,7 +5,6 @@ examples/test/
 # data folder built by examples/tiny/make_data.py
 examples/tiny/data/
 .venv/
-exportToHTML/
 __pycache__/
 *.egg-info/
 data/skim_dev/
@@ -16,3 +15,7 @@ data/calibration/*.routes.csv
 docs/paper/
 docs/paper_status.md
 build/
+.idea/
+# PyCharm HTML exports (local)
+exportToHTML/
+.coverage

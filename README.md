@@ -46,7 +46,7 @@ hub scenarios.
     pip install -r requirements-lock.txt      # the exact tested environment (Python 3.13)
     pip install -e . --no-deps
     pytest                                    # ~550 tests, ~25 s
-    ruff check src tests examples
+    ruff check src tests examples validation
 
 `requirements-lock.txt` pins every package; R5 and OpenTripPlanner also need
 Java 21. `pip install -e ".[test,routing,legacy,dev]"` installs from the
@@ -106,4 +106,4 @@ measured congestion (peak load is a road-class factor), timetable-based PT
 waiting and transfer penalties, competition for jobs in the paper runs
 (Shen is available for square runs only), supply limits of shared bicycles.
 
-Licence: see [LICENSE](LICENSE).
+Cite as in [CITATION.cff](CITATION.cff). Licence: see [LICENSE](LICENSE).

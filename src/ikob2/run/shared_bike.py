@@ -61,6 +61,11 @@ DOCKLESS_MODELS = ("lime_tiers", "unlock_per_minute", "flat")
 
 @dataclass(frozen=True)
 class SharedBikeTariffs:
+    """Prices of the shared-bicycle rentals added to a PT journey: OV-fiets per
+    rental, dockless access by Lime tiers, unlock fee plus rate per minute,
+    or a flat price (`dockless_model`), a scale on every Lime price
+    (`lime_scale`), and the known hub tariff kinds. Defaults from the
+    `shared_bike` parameters."""
     ovfiets_eur: float = DEFAULTS.shared_bike.ovfiets_eur   # per rental (egress)
     dockless_unlock_eur: float = DEFAULTS.shared_bike.dockless_unlock_eur
     dockless_per_min_eur: float = DEFAULTS.shared_bike.dockless_per_min_eur

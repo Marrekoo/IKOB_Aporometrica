@@ -7,7 +7,8 @@ Threshold-gate accessibility model (`src/ikob2`). Read `README.md` and
 
     pip install -r requirements-lock.txt && pip install -e . --no-deps
     pytest -q                 # ~550 tests, ~25 s; must pass before a commit
-    ruff check src tests examples
+    pytest -q --cov           # as CI: fails below 80% coverage
+    ruff check src tests examples validation
     pre-commit install --hook-type pre-commit --hook-type pre-push
 
 CI (`.github/workflows/tests.yml`) runs ruff and pytest on the locked

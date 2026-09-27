@@ -70,7 +70,8 @@ itineraries.
 238 random pairs from Utrecht origins to destinations across the country;
 OTP itineraries departing at 07:00, 07:30, 08:00, 08:30 and 09:00 on
 2026-09-15 (averaged), compared with the store's `time`, `rail_km` and
-`other_km`. The comparison script is not part of the package.
+`other_km`. Script and samples: `validation/pt_router_vs_otp.py` and
+`validation/results/` (`validation/README.md`).
 
 | | Frequency model vs OTP |
 |---|---|

@@ -26,6 +26,8 @@ FLAGS = {"concurrency": "servers.valhalla_concurrency",
 
 
 def main(argv=None) -> None:
+    """Command line entry point (`python -m ikob2.cli.servers`): build, start,
+    stop or query the local Valhalla and OpenTripPlanner servers."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)

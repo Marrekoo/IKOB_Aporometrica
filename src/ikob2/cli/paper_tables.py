@@ -86,6 +86,12 @@ KEY_COLS = ["buurtcode", "segment"]
 def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
            controlled_prefix: str = "spc", timeonly_prefix: str = "spt"
            ) -> dict[str, pd.DataFrame]:
+    """The paper tables for the specification `tags` from the runs
+    <prefix>_<tag>_<s0|s1|s2> (income-matched jobs), <controlled_prefix>_...
+    (common jobs) and <timeonly_prefix>_<tag>_s0 (time only, for the gap),
+    for `mode`. Returns name -> table: baseline_by_spec, incidence_by_spec,
+    interchange_by_spec, gap_by_spec and correlation_by_spec. Missing runs
+    are skipped with a warning."""
     base, inc, rat, gap = [], [], [], []
     runs = {}
     for tag in tags:
@@ -142,6 +148,8 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
 
 
 def main(argv=None) -> None:
+    """Command line entry point (`python -m ikob2.cli.paper_tables`); writes
+    the tables to outputs/comparisons/specs/."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)

@@ -264,10 +264,18 @@ def test_covariates_steer_the_within_municipality_split():
 
 def test_missing_covariates_fall_back_to_municipal_mean():
     model, lisa, gem, buurt_jobs, cov = _impute_setup()
-    cov = cov.copy()
-    cov.loc["A1"] = np.nan
-    res = impute_sector_jobs(buurt_jobs, gem, lisa, model, cov)
-    assert np.isfinite(res.jobs.to_numpy()).all()
+    missing = cov.copy()
+    missing.loc["A1"] = np.nan
+    res = impute_sector_jobs(buurt_jobs, gem, lisa, model, missing)
+    # the same as giving A1 the mean of the other buurten of its municipality
+    filled = cov.copy()
+    filled.loc["A1"] = cov.loc[["A2", "A3"]].mean()
+    ref = impute_sector_jobs(buurt_jobs, gem, lisa, model, filled)
+    np.testing.assert_allclose(res.jobs.to_numpy(), ref.jobs.to_numpy(),
+                               rtol=1e-9)
+    # and different from leaving A1's own covariates in
+    own = impute_sector_jobs(buurt_jobs, gem, lisa, model, cov)
+    assert not np.allclose(res.jobs.to_numpy(), own.jobs.to_numpy())
 
 
 # ── Sector -> income weights and pools ───────────────────────────────

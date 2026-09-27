@@ -23,6 +23,9 @@ from ikob2.utils.paths import INPUT_DIRS, REPO_DATA, DataLayout
 
 def link_input(layout: DataLayout, target: Path, subfolder: str,
                name: str | None = None) -> Path:
+    """Symlink `target` into inputs/<subfolder> (as `name`, default its own
+    name) so a source can stay where it is; returns the link. An existing
+    link to the same target is kept, anything else at that path is an error."""
     if subfolder not in INPUT_DIRS:
         raise ValueError(f"inputs subfolder must be one of {INPUT_DIRS}.")
     target = Path(target).expanduser().resolve()
@@ -39,6 +42,8 @@ def link_input(layout: DataLayout, target: Path, subfolder: str,
 
 
 def main(argv=None) -> None:
+    """Command line entry point (`python -m ikob2.cli.layout`): `create`
+    (folders, README, reference files) or `link`."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)

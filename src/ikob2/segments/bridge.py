@@ -106,6 +106,8 @@ def validate_envelope(
 
 
 def load_envelope(path: str | Path, **kwargs) -> pd.DataFrame:
+    """Read an envelope table (household_type, income_class, low, high[, atom])
+    and validate it (`validate_envelope`; keyword arguments are passed on)."""
     return validate_envelope(pd.read_csv(path), **kwargs)
 
 

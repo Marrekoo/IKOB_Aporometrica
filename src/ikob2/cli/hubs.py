@@ -31,6 +31,9 @@ FLAGS = {"factor": "siting.hub_density_factor",
 
 
 def cmd_propose(args) -> None:
+    """Place the extra hubs of scenario S2 in the buurten with low baseline
+    accessibility and low bicycle ownership, and write them as a hub file
+    (default intermediate/hubs/utrecht_hubs_s2.csv)."""
     from pyproj import Transformer
 
     from ikob2.data.geopackage import load_cbs_buurten
@@ -94,6 +97,7 @@ def cmd_propose(args) -> None:
 
 
 def main(argv=None) -> None:
+    """Command line entry point (`python -m ikob2.cli.hubs`)."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--log-level", default="INFO")

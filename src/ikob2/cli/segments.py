@@ -100,6 +100,9 @@ def _cfg(args) -> SegmentConfig:
 
 
 def cmd_fetch(args) -> None:
+    """Download the StatLine snapshots (households by type and income,
+    households with children, sector wages, KWB establishments, home
+    working, education by sector) into the StatLine folder."""
     prm = resolve(args)
     cfg = _cfg(args)
     out = Path(args.out) if args.out else statline_dir(layout(args, prm))
@@ -139,6 +142,8 @@ def cmd_fetch(args) -> None:
 
 
 def cmd_run(args) -> None:
+    """Compute the household-type x income segments per buurt and write them as
+    a GeoPackage, with a per-buurt diagnostics CSV."""
     prm = resolve(args)
     lay = layout(args, prm)
     fill(args, lay, kwb=lambda lay: lay.kwb(args.kwb_year, prm.paths.kwb_version),
@@ -157,6 +162,8 @@ def cmd_run(args) -> None:
 
 
 def cmd_car(args) -> None:
+    """Car availability per segment from the ODiN persons, shrunk towards the
+    national cell; writes the table used by `--ownership`."""
     from ikob2.segments.car_availability import (car_availability,
                                                  read_odin_persons)
     prm = resolve(args)
@@ -172,6 +179,9 @@ def cmd_car(args) -> None:
 
 
 def cmd_pt_spend(args) -> None:
+    """Public transport fare spending per person and year by income decile from
+    the ODiN legs, priced with the model's fare rules; writes the table used
+    for the cost of fare concessions."""
     from ikob2.segments.pt_spend import pt_spend_by_decile, read_odin
     from ikob2.skims.pt_fare import PtFareModel
 
@@ -189,6 +199,9 @@ def cmd_pt_spend(args) -> None:
 
 
 def cmd_jobs(args) -> None:
+    """Impute the LISA jobs per sector of the target year onto buurten
+    (structure model, establishment seed, IPF) and write the buurt x sector
+    table."""
     import pandas as pd
 
     from ikob2.segments import jobs_impute as ji
@@ -236,6 +249,7 @@ def cmd_jobs(args) -> None:
 
 
 def main(argv=None) -> None:
+    """Command line entry point (`python -m ikob2.cli.segments`)."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)

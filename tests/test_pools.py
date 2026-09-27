@@ -190,7 +190,15 @@ def test_segment_default_time_cost_id_matches_runner_default():
     seg = Segment(
         name="s", income="laag", class_filter=ALL_ONES,
     )
-    result = SegmentedRunner(decay_epsilon=None).run(
-        _state(), [seg], {"s": np.ones(2)},
-    )
-    assert np.all(np.isfinite(result.per_segment["s"]))
+    state = _state(population=np.array([1.0, 3.0]),
+                   opportunities=np.array([10.0, 50.0]))
+    implicit = SegmentedRunner(decay_epsilon=None).run(
+        state, [seg], {"s": np.array([1.0, 3.0])})
+    explicit = SegmentedRunner(decay_epsilon=None).run(
+        state, [seg], {"s": np.array([1.0, 3.0])},
+        cost_matrices={"time": state.generalized_cost})
+    np.testing.assert_array_equal(implicit.per_segment["s"],
+                                  explicit.per_segment["s"])
+    # all-ones weights: everyone competes for everything, A_i = sum O / sum P
+    np.testing.assert_allclose(implicit.per_segment["s"], [60.0 / 4.0] * 2,
+                               rtol=1e-6)

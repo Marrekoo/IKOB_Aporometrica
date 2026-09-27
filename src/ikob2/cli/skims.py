@@ -69,6 +69,8 @@ def resolve(args, flags):
 
 
 def cmd_build(args) -> None:
+    """Create a skim store for the study municipalities and fill it with R5
+    (car, bicycle) and zone-geometry (walking) travel times, block by block."""
     from ikob2.data.geopackage import load_cbs_buurten
 
     prm = resolve(args, BUILD_FLAGS)
@@ -151,6 +153,9 @@ def cmd_build(args) -> None:
 
 
 def cmd_calibrate_detour(args) -> None:
+    """Fit the route / crow-fly detour factor per distance band from OSRM
+    routes of sampled pairs and save the detour model (JSON, plus the routed
+    pairs as CSV)."""
     from ikob2.data.geopackage import load_cbs_buurten
     from ikob2.skims import osrm
 
@@ -184,6 +189,8 @@ def cmd_calibrate_detour(args) -> None:
 
 
 def cmd_build_distance(args) -> None:
+    """Fill the store's car `distance`: Valhalla routes near the origins, the
+    detour model beyond and where no route is found."""
     from ikob2.data.geopackage import load_cbs_buurten
     from ikob2.skims import distance as dist_mod
     from ikob2.skims import valhalla_server
@@ -217,6 +224,8 @@ def cmd_build_distance(args) -> None:
 
 
 def cmd_make_peak(args) -> None:
+    """Write a peak-load copy of an OSM extract (maxspeed divided by a
+    congestion factor per road class)."""
     from ikob2.skims import peak
 
     stats = peak.make_peak_extract(args.osm, args.out)
@@ -227,6 +236,9 @@ def cmd_make_peak(args) -> None:
 
 
 def cmd_build_pt(args) -> None:
+    """Fill a public transport mode of the store with the GTFS frequency model:
+    time, rail and other km, boardings, and the riding minutes of bicycle
+    legs when access or egress is by bicycle."""
     from ikob2.data.geopackage import load_cbs_buurten
     from ikob2.skims.gtfs_pt import LegSpec, PtRouter, load_peak_timetable
     from ikob2.skims.pt_build import build_pt_layer
@@ -313,6 +325,7 @@ def cmd_build_pt(args) -> None:
 
 
 def cmd_inspect(args) -> None:
+    """Print the origins, layers, arrays and metadata of a skim store."""
     store = SkimStore.open(args.store)
     print(f"origins: {len(store.origins)}")
     for name in store.layer_names:
@@ -328,6 +341,7 @@ def cmd_inspect(args) -> None:
 
 
 def main(argv=None) -> None:
+    """Command line entry point (`python -m ikob2.cli.skims`)."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--log-level", default="INFO")

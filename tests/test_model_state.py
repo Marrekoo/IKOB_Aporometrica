@@ -19,8 +19,14 @@ def make_state(n=3, **overrides):
 
 
 def test_model_state_validates():
+    from dataclasses import replace
+
     state = make_state(n=3)
-    state.validate()  # should not raise
+    assert state.validate() is None
+    with pytest.raises(ValueError, match="shape"):
+        replace(state, population=np.ones(2, dtype=DTYPE)).validate()
+    with pytest.raises(ValueError, match="decay_epsilon"):
+        replace(state, decay_epsilon=-1.0).validate()
 
 
 def test_create_coerces_dtype():

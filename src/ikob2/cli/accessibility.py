@@ -210,6 +210,7 @@ def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpe
 
 
 def codes_all(zones) -> list[str]:
+    """Zone codes of a ZoneSet as strings, in zone order."""
     return [str(c) for c in zones.codes]
 
 
@@ -412,6 +413,9 @@ def input_fingerprints(args) -> dict:
 
 
 def cmd_run(args) -> None:
+    """Run the model for the arguments of `main` and write the run folder:
+    accessibility.csv, the summaries, run.json and (unless disabled) the
+    analysis products."""
     from ikob2.data.geopackage import load_cbs_buurten
 
     prm = resolve(args)
@@ -632,6 +636,7 @@ def cmd_run(args) -> None:
 
 
 def main(argv=None) -> None:
+    """Command line entry point (`python -m ikob2.cli.accessibility`)."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--log-level", default="INFO")

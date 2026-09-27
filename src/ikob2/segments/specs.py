@@ -78,6 +78,8 @@ def mean_cost(row) -> float:
 
 
 def exponential_cost(mean: float) -> CurveSpec:
+    """Exponential cost margin with the given mean acceptable cost (EUR); a
+    mean of 0 or less gives a margin that accepts only free trips."""
     rate = _ZERO_MEAN_RATE if mean <= 0 else 1.0 / mean
     return CurveSpec("exponential", (rate,))
 

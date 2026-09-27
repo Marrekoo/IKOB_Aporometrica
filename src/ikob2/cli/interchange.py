@@ -20,6 +20,9 @@ from ikob2.utils.paths import DataLayout
 
 
 def main(argv=None) -> None:
+    """Compute the interchangeability ratio R = gain(A) / gain(B) against a
+    baseline run and write the per-pair, per-origin and pooled tables to
+    outputs/comparisons/<a>_over_<b>/."""
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)

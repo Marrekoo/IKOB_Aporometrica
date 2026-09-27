@@ -69,6 +69,11 @@ NS_RAIL_TABLE = load_ns_table()
 
 @dataclass(frozen=True)
 class PtFareModel:
+    """Public transport fare per journey: rail by the NS tariff table (or a
+    tapering power law through two anchors), read linearly between tariff
+    units, with an optional discount; bus, tram, metro and ferry by a
+    boarding charge plus a rate per km, the boarding once per journey or per
+    boarding. Defaults from the `pt_fare` parameters."""
     rail_eur_per_km_at_1km: float = DEFAULTS.pt_fare.rail_eur_per_km_at_1km
     rail_eur_per_km_at_100km: float = DEFAULTS.pt_fare.rail_eur_per_km_at_100km
     rail_table: tuple[tuple[float, float], ...] | None = NS_RAIL_TABLE
@@ -126,6 +131,8 @@ class PtFareModel:
 
     @property
     def matrix_id(self) -> str:
+        """Identity of the fare matrix this model produces, used as the cost
+        matrix key."""
         table = ("ns" if self.rail_table == NS_RAIL_TABLE else "table") \
             if self.rail_table else (
             f"{self.rail_eur_per_km_at_1km:g}-{self.rail_eur_per_km_at_100km:g}")
@@ -134,6 +141,9 @@ class PtFareModel:
                 f"{self.regional_eur_per_km:g}/km,{self.boardings})")
 
     def rail_fare(self, km) -> np.ndarray:
+        """Rail fare (EUR) for in-vehicle rail km: the tariff table or the
+        power law, at least the minimum fare above 0 km, 0 at 0 km, NaN
+        where km is NaN, times (1 - rail_discount)."""
         km = np.asarray(km, dtype=float)
         if self.rail_table:
             pts = np.array(self.rail_table, dtype=float)
