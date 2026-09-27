@@ -558,3 +558,19 @@ def test_rescaled_budget_changes_who_clears_a_fare():
     c = np.array([[40.0]], dtype=DTYPE)
     assert uniform(c, *s1.params)[0, 0] > uniform(c, *s3.params)[0, 0]
     assert s3.params == pytest.approx((23.16 / 3, 148.17 / 3))
+
+
+def test_budgets_per_journey_are_not_divided(tmp_path):
+    t = pd.read_csv(BUDGETS)
+    t["unit"] = "journey"
+    p = tmp_path / "rb.csv"
+    t.to_csv(p, index=False)
+    env = load_reference_budgets(p)                    # default 2.2 is ignored
+    raw = load_reference_budgets(BUDGETS, legs_per_tour=1.0)
+    np.testing.assert_allclose(env["high"], raw["high"])
+    t.loc[t.household_type == "single", "unit"] = "tour"
+    t.to_csv(p, index=False)
+    mixed = load_reference_budgets(p)
+    s = mixed.household_type == "single"
+    np.testing.assert_allclose(mixed.loc[s, "high"], raw.loc[s, "high"] / 2.2)
+    np.testing.assert_allclose(mixed.loc[~s, "high"], raw.loc[~s, "high"])

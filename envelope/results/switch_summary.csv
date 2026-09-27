@@ -1,0 +1,12 @@
+variant,low_D2-D10,central_D2-D10,high_D2-D10,low_D2-D4,central_D2-D4,high_D2-D4
+baseline (reproduces the published table),1.0,1.0,1.0,1.0,1.0,1.0
+unit: per journey,1.053,1.055,1.059,1.046,1.06,1.059
+n_lower: lowest decile,1.0,1.0,0.373,1.0,1.0,0.373
+income_bridge: per adult,1.142,1.127,1.105,1.755,1.446,1.349
+aggregates: ODiN 2022-23,1.03,1.019,1.0,0.969,1.002,1.0
+car_all_tariffs,1.0,1.0,1.0,1.0,1.0,1.0
+quantile_kappa: off,1.035,1.034,1.025,1.188,1.114,1.082
+gamma_anchor: 0,1.0,1.0,1.0,1.438,1.136,1.0
+spread: gamma only,1.103,1.0,0.265,1.59,1.0,0.264
+corrections combined,1.251,1.215,0.488,1.867,1.551,0.565
+corrections + spread gamma,1.298,1.215,0.369,2.801,1.551,0.424

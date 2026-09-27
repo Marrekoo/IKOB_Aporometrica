@@ -127,7 +127,9 @@ def rescale_budgets(envelope: pd.DataFrame,
 
     legs_per_tour : one number for all segments, or a mapping household
         type -> number (every type present in the envelope is needed).
-    The atom is a share of households and does not change.
+    Rows whose `unit` column says "journey" (an envelope built per journey,
+    `envelope.unit`) are not divided. The atom is a share of households and
+    does not change.
     """
     df = envelope.copy()
     if isinstance(legs_per_tour, Mapping):
@@ -140,7 +142,9 @@ def rescale_budgets(envelope: pd.DataFrame,
         legs = pd.Series(float(legs_per_tour), index=df.index)
     if not np.all(np.isfinite(legs)) or (legs <= 0).any():
         raise ValueError("legs_per_tour must be positive and finite.")
-    for col in ("low", "high", "km_low", "km_high"):
+    if "unit" in df.columns:          # budgets already per journey stay as they are
+        legs = legs.where(df["unit"].astype(str).str.strip() != "journey", 1.0)
+    for col in ("low", "high", "central", "km_low", "km_high"):
         if col in df.columns:
             df[col] = df[col] / legs
     df.attrs["legs_per_tour"] = (dict(legs_per_tour)

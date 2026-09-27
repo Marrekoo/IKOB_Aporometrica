@@ -6,10 +6,14 @@ The reference-budget envelope from its sources (ikob2.envelope).
 
 `aggregates` reads ODiN (default: the `envelope.odin` files under
 inputs/odin) and writes the aggregate tables to intermediate/envelope/odin/.
-It is the only step that reads microdata.
+It is the only step that reads microdata. The aggregates of ODiN 2023 and
+2022-23 are published in data/envelope/odin/ (seeded into
+inputs/envelope/odin/), so `build` runs without the microdata.
 
 `build` combines the source tables (inputs/envelope/sources, seeded by
-`cli.layout create`) with the aggregates and writes to intermediate/envelope/:
+`cli.layout create`) with the aggregates (default:
+inputs/envelope/odin/<envelope.aggregates>) and the [envelope] switches, and
+writes to intermediate/envelope/:
 anchors.csv, envelope.csv (residuals per decile and rent scenario),
 tour_bounds.csv, grid.csv (X_M for every scenario) and reference_budgets.csv
 (EUR per home-based tour; the model divides by `legs_per_tour`).
@@ -60,22 +64,25 @@ def build(src_dir, agg_dir, prm) -> dict:
     bounds = xm.tour_bounds(agg, prm)
     bund = xm.bundles(agg, src, prm)
     grid = xm.grid(env, bounds, xm.commuting(agg, bund, src, prm), bund, src, prm)
+    gate = xm.gate(grid, prm, agg["km_cdf"])
     return {"anchors": anch, "envelope": env, "tour_bounds": bounds,
             "bundles": bund, "grid": grid,
-            "reference_budgets": xm.reference_budgets(xm.gate(grid))}
+            "reference_budgets": xm.reference_budgets(gate, prm)}
 
 
 def cmd_build(args) -> None:
     """Build the envelope and write its tables."""
     prm = params_mod.from_args(args)
     lay = _layout(args, prm)
-    agg = Path(args.aggregates) if args.aggregates else lay.envelope_dir() / "odin"
+    agg = (Path(args.aggregates) if args.aggregates
+           else lay.envelope_aggregates(prm.envelope.aggregates))
     tables = build(lay.envelope_sources(), agg, prm)
     out = Path(args.out) if args.out else lay.envelope_dir()
     out.mkdir(parents=True, exist_ok=True)
     for name, df in tables.items():
         df.to_csv(out / f"{name}.csv", index=False)
-    print(f"Envelope written to {out} (reference_budgets.csv: EUR per home-based tour)")
+    print(f"Envelope written to {out} (reference_budgets.csv: EUR per "
+          f"{prm.envelope.unit}; aggregates {agg})")
 
 
 def main(argv=None) -> None:

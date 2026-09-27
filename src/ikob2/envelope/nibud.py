@@ -7,9 +7,10 @@ Baskets and residuals (X_M calc.R, sections 3 and 6).
   * `anchors`: the anchor points of each household type: net income `y`,
     rent, the minimum basket `m_bas` and an example basket `m_ex`. At
     Warnaar's anchors `m_ex` is backed out of the published residual b_norm,
-    read as the midpoint of the two residuals:
+    read as the residual at gamma = `gamma_anchor` (0.5: the midpoint of the
+    two residuals, as in X_M calc.R; 0: the example-basket residual itself):
 
-        b_norm = y - rent - kappa (m_ex + m_bas) / 2
+        b_norm = y - rent - kappa ((1 - a) m_ex + a m_bas),  a = gamma_anchor
 
     At the social-assistance point and outside Warnaar's anchors it is
     extended along the household type's own slope in standardised income;
@@ -30,6 +31,7 @@ import pandas as pd
 from ikob2.envelope.sources import Sources
 
 HH_TYPES = ("single", "couple", "single_parent", "couple_children")
+ADULTS = {"single": 1, "couple": 2, "single_parent": 1, "couple_children": 2}
 
 
 def basket_aggregates(src: Sources) -> pd.DataFrame:
@@ -109,7 +111,11 @@ def anchors(src: Sources, prm) -> pd.DataFrame:
     a["y_std"] = a["y_disp"] / a["eqv"]
     a["kappa_row"] = np.where(a["price_base"] == "vdb2023", 1.0, kappa)
 
-    m_ex_pub = 2 * (a["y_disp"] - a["rent"] - a["b_norm"]) / a["kappa_row"] - a["m_bas"]
+    g0 = float(e.gamma_anchor)
+    if not 0.0 <= g0 < 1.0:
+        raise ValueError("gamma_anchor must be in [0, 1).")
+    m_ex_pub = (((a["y_disp"] - a["rent"] - a["b_norm"]) / a["kappa_row"]
+                 - g0 * a["m_bas"]) / (1.0 - g0))
     a["m_ex_pub"] = m_ex_pub
     a["basket_inverted"] = np.isfinite(m_ex_pub) & (m_ex_pub < a["m_bas"] - e.slack_tol)
     flr = np.where(np.isfinite(m_ex_pub), np.maximum(m_ex_pub, a["m_bas"]), np.nan)
@@ -140,7 +146,7 @@ def anchors(src: Sources, prm) -> pd.DataFrame:
     if (a["b_ex"] > a["b_bas"] + e.slack_tol).any():
         raise ValueError("b_ex exceeds b_bas: the gamma ladder is inverted.")
     rt = a[np.isfinite(a["b_norm"]) & ~a["basket_inverted"]]
-    if (((rt["b_ex"] + rt["b_bas"]) / 2 - rt["b_norm"]).abs() >= 0.01).any():
+    if (((1 - g0) * rt["b_ex"] + g0 * rt["b_bas"] - rt["b_norm"]).abs() >= 0.01).any():
         raise ValueError("The m_ex inversion does not reproduce b_norm.")
     return a
 
@@ -177,14 +183,19 @@ def _bracket_rent(y, rent, z) -> tuple[float, float]:
 
 def quantile_envelope(anch: pd.DataFrame, axis: pd.DataFrame, src: Sources,
                       prm) -> pd.DataFrame:
-    """Residuals per household type, income decile and rent scenario:
+    """Residuals per household type, income decile and rent scenario (CBS
+    incomes plus the basic health premium per adult with `income_bridge`
+    per_adult; baskets uprated by kappa with `quantile_kappa`):
     y_disp, rent, m_bas, m_ex, b_ex, b_bas, slack and the flags
     env_bas_ok (b_bas defined), gamma_identified (a usable example basket)
     and b_kind (gamma_indexed, point, b_bas_above_anchors)."""
     e = prm.envelope
-    kappa = src.kappa
+    kappa = src.kappa if e.quantile_kappa else 1.0
+    if e.income_bridge not in ("none", "per_adult"):
+        raise ValueError("income_bridge must be 'none' or 'per_adult'.")
     rows = []
     for t, d in anch.groupby("hh_type", sort=False):
+        bridge = e.basic_premium_eur * ADULTS[t] if e.income_bridge == "per_adult" else 0.0
         y, r, mx = (d[c].to_numpy(float) for c in ("y_std", "rent", "m_ex"))
         m_bas, eqv = float(d["m_bas"].iloc[0]), float(d["eqv"].iloc[0])
         for q in axis.itertuples(index=False):
@@ -198,7 +209,7 @@ def quantile_envelope(anch: pd.DataFrame, axis: pd.DataFrame, src: Sources,
             if censored or below or above:
                 mraw = np.nan
             base = dict(hh_type=t, point_id=q.quantile, y_std=z,
-                        y_disp=z * eqv + e.income_bridge_eur,
+                        y_disp=z * eqv + bridge,
                         env_eligible=q.env_eligible, m_bas=m_bas,
                         m_ex=max(mraw, m_bas) if np.isfinite(mraw) else np.nan,
                         below_floor=below, above_ceiling=above, kappa_row=kappa)

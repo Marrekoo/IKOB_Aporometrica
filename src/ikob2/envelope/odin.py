@@ -34,6 +34,13 @@ Tables returned (dict name -> DataFrame):
   commuter_rates   level (cell | quantile), hh_type, quantile, rate (commute
                    tours per day of unreimbursed commuters), n
   pt_km            train_km, btm_km (km of train and bus/tram/metro trips)
+  units            journeys_per_tour (priced one-way journeys per priced tour)
+  km_cdf           unit (tour | journey), km, share (weighted share of
+                   non-commute priced tours / journeys up to km, on a grid)
+
+Every rate has a journey counterpart (columns prefixed `j`): the same count
+for priced one-way journeys (ODiN verplaatsingen with a priced main mode)
+instead of tours; commute journeys are the priced journeys of commute tours.
 """
 
 from __future__ import annotations
@@ -120,9 +127,12 @@ def _r_cumsum(x: pd.Series) -> pd.Series:
     return out
 
 
-def tours(odin: pd.DataFrame, p: pd.DataFrame) -> pd.DataFrame:
+def tours(odin: pd.DataFrame, p: pd.DataFrame, journeys: bool = False):
     """Priced home-based tours: person, any_commute, any_pass, mode_max, km,
-    dep_hour, with the person's household type and commute status.
+    dep_hour, nj (priced journeys) and nj_pass (of them as car passenger),
+    with the person's household type and commute status; with
+    `journeys=True` also the priced journeys of those tours (km, w_person,
+    any_commute of their tour).
 
     A person's tour number rises by one after every trip home. As in the R
     script, a trip whose destination is missing leaves the numbering
@@ -141,12 +151,18 @@ def tours(odin: pd.DataFrame, p: pd.DataFrame) -> pd.DataFrame:
     g = t.groupby(["person", "tour"], dropna=False, sort=False)
     out = g.agg(any_priced=("priced", "max"), any_pass=("passenger", "max"),
                 any_commute=("commute", "max"), km=("km", "sum"),
-                dep_hour=("vert_uur", lambda s: s.iloc[0]))
+                dep_hour=("vert_uur", lambda s: s.iloc[0]),
+                nj=("priced", "sum"), nj_pass=("passenger", "sum"))
     out["mode_max"] = t.loc[g["_km"].idxmax().to_numpy(), "mode"].to_numpy()
     out = out.reset_index()
     out = out[out["any_priced"]]
-    return out.merge(p[["hh_type", "reimbursed", "unreimb_commuter", "w_person"]],
-                     left_on="person", right_index=True, how="left")
+    out = out.merge(p[["hh_type", "reimbursed", "unreimb_commuter", "w_person"]],
+                    left_on="person", right_index=True, how="left")
+    if journeys:
+        tt = t[t["priced"]].merge(out[["person", "tour", "any_commute"]],
+                                  on=["person", "tour"], how="inner")
+        return out, tt
+    return out
 
 
 def _wmean_na(d: pd.DataFrame, col: str, keys) -> pd.Series:
@@ -171,18 +187,26 @@ def aggregates(odin: pd.DataFrame, hh_types: pd.DataFrame) -> dict:
     cw = crosswalk(p)
     pq = (p.reset_index().merge(cw, on="income")
           .assign(w_eff=lambda d: d["w_person"] * d["share"]))
-    tr = tours(odin, p)
+    tr, jr = tours(odin, p, journeys=True)
     by_person = tr.groupby("person").agg(
         n_all=("any_commute", "size"),
         n_disc=("any_commute", lambda s: int((~s).sum())),
         n_commute=("any_commute", "sum"),
-        pass_share=("any_pass", "mean"))
+        pass_share=("any_pass", "mean"),
+        j_all=("nj", "sum"), j_pass=("nj_pass", "sum"))
+    by_person["j_disc"] = tr[~tr["any_commute"]].groupby("person")["nj"].sum().reindex(
+        by_person.index).fillna(0)
+    by_person["j_commute"] = by_person["j_all"] - by_person["j_disc"]
+    by_person["pass_share_j"] = by_person["j_pass"] / by_person["j_all"]
     committed = tr[tr["any_commute"] & (tr["reimbursed"] == False)]  # noqa: E712
     by_person["n_committed"] = committed.groupby("person").size().reindex(
         by_person.index).fillna(0)
+    by_person["j_committed"] = committed.groupby("person")["nj"].sum().reindex(
+        by_person.index).fillna(0)
 
     rf = pq.merge(by_person, left_on="person", right_index=True, how="left")
-    for c in ("n_all", "n_disc", "n_commute", "n_committed"):
+    for c in ("n_all", "n_disc", "n_commute", "n_committed", "j_all", "j_disc",
+              "j_commute", "j_committed"):
         rf[c] = rf[c].fillna(0)
     rf = rf[rf["hh_type"].notna() & (rf["w_eff"] > 0)]
 
@@ -190,35 +214,52 @@ def aggregates(odin: pd.DataFrame, hh_types: pd.DataFrame) -> dict:
     disc = [_wmean(rf, "n_disc", k).rename(columns={"rate": "rate_disc"}).assign(level=lv)
             for lv, k in (("cell", cell), ("type", ("hh_type", "age_band")),
                           ("quantile", ("quantile", "age_band")))]
+    jdisc = [_wmean(rf, "j_disc", k).rename(columns={"rate": "jrate_disc"}).drop(columns="n")
+             .assign(level=lv)
+             for lv, k in (("cell", cell), ("type", ("hh_type", "age_band")),
+                           ("quantile", ("quantile", "age_band")))]
     comm = _wmean(rf, "n_committed", cell).rename(columns={"rate": "rate_comm"})
-    band = pd.concat(disc, ignore_index=True).merge(
-        comm.assign(level="cell").drop(columns="n"), on=["level", *cell], how="left")
+    jcomm = _wmean(rf, "j_committed", cell).rename(columns={"rate": "jrate_comm"})
+    band = (pd.concat(disc, ignore_index=True)
+            .merge(pd.concat(jdisc, ignore_index=True),
+                   on=["level", "hh_type", "quantile", "age_band"], how="left")
+            .merge(comm.assign(level="cell").drop(columns="n"), on=["level", *cell], how="left")
+            .merge(jcomm.assign(level="cell").drop(columns="n"), on=["level", *cell], how="left"))
 
     comp_cols = ["hh_size", "hh_lft1", "hh_lft2", "hh_lft3", "hh_lft4"]
     comp = pd.DataFrame({c: _wmean_na(rf, c, ("hh_type", "quantile"))
                          for c in comp_cols}).reset_index()
 
     ps = rf[(rf["n_all"] > 0) & rf["pass_share"].notna()]
-    pass_share = _wmean_na(ps, "pass_share", ("hh_type",)).rename(
-        "pass_share").reset_index()
+    pass_share = pd.concat([
+        _wmean_na(ps, "pass_share", ("hh_type",)).rename("pass_share"),
+        _wmean_na(ps, "pass_share_j", ("hh_type",)).rename("pass_share_j")],
+        axis=1).reset_index()
 
     ct = tr[tr["any_commute"] & tr["dep_hour"].notna() & tr["hh_type"].notna()]
     ct = ct.merge(pq[["person", "quantile", "w_eff"]], on="person")
     ct = ct[np.isfinite(ct["km"]) & (ct["km"] > 0) & (ct["reimbursed"] == False)]  # noqa: E712
     is_car = ct["mode_max"].isin(CAR_MODES)
     ct = ct.assign(km_car=ct["km"] * is_car, km_pt=ct["km"] * ~is_car, pt=(~is_car).astype(float))
+    ct = ct.assign(km_car_j=ct["km_car"] / ct["nj"], km_pt_j=ct["km_pt"] / ct["nj"])
     commute = pd.DataFrame({c: _wmean_na(ct, c, ("hh_type", "quantile"))
-                            for c in ("km_car", "km_pt", "pt")}).rename(
+                            for c in ("km_car", "km_pt", "pt", "km_car_j", "km_pt_j")}).rename(
         columns={"pt": "share_pt"})
     commute["n"] = ct.groupby(["hh_type", "quantile"]).size()
     commute = commute.reset_index()
 
     uc = pq[pq["unreimb_commuter"]].merge(by_person[["n_commute"]], left_on="person",
                                           right_index=True, how="left")
+    uc = uc.merge(by_person[["j_commute"]], left_on="person", right_index=True, how="left")
     uc["n_commute"] = uc["n_commute"].fillna(0)
+    uc["j_commute"] = uc["j_commute"].fillna(0)
     commuters = pd.concat([
         _wmean(uc, "n_commute", ("hh_type", "quantile")).assign(level="cell"),
         _wmean(uc, "n_commute", ("quantile",)).assign(level="quantile")], ignore_index=True)
+    jcomm_r = pd.concat([
+        _wmean(uc, "j_commute", ("hh_type", "quantile")).assign(level="cell"),
+        _wmean(uc, "j_commute", ("quantile",)).assign(level="quantile")], ignore_index=True)
+    commuters["jrate"] = jcomm_r["rate"].to_numpy()
 
     trips = odin[(odin["verpl"] == 1) & odin["trip_no"].notna()]
     trips = trips[trips["motive"].notna() & (trips["motive"] != TOURING)
@@ -226,9 +267,29 @@ def aggregates(odin: pd.DataFrame, hh_types: pd.DataFrame) -> dict:
     km = trips["dist_hm"] / 10.0
     pt_km = pd.DataFrame({"train_km": [km[trips["mode"] == TRAIN].sum()],
                           "btm_km": [km[trips["mode"] == BTM].sum()]})
+    units = pd.DataFrame({"journeys_per_tour": [
+        (rf["j_all"] * rf["w_eff"]).sum() / (rf["n_all"] * rf["w_eff"]).sum()]})
+    bench_t = tr[~tr["any_commute"] & np.isfinite(tr["km"]) & (tr["km"] > 0)]
+    bench_j = jr[~jr["any_commute"] & np.isfinite(jr["km"]) & (jr["km"] > 0)]
+    cdf = pd.concat([_cdf(bench_t["km"], bench_t["w_person"]).assign(unit="tour"),
+                     _cdf(bench_j["km"], bench_j["w_person"]).assign(unit="journey")],
+                    ignore_index=True)[["unit", "km", "share"]]
     return {"crosswalk": cw, "band_rates": band, "composition": comp,
             "passenger_share": pass_share, "commute_tours": commute,
-            "commuter_rates": commuters, "pt_km": pt_km}
+            "commuter_rates": commuters, "pt_km": pt_km, "units": units,
+            "km_cdf": cdf}
+
+
+KM_GRID = np.round(np.concatenate([np.arange(0.5, 20, 0.5), np.arange(20, 100, 2.5),
+                                   np.arange(100, 1001, 25)]), 2)
+
+
+def _cdf(km: pd.Series, w: pd.Series) -> pd.DataFrame:
+    """Weighted share of km up to each grid point (an aggregate CDF)."""
+    ok = np.isfinite(km) & np.isfinite(w) & (w > 0)
+    k, ww = km[ok].to_numpy(float), w[ok].to_numpy(float)
+    return pd.DataFrame({"km": KM_GRID,
+                         "share": [ww[k <= x].sum() / ww.sum() for x in KM_GRID]})
 
 
 def write_aggregates(tables: dict, folder: str | Path) -> None:
@@ -243,5 +304,5 @@ def read_aggregates(folder: str | Path) -> dict:
     """Read the tables written by `write_aggregates`."""
     folder = Path(folder)
     names = ("crosswalk", "band_rates", "composition", "passenger_share",
-             "commute_tours", "commuter_rates", "pt_km")
+             "commute_tours", "commuter_rates", "pt_km", "units", "km_cdf")
     return {n: pd.read_csv(folder / f"{n}.csv") for n in names}

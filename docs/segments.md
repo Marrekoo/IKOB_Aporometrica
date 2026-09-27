@@ -81,7 +81,7 @@ loads it:
   tariff); `envelope/breakdown.py` shows which scenario sets each bound.
   `high` is set in every cell by a fixed 8 tours per month, `low` by the
   highest tour rate of the household type; the tour count accounts for 60-99%
-  of the width. Above the highest Nibud anchor (20 of the 36 cells: singles
+  of the width. Above the highest Nibud anchor (19 of the 36 cells: singles
   from D8, couples from D7, families from D5) the bounds rest on the minimum
   basket and are upper bounds.
 * **Non-monotone in income.** Single households: D6 low 25.26 against D5
@@ -91,7 +91,11 @@ loads it:
 * **Other bases.** `legs_per_tour` (a number, or a mapping per household
   type) sets the divisor: `load_reference_budgets(path, legs_per_tour=1)`
   reads the table as per journey, `rescale_budgets(env, ...)` converts a
-  loaded envelope. The atom does not change.
+  loaded envelope. A table built per journey (`envelope.unit` = journey,
+  column `unit`) is never divided. The atom does not change.
+* **Further columns.** `central` (the central scenario, converted like the
+  bounds), `upper_bound` and `gate_slack` are carried along
+  (`envelope/README.md`).
 
 A general **envelope table** (`load_envelope`) has columns
 `household_type, income_class, low, high[, atom]`; every requested segment

@@ -28,7 +28,8 @@ File names inside `inputs/` that the commands look for by default are
 | `osm/*.osm.pbf` | OpenStreetMap: national extract (`paths.osm_national`) and province extracts (`paths.osm_regions`) | Geofabrik | R5, Valhalla, OTP, `skims.peak`, `skims.osm_walk` |
 | `gtfs/gtfs-nl.zip` | national GTFS feed | OVapi / NDOV | `skims.gtfs_pt`, OTP |
 | `survey/S_T_work.csv` | Weibull time margins per mode and job type: `wfh` (No home working / Home working), `mode`, `eta` (minutes), `k`, `median`, `class` | survey fit (seed: `data/margins/`) | `segments.time_margins` |
-| `envelope/reference_budgets.csv` | reference budgets: `household_type, income_class (D1-D10), low, high` (EUR per journey), `km_low, km_high` (car km equivalents); D1 rows blank (censored, atom 1) | the paper's envelope (seed: `data/envelope/`) | `segments.bridge.load_reference_budgets` |
+| `envelope/reference_budgets.csv` | reference budgets: `household_type, income_class (D1-D10), low, high` (EUR per priced home-based tour; divided by `accessibility.legs_per_tour` on loading unless `unit` is journey), `km_low, km_high` (distance equivalents), `central`, `unit`, `upper_bound`, `gate_slack`; D1 rows blank (censored, atom 1) | the paper's envelope (seed: `data/envelope/`) | `segments.bridge.load_reference_budgets` |
+| `envelope/odin/<2023, 2022_2023>/*.csv` | ODiN aggregates for the envelope (tour and journey rates, composition, commuting, distance distribution); published, see `data/envelope/odin/README.md` | seed: `data/envelope/odin/` | `ikob2.envelope` |
 | `envelope/sources/*.csv` | the inputs of the reference-budget envelope: Nibud basket, Warnaar anchors, CBS income percentiles, car costs, ...; each row with its source (`envelope/README.md`) | seed: `data/envelope/sources/` | `ikob2.envelope` |
 | `tariffs/lime_price_scales*.csv`, `tariffs/pt_fare_scales*.csv` | multipliers on the Lime price and on the PT fare by segment: `household_type, income_class, scale` (`*` = all, later rows override) | scenario definitions (seed: `data/tariffs/`) | `run.shared_bike.load_price_scales` |
 | `odin/ODIN_22_23_clean.csv` | pooled ODiN 2022-23 (persons, households, tours, legs) | CBS / RWS | `segments.car_availability`, `segments.pt_spend` |
@@ -61,7 +62,7 @@ not these.
 | `jobs/sector_jobs_<year>.csv` | `buurtcode, L01..L15`: jobs per LISA sector per buurt | `cli.segments jobs` |
 | `ownership/car_availability_<study>.csv` | `household_type, income_class, n_national, share_national, n_local, share_local, share` | `cli.segments car-availability` |
 | `ownership/pt_spend_<study>.csv` | per income decile: PT trips per person and year, mean fare, spending (local shrunk and national) | `cli.segments pt-spend` |
-| `envelope/odin/*.csv` | ODiN aggregates for the envelope (tour rates, composition, commuting) | `cli.envelope aggregates` |
+| `envelope/odin/*.csv` | ODiN aggregates made from the microdata (the published ones are under `inputs/envelope/odin/`) | `cli.envelope aggregates` |
 | `envelope/*.csv` | the re-derived envelope: anchors, residuals, tour bounds, scenario grid, `reference_budgets.csv` | `cli.envelope build` |
 | `hubs/utrecht_hubs_s2.csv` | extra Lime hubs of scenario S2: `hub, lat, lon, precision, source, buurtcode, access, bike_share, score` | `cli.hubs propose` |
 | `skims/<study>/` | skim store (below) | `cli.skims build`, `build-distance`, `build-pt` |

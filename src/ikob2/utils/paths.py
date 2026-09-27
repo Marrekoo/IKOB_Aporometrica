@@ -97,6 +97,8 @@ intermediate/ and outputs/ can be deleted and rebuilt from inputs/.
 SEED = (
     ("envelope", "inputs", "envelope", "*.csv"),
     ("envelope/sources", "inputs", "envelope/sources", "*.csv"),
+    ("envelope/odin/2023", "inputs", "envelope/odin/2023", "*.csv"),
+    ("envelope/odin/2022_2023", "inputs", "envelope/odin/2022_2023", "*.csv"),
     ("margins", "inputs", "survey", "*.csv"),
     ("tariffs", "inputs", "tariffs", "*.csv"),
     ("statline", "cache", "statline", "*.csv"),
@@ -188,6 +190,9 @@ class DataLayout:
 
     def envelope_sources(self) -> Path:
         return self.inputs / "envelope" / DEFAULTS.envelope.sources
+
+    def envelope_aggregates(self, name: str = DEFAULTS.envelope.aggregates) -> Path:
+        return self.inputs / "envelope" / "odin" / name
 
     def envelope_dir(self) -> Path:
         return self.intermediate / "envelope"

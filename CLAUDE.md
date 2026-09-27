@@ -45,7 +45,11 @@ in `.pre-commit-config.yaml` equal to the locked one.
 * **ODiN microdata requires a DANS permission.** Never paste, print or send
   rows of the ODiN files (`inputs/odin/`) to an AI tool or into logs, issues,
   commits or documentation. Work with code and aggregate outputs only (the
-  tables written by `cli.segments car-availability` and `pt-spend`).
+  tables written by `cli.segments car-availability`, `pt-spend` and
+  `cli.envelope aggregates`). The envelope aggregates in
+  `data/envelope/odin/` are published with the author's approval
+  (`data/envelope/odin/README.md`); publishing other ODiN-derived tables
+  needs the author's decision.
 
 ## Modelling decisions not to change without asking
 

@@ -172,18 +172,44 @@ def test_budget_per_tour_is_residual_over_tours(src):
 
 # ── regression: the published table ──────────────────────────────────
 
-def _aggregates_dir():
-    root = os.environ.get("IKOB_DATA_ROOT")
-    d = Path(root) / "intermediate" / "envelope" / "odin" if root else None
-    return d if d is not None and (d / "band_rates.csv").exists() else None
+AGGREGATES = SOURCES.parent / "odin"
 
 
-@pytest.mark.skipif(_aggregates_dir() is None,
-                    reason="ODiN aggregates not available (set IKOB_DATA_ROOT; "
-                           "python -m ikob2.cli.envelope aggregates)")
 def test_sources_and_aggregates_reproduce_reference_budgets():
     from ikob2.cli.envelope import build
 
-    got = build(SOURCES, _aggregates_dir(), P)["reference_budgets"]
+    got = build(SOURCES, AGGREGATES / "2023", P)["reference_budgets"]
     want = pd.read_csv(REFERENCE)
     pd.testing.assert_frame_equal(got, want, check_dtype=False)
+
+
+def test_published_aggregates_match_a_fresh_aggregation_when_odin_is_there():
+    root = os.environ.get("IKOB_DATA_ROOT")
+    f = Path(root) / "inputs" / "odin" / "ODIN_23.csv" if root else None
+    if f is None or not f.exists():
+        pytest.skip("ODiN 2023 microdata not available (IKOB_DATA_ROOT)")
+    src = load_sources(SOURCES)
+    fresh = odin.aggregates(odin.read_odin(f), src["odin_household_types"])
+    pub = odin.read_aggregates(AGGREGATES / "2023")
+    for name, df in fresh.items():
+        np.testing.assert_allclose(df.select_dtypes("number").to_numpy(float),
+                                   pub[name].select_dtypes("number").to_numpy(float),
+                                   rtol=1e-12, atol=1e-12, err_msg=name)
+
+
+@pytest.mark.parametrize("switch, value", [
+    ("unit", "journey"), ("n_lower", "lowest_decile"), ("spread", "gamma"),
+    ("gamma_anchor", 0.0), ("income_bridge", "per_adult"),
+    ("quantile_kappa", False), ("aggregates", "2022_2023"), ("car_all_tariffs", True)])
+def test_every_switch_builds_a_valid_envelope(switch, value):
+    from ikob2.cli.envelope import build
+    from ikob2.segments.bridge import validate_envelope
+
+    prm = P.with_values({f"envelope.{switch}": value})
+    agg = AGGREGATES / (value if switch == "aggregates" else "2023")
+    t = build(SOURCES, agg, prm)["reference_budgets"]
+    ok = t.dropna(subset=["low", "high"])
+    assert len(ok) == 36 and (ok["low"] <= ok["central"] + 1e-9).all() \
+        and (ok["central"] <= ok["high"] + 1e-9).all()
+    validate_envelope(ok[["household_type", "income_class", "low", "high"]])
+    assert set(t["unit"]) == {prm.envelope.unit}
