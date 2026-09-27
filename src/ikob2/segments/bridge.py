@@ -42,6 +42,7 @@ from ikob2.domain.filter_config import (
     CurveSpec,
 )
 from ikob2.domain.segments import Segment
+from ikob2.params import DEFAULTS
 from ikob2.segments.config import HOUSEHOLD_TYPES, INCOME_CLASSES
 
 logger = logging.getLogger(__name__)
@@ -113,17 +114,16 @@ def load_envelope(path: str | Path, **kwargs) -> pd.DataFrame:
 
 def rescale_budgets(envelope: pd.DataFrame,
                     legs_per_tour: float | Mapping[str, float]) -> pd.DataFrame:
-    """Divide the per-tour budgets by a number of legs (a sensitivity).
+    """Convert per-tour budgets to per-journey budgets.
 
-    The reference budgets are per ODiN tour. An ODiN tour (a
-    'verplaatsing') is one movement in one direction for a single purpose
-    and consists of one or more legs ('ritten', walking legs included;
-    it is not a round trip). The cost matrices price a whole door-to-door
-    journey, that is one tour, so the table applies as it is:
-    `legs_per_tour = 1.0`, the default. A larger number would divide the
-    budgets as if each leg were priced and gated separately
-    (low / legs, high / legs, the km equivalents likewise), which the
-    model does not do; use it as a sensitivity only.
+    The reference budgets are per HOME-BASED TOUR: the envelope script
+    divides a household's monthly mobility residual by its number of
+    home-based tours (chains of one-way journeys from home back to home).
+    The cost matrices price one one-way journey (an ODiN verplaatsing,
+    door to door), so the budgets are divided by the number of one-way
+    journeys per tour (low / n, high / n, the km equivalents likewise);
+    ODiN 2022-23 gives 2.2 (envelope/journeys_per_tour.py), the default
+    `accessibility.legs_per_tour`. 1.0 leaves the table as it is.
 
     legs_per_tour : one number for all segments, or a mapping household
         type -> number (every type present in the envelope is needed).
@@ -151,7 +151,8 @@ def rescale_budgets(envelope: pd.DataFrame,
 
 def load_reference_budgets(path: str | Path, *,
                            censored: str = "atom",
-                           legs_per_tour: float | Mapping[str, float] = 1.0
+                           legs_per_tour: float | Mapping[str, float] =
+                           DEFAULTS.accessibility.legs_per_tour
                            ) -> pd.DataFrame:
     """The reference-budget table (per-trip cost budgets by household
     type and income decile; data/envelope/reference_budgets.csv) as a
@@ -167,11 +168,10 @@ def load_reference_budgets(path: str | Path, *,
                 `only=`) leave those segments out of a run;
       "error" : raise.
 
-    legs_per_tour : the basis of the table's budgets. The published
-    values are per ODiN tour; the default 1.0 reads them as per ONE-WAY
-    TRIP (no conversion). Pass the average number of priced legs per
-    tour (a number, or a mapping household type -> number) to divide
-    them down to per-trip budgets; see `rescale_budgets`.
+    legs_per_tour : one-way journeys per home-based tour (a number, or a
+    mapping household type -> number): the table's budgets are per
+    home-based tour and are divided by it to give per-journey budgets;
+    default `accessibility.legs_per_tour` (2.2); see `rescale_budgets`.
 
     Extra columns (km_low, km_high, the distance equivalents of the
     budgets) are kept.

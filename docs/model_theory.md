@@ -85,12 +85,11 @@ for decile 1, so no priced journey is acceptable to it. The atom is reported
 per row (`atom`), and `accessibility_normalised = accessibility / (1 - atom)`.
 Free modes have `S_M = 1`.
 
-The budgets are per ODiN tour, one whole one-way journey for a single purpose
-with all its legs; this is what the model's door-to-door cost prices, so the
-table is used as it stands (`legs_per_tour = 1`). A larger `legs_per_tour`
-divides the bounds as a sensitivity (`segments.bridge.rescale_budgets`). The
-bounds are the residual envelope divided by the class's ODiN trips, so they
-need not increase with income (see `segments.md`).
+The envelope gives budgets per home-based tour (a chain of one-way journeys
+from home back to home), while `c_ijm` is the cost of one one-way journey.
+The bounds are therefore divided by the number of journeys per tour,
+`legs_per_tour` = 2.2 (ODiN 2022-23; `segments.bridge.rescale_budgets`). The
+bounds need not increase with income (see `segments.md`).
 
 ## 4. Dependence between the gates
 
@@ -194,7 +193,7 @@ rectangular and use the Hansen form (`run_hansen`).
 * **Specifications**: the grid M0-M3 over the scenarios, with correlations
   of levels and of gains between specifications (`cli.paper_tables`).
 * **Dependence bounds**: `--copula countermonotone` and `--spec m3 --theta inf`.
-* **Budget basis**: `--legs-per-tour`.
+* **Budget basis**: `--legs-per-tour` (1 reads the table as per journey).
 * **Congestion**: a peak-load skim store (`skims.md`).
 * **Controlled comparison**: `--common-jobs` gives every segment all jobs, so
   segments differ only in their margins.

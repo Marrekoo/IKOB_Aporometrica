@@ -2,7 +2,7 @@
 # pre-commit --hook-type pre-push` once per clone.
 #   ruff    before each commit, in its own environment pinned to the version
 #           of requirements-lock.txt (keep the two equal);
-#   pytest  before each push, in the project environment (activate it first).
+#   pytest  before each push, in the project environment (.venv when present).
 repos:
   - repo: local
     hooks:
@@ -14,7 +14,9 @@ repos:
         types: [python]
       - id: pytest
         name: pytest
-        entry: pytest -q
+        # the project environment when there is one (IDEs do not always put
+        # it on PATH), else whatever python is on PATH
+        entry: bash -c 'if [ -x .venv/bin/python ]; then .venv/bin/python -m pytest -q; else python -m pytest -q; fi'
         language: system
         pass_filenames: false
         always_run: true

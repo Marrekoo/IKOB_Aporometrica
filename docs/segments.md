@@ -62,20 +62,36 @@ loads it:
   (no priced journey acceptable); `"drop"` leaves it out.
 * `onbekend` has no row; `envelope_segment_names(env)` lists the 40 segments
   with a budget, and only those are run.
-* **Basis.** The bounds are per ODiN tour ("verplaatsing"): one movement in
-  one direction for one purpose, made of one or more legs ("ritten",
-  walking legs included), not a round trip. The model's door-to-door times
-  and journey costs (the whole fare plus shared-bicycle rentals) are those of
-  one tour, so the table applies as it is (`legs_per_tour = 1`). In ODiN 94.6%
-  of regular tours have one leg; public-transport tours average 2.6 legs, of
-  which 1.3 are public-transport legs.
-* **Non-monotone in income.** Each bound is the residual envelope divided by
-  that class's priced ODiN trips, so a decile that travels more has a lower
-  per-trip bound (single households: D6 low 25.26 against D5 34.58). This is
-  a property of the data.
-* **Sensitivity.** `legs_per_tour` (a number, or a mapping per household
-  type) divides the bounds: `load_reference_budgets(path, legs_per_tour=2)`
-  or `rescale_budgets(env, ...)`. The atom does not change.
+* **Basis: per home-based tour, converted to per journey.** The envelope
+  script divides a household's monthly mobility residual by its number of
+  priced *home-based tours*: a person's regular trips in order, a new tour
+  starting after every trip that ends at home. A tour is therefore a chain of
+  one-way journeys (ODiN verplaatsingen) from home back to home. The model
+  prices one one-way journey door to door (the whole fare plus shared-bicycle
+  rentals), so the bounds are divided by the number of journeys per tour,
+  `accessibility.legs_per_tour` = 2.2. On ODiN 2022-23 (and on ODiN 2023, the
+  envelope script's input) a priced home-based tour has 2.19 journeys on
+  average (2.17 weighted); 12% of tours have one journey, 66% two, 15% three;
+  the median tour is 19 km against 8 km per priced journey
+  (`envelope/journeys_per_tour.py`). The parameter name is historical: it
+  counts journeys, not the legs ("ritten") within a journey.
+* **What sets the bounds.** `low` and `high` are the minimum and maximum of
+  the per-tour budget over the envelope script's scenario grid (share of the
+  example basket given up, tours per month, rent bracket, commuting, PT
+  tariff); `envelope/breakdown.py` shows which scenario sets each bound.
+  `high` is set in every cell by a fixed 8 tours per month, `low` by the
+  highest tour rate of the household type; the tour count accounts for 60-99%
+  of the width. Above the highest Nibud anchor (20 of the 36 cells: singles
+  from D8, couples from D7, families from D5) the bounds rest on the minimum
+  basket and are upper bounds.
+* **Non-monotone in income.** Single households: D6 low 25.26 against D5
+  34.58. The high-rent scenario of D6 jumps to the anchor rent of 880 EUR a
+  month (a free-market rent at 1.5 x modal income) where D5 still has 540; it
+  is a property of the rent bracket, not of travel behaviour.
+* **Other bases.** `legs_per_tour` (a number, or a mapping per household
+  type) sets the divisor: `load_reference_budgets(path, legs_per_tour=1)`
+  reads the table as per journey, `rescale_budgets(env, ...)` converts a
+  loaded envelope. The atom does not change.
 
 A general **envelope table** (`load_envelope`) has columns
 `household_type, income_class, low, high[, atom]`; every requested segment

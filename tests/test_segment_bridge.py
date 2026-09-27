@@ -439,7 +439,7 @@ BUDGETS = "data/envelope/reference_budgets.csv"
 
 
 def test_reference_budgets_match_the_published_table():
-    env = load_reference_budgets(BUDGETS)
+    env = load_reference_budgets(BUDGETS, legs_per_tour=1.0)
     assert len(env) == 40
     assert set(env.household_type) == {"single", "couple", "single_parent",
                                        "couple_children"}
@@ -478,7 +478,7 @@ def test_censored_first_decile_policies():
 
 
 def test_reference_budgets_drive_segments_and_the_gate():
-    env = load_reference_budgets(BUDGETS)
+    env = load_reference_budgets(BUDGETS, legs_per_tour=1.0)
     names = envelope_segment_names(env)
     assert len(names) == 40 and "single_onbekend" not in names
     segs = build_segments(TIME, envelope=env, money_cost_id=FARE, only=names)
@@ -503,17 +503,21 @@ def test_reference_budgets_drive_segments_and_the_gate():
 from ikob2.segments.bridge import rescale_budgets  # noqa: E402
 
 
-def test_default_basis_is_one_way_trip_and_leaves_the_table_unchanged():
+def test_default_basis_converts_per_tour_to_per_journey():
+    # the table is per home-based tour; the default divides by 2.2 journeys
     env = load_reference_budgets(BUDGETS)
     raw = pd.read_csv(BUDGETS)
     d2 = env[(env.household_type == "couple") & (env.income_class == "D2")].iloc[0]
-    assert (d2.low, d2.high) == (4.87, 23.52)
-    assert env.attrs["legs_per_tour"] == 1.0
+    assert (d2.low, d2.high) == (pytest.approx(4.87 / 2.2), pytest.approx(23.52 / 2.2))
+    assert env.attrs["legs_per_tour"] == 2.2
     assert len(env) == len(raw)
+    one = load_reference_budgets(BUDGETS, legs_per_tour=1.0)
+    d2 = one[(one.household_type == "couple") & (one.income_class == "D2")].iloc[0]
+    assert (d2.low, d2.high) == (4.87, 23.52)          # 1: the table as it is
 
 
 def test_legs_per_tour_divides_bounds_and_km_but_not_atom():
-    base = load_reference_budgets(BUDGETS)
+    base = load_reference_budgets(BUDGETS, legs_per_tour=1.0)
     two = load_reference_budgets(BUDGETS, legs_per_tour=2.0)
     for col in ("low", "high", "km_low", "km_high"):
         np.testing.assert_allclose(two[col], base[col] / 2.0)
@@ -526,7 +530,7 @@ def test_legs_per_tour_per_household_type():
     legs = {"single": 1.5, "couple": 2.0, "single_parent": 2.5,
             "couple_children": 3.0}
     env = load_reference_budgets(BUDGETS, legs_per_tour=legs)
-    base = load_reference_budgets(BUDGETS)
+    base = load_reference_budgets(BUDGETS, legs_per_tour=1.0)
     for t, n in legs.items():
         sel = env.household_type == t
         np.testing.assert_allclose(env.loc[sel, "high"],
@@ -545,7 +549,7 @@ def test_legs_per_tour_validation(bad):
 def test_rescaled_budget_changes_who_clears_a_fare():
     # a 40 EUR one-way trip: cleared by D5 couples (23-148 EUR) when the
     # table is read per trip, but only partly once it is per 3-leg tour
-    env1 = load_reference_budgets(BUDGETS)
+    env1 = load_reference_budgets(BUDGETS, legs_per_tour=1.0)
     env3 = rescale_budgets(env1, 3.0)
     s1 = build_segments(TIME, envelope=env1, money_cost_id=FARE,
                         only=["couple_D5"])[0].class_filter.cost

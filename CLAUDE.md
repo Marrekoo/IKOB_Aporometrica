@@ -49,8 +49,9 @@ in `.pre-commit-config.yaml` equal to the locked one.
 
 ## Modelling decisions not to change without asking
 
-* The reference budgets are per ODiN tour (one whole one-way journey);
-  `legs_per_tour` stays 1 except as an explicit sensitivity.
+* The reference budgets are per home-based tour and are divided by the
+  number of one-way journeys per tour, `legs_per_tour` = 2.2 (ODiN 2022-23,
+  `envelope/journeys_per_tour.py`); other values only as a sensitivity.
 * Results are framed as capability / equity (gain per euro, share of the gap
   closed); no fiscal-return estimates.
 * Runs that set bicycle ownership to zero ("nobike") describe accessibility in
