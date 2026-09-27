@@ -1,7 +1,11 @@
-examples/
+# local projects of the removed IKOB-file workflow
+examples/advanced_project/
+examples/minimal_project/
+examples/test/
+# data folder built by examples/tiny/make_data.py
+examples/tiny/data/
 .venv/
 exportToHTML/
-!docs/examples
 __pycache__/
 *.egg-info/
 data/skim_dev/
@@ -11,3 +15,4 @@ data/calibration/*.routes.csv
 # draft paper: results and text stay local
 docs/paper/
 docs/paper_status.md
+build/

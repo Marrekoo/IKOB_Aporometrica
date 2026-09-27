@@ -19,7 +19,6 @@ from ikob2.segments.marginals import (
 from ikob2.segments.pipeline import compute_segments
 from ikob2.segments.structure import (
     fit_structure_model,
-    gemeente_covariates,
     std_vec,
 )
 
@@ -109,13 +108,13 @@ def make_income_raw(n_gm=14, seed=0):
     rng = np.random.default_rng(seed)
     rows = []
     for g in range(n_gm):
-        for t, key in CFG.household_key_map.items():
+        for key in CFG.household_key_map.values():
             pct = rng.dirichlet(np.ones(10) * 8) * 100
             pct = np.round(pct)
             row = {"Populatie": "1050010", "KenmerkenVanHuishoudens": key,
                    "RegioS": f"GM{1000 + g:04d}  ", "Perioden": "2022JJ00",
                    CFG.income_total_col: float(rng.uniform(2, 60))}
-            for (cls, col), p in zip(CFG.income_decile_cols.items(), pct):
+            for col, p in zip(CFG.income_decile_cols.values(), pct):
                 row[col] = p
             rows.append(row)
     return pd.DataFrame(rows)

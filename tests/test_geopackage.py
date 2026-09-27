@@ -169,7 +169,6 @@ def test_nullable_extension_dtype_columns_do_not_crash(tmp_path, monkeypatch):
 
 def test_every_negative_cbs_code_becomes_nan(tmp_path):
     """The suppression code differs by vintage (-99999999, -99997, -99995)."""
-    import geopandas
     gpkg = tmp_path / "cbs.gpkg"
     gdf = make_buurten_gpkg(gpkg, with_water=False)
     gdf["aantal_inwoners"] = [-99997, -99995, 500]

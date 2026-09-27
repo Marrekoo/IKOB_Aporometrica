@@ -16,7 +16,6 @@ Inputs are accessibility tables (`AccessibilityResult.table`).
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 KEY = ["buurtcode", "segment"]

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from ikob2.run.accessibility import MixedMode, ModeMatrices, OptionSet
+from ikob2.run.accessibility import OptionSet
 from ikob2.run.scenarios import Usage, calibrate_flat, choice_terms, lime_usage
 from ikob2.run.shared_bike import SharedBikeTariffs
 from tests.test_price_scale import opts
@@ -56,7 +56,6 @@ def test_calibration_recovers_the_price_when_volume_does_not_react():
     tiers = SharedBikeTariffs()
 
     def usage_for(p):
-        price = 4.0 if p is None else p
         return Usage(revenue=4.0 * 100.0 if p is None else p * 100.0,
                      rentals=100.0, rentals_scaled=100.0)
     for method in ("weighted_mean", "fixed_point"):

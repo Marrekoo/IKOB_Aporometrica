@@ -74,7 +74,7 @@ def _pick_layer(path: Path, layer: str | None) -> str:
         return layer
     if len(layers) == 1:
         return layers[0]
-    buurt_layers = [l for l in layers if "buurt" in l.lower()]
+    buurt_layers = [name for name in layers if "buurt" in name.lower()]
     if len(buurt_layers) == 1:
         return buurt_layers[0]
     raise ValueError(

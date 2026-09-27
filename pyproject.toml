@@ -15,12 +15,16 @@ dependencies = [
     "shapely>=2.0",
     "pyogrio>=0.7",
     "statsmodels>=0.14",
+    "pyproj>=3.6",
+    "threadpoolctl>=3.1",
+    "pyarrow>=14",
 ]
 
 [project.optional-dependencies]
 test = ["pytest>=7.0"]
-routing = ["r5py>=1.1", "pyvalhalla>=3.9"]   # R5 (Java 21) and a local Valhalla server
+routing = ["r5py>=1.1", "pyvalhalla>=3.9", "osmium>=3.7"]   # R5 (Java 21), a local Valhalla server, OSM extracts
 legacy = ["openpyxl>=3.1"]   # read the Excel inputs (LISA, IKOB job table)
+dev = ["ruff>=0.6", "pre-commit>=3.7"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -28,3 +32,17 @@ where = ["src"]
 [tool.setuptools.package-data]
 "ikob2" = ["defaults.toml"]
 "ikob2.skims" = ["*.csv"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+# pyflakes (undefined names, unused imports/variables), pycodestyle errors,
+# bugbear (likely bugs)
+select = ["E4", "E7", "E9", "F", "B"]
+# zip(strict=True) would change behaviour where lengths differ on purpose
+ignore = ["B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

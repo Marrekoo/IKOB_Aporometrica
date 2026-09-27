@@ -345,12 +345,23 @@ def test_m0_is_a_step_in_generalised_time_at_the_median_acceptable_time():
     vot = {"car": 12.0}
     res = run(pop, jobs, wfh, wage, {"car": ModeMatrices(time, cost, "fare")},
               spec="m0", vot=vot)
-    # a hand computation for one segment, origin O0: sum of jobs within T*
+    # hand computation: the income-matched jobs within the median acceptable
+    # time T*_w of each job type, in generalised minutes t + 60 c / VoT
     med = {w: median_time(MARGINS[("car", w)]) for w in WFH_TYPES}
     assert med["no_wfh"] > 0
-    g = time + cost * 60.0 / 12.0
-    t = res.table[(res.table.segment == NAMES[0]) & (res.table.buurtcode == "O0")]
-    assert (t["accessibility"] >= 0).all()
+    g = time.astype(float) + cost.astype(float) * 60.0 / vot["car"]
+    W = sector_income_weights(wage, jobs.sum())
+    no, yes = split_jobs_by_wfh(jobs, wfh)
+    expected = np.zeros(3)
+    for wtype, j in (("no_wfh", no), ("wfh_possible", yes)):
+        pool = sector_pools(j, DESTS, W)["D5"].astype(float)
+        expected += fam.survival("step", (med[wtype],), g) @ pool
+    got = res.table[(res.table["mode"] == "car")
+                    & (res.table.segment == "couple_D5")].sort_values(
+        "buurtcode")["accessibility"].to_numpy()
+    np.testing.assert_allclose(got, expected, rtol=1e-4)
+    assert 0 < expected.sum() < sum(
+        sector_pools(j, DESTS, W)["D5"].sum() * 3 for j in (no, yes))
     # the same run with the cost far above the value of time removes access
     dear = run(pop, jobs, wfh, wage,
                {"car": ModeMatrices(time, cost * 1000, "fare")},

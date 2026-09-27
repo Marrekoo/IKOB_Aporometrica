@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ikob2.core.decay_curves import apply_decay, logistic
+from ikob2.core.decay_curves import apply_decay
 from ikob2.core.numerics import DTYPE, ensure_dense
 from ikob2.data.validation import validate_pools
 from ikob2.domain.filter_config import INDEPENDENCE, ClassFilter, CurveSpec

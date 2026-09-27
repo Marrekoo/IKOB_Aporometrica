@@ -430,20 +430,28 @@ def _qspline(params):
     for i in range(n - 1):
         dl = delta[i]
         if dl == 0.0:
-            starts.append(x[i]); ends.append(x[i + 1])
-            A.append(y[i]); B.append(0.0); C.append(0.0)
+            starts.append(x[i])
+            ends.append(x[i + 1])
+            A.append(y[i])
+            B.append(0.0)
+            C.append(0.0)
             continue
         al, be = d[i] / dl, d[i + 1] / dl
         t = (1.0 - be) / (al - be) if (al - 1.0) * (be - 1.0) < 0 else 0.5
         xi = x[i] + t * h[i]
         s = 2.0 * dl - t * d[i] - (1.0 - t) * d[i + 1]
         # [x_i, xi]
-        starts.append(x[i]); ends.append(xi)
-        A.append(y[i]); B.append(d[i]); C.append((s - d[i]) / (2.0 * t * h[i]))
+        starts.append(x[i])
+        ends.append(xi)
+        A.append(y[i])
+        B.append(d[i])
+        C.append((s - d[i]) / (2.0 * t * h[i]))
         # [xi, x_{i+1}]
         y_xi = y[i] + (d[i] + s) / 2.0 * t * h[i]
-        starts.append(xi); ends.append(x[i + 1])
-        A.append(y_xi); B.append(s)
+        starts.append(xi)
+        ends.append(x[i + 1])
+        A.append(y_xi)
+        B.append(s)
         C.append((d[i + 1] - s) / (2.0 * (1.0 - t) * h[i]))
     return (np.array(starts), np.array(ends), np.array(A), np.array(B),
             np.array(C), float(x[-1]))

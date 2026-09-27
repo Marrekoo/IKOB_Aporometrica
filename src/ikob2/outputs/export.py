@@ -23,8 +23,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    import geopandas as gpd
 
 logger = logging.getLogger(__name__)
 

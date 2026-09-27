@@ -39,7 +39,6 @@ over its trips.
 
 from __future__ import annotations
 
-import io
 import logging
 import zipfile
 from dataclasses import dataclass, field
@@ -228,7 +227,7 @@ def reduce_stop_times(st: pd.DataFrame, stops: pd.DataFrame,
                           as_index=False)["minutes"].median()
     # keep only rides between stops that have a headway (run in the window)
     have = set(zip(line_stops["line_id"], line_stops["stop_id"]))
-    mask = [(l, a) in have and (l, b) in have for l, a, b in zip(
+    mask = [(line, a) in have and (line, b) in have for line, a, b in zip(
         rides["line_id"], rides["from_stop"], rides["to_stop"])]
     rides = rides[mask]
 
@@ -316,7 +315,7 @@ class PtRouter:
         # least one ride" (r); only r can alight, so a boarding is never
         # cancelled at the same stop
         n_ls = len(ls)
-        ls_index = {(l, s): i for i, (l, s) in enumerate(
+        ls_index = {(line, s): i for i, (line, s) in enumerate(
             zip(ls["line_id"], ls["stop_id"]))}
         self.n_stops, self.n_line_stops = n_stops, 2 * n_ls
         b0 = 2 * n_stops                       # first "boarded" node
@@ -341,7 +340,8 @@ class PtRouter:
         ).fillna(False).to_numpy(dtype=bool)
         for layer in (0, 1):                                        # board
             u.append(sidx[b] + layer * n_stops)
-            v.append(lsn[b]); w.append(wait[b])
+            v.append(lsn[b])
+            w.append(wait[b])
             attrs(int(b.sum()), board=(~line_rail[b]).astype(float))
         a = ls["can_alight"].to_numpy()
         u.append(np.arange(n_ls)[a] + r0)                            # alight
@@ -350,8 +350,8 @@ class PtRouter:
         attrs(int(a.sum()))
 
         r = tt.rides
-        ru = [ls_index.get((l, s)) for l, s in zip(r["line_id"], r["from_stop"])]
-        rv = [ls_index.get((l, s)) for l, s in zip(r["line_id"], r["to_stop"])]
+        ru = [ls_index.get((line, s)) for line, s in zip(r["line_id"], r["from_stop"])]
+        rv = [ls_index.get((line, s)) for line, s in zip(r["line_id"], r["to_stop"])]
         ok = np.array([a_ is not None and b_ is not None
                        for a_, b_ in zip(ru, rv)], dtype=bool)
         ru_i = np.array(ru, dtype=object)[ok].astype(int)
@@ -380,9 +380,11 @@ class PtRouter:
                            - self.stop_xy[pairs[:, 1]]).T)
             tw = self.walk_min(d)
             # transfers only between after-alighting nodes
-            u.append(pairs[:, 0] + n_stops); v.append(pairs[:, 1] + n_stops)
+            u.append(pairs[:, 0] + n_stops)
+            v.append(pairs[:, 1] + n_stops)
             w.append(tw)
-            u.append(pairs[:, 1] + n_stops); v.append(pairs[:, 0] + n_stops)
+            u.append(pairs[:, 1] + n_stops)
+            v.append(pairs[:, 0] + n_stops)
             w.append(tw)
             attrs(2 * len(pairs))
         self._edges = (np.concatenate(u), np.concatenate(v),

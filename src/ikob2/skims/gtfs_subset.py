@@ -44,7 +44,7 @@ def subset_gtfs(src, dst, bbox, dates, *, chunksize: int = 2_000_000) -> dict:
     trips = trips[trips["service_id"].isin(services)]
     trip_ids = set(trips["trip_id"])
 
-    parts, counts = [], {}
+    parts = []
     for chunk in pd.read_csv(zin.open("stop_times.txt"), dtype=str,
                              chunksize=chunksize):
         chunk = chunk[chunk["trip_id"].isin(trip_ids)

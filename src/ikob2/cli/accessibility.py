@@ -244,7 +244,8 @@ def load_chains(prm, args, store, codes, model):
             raise SystemExit(f"Store lacks mode '{stored}': build it with "
                              f"`cli.skims build-pt --mode-name {stored}` "
                              f"(hub kinds: shared_bike.egress_hub_kinds).")
-        blk = lambda v: store.block("all", stored, v, destinations=codes)  # noqa: E731
+        def blk(v, stored=stored):
+            return store.block("all", stored, v, destinations=codes)
         chains[mode] = {"time": blk("time")}
         if mode.startswith("pt_bw") or mode.startswith("pt_bb"):
             chains[mode]["access_min"] = blk("access_min")

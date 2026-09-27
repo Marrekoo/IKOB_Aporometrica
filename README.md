@@ -38,11 +38,32 @@ hub scenarios.
 | [docs/families.md](docs/families.md) | survival families, hazard diagnostics, time margins |
 | [docs/skims.md](docs/skims.md) | skim store, car/bike/walk/PT times, car cost, peak load, PT fares, bicycle legs |
 | [docs/servers.md](docs/servers.md) | local Valhalla and OpenTripPlanner servers, validation of the PT router |
+| [CLAUDE.md](CLAUDE.md) | working rules for contributors and AI assistants: tests, data licences, fixed modelling decisions |
 
 ## Install and test
 
-    pip install -e ".[test,routing,legacy]"   # routing needs Java 21 (R5, OTP)
-    pytest                                    # ~550 tests, ~20 s
+    python -m venv .venv && . .venv/bin/activate
+    pip install -r requirements-lock.txt      # the exact tested environment (Python 3.13)
+    pip install -e . --no-deps
+    pytest                                    # ~550 tests, ~25 s
+    ruff check src tests examples
+
+`requirements-lock.txt` pins every package; R5 and OpenTripPlanner also need
+Java 21. `pip install -e ".[test,routing,legacy,dev]"` installs from the
+version ranges of `pyproject.toml` instead. CI runs the lint and the tests on
+the locked environment on every push (`.github/workflows/tests.yml`);
+`pre-commit install --hook-type pre-commit --hook-type pre-push` runs them
+locally before commits and pushes.
+
+## Example
+
+    python examples/tiny/make_data.py examples/tiny/data
+    python -m ikob2.cli.accessibility --data-root examples/tiny/data \
+        --study tiny --run example --modes car bike pt
+
+A complete run on a small synthetic data folder in a few seconds; the stored
+output is in `examples/tiny/expected/` and is checked by the tests
+(`examples/tiny/README.md`).
 
 ## Run (outline; full commands in docs/pipeline.md)
 

@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -27,8 +26,8 @@ def test_licence_basis_and_unmodelled_rows_dropped():
             (8, 5, 1, 1, 1.0, 1), (2, 11, 1, 1, 1.0, 1)]   # 'other', unknown income
     hh = car_availability(persons(rows), None, basis="household_car")
     lic = car_availability(persons(rows), None, basis="car_and_licence")
-    pick = lambda t: t[(t.household_type == "couple")
-                       & (t.income_class == "D5")].iloc[0]
+    def pick(t):
+        return t[(t.household_type == "couple") & (t.income_class == "D5")].iloc[0]
     assert pick(hh).share == 1.0 and pick(lic).share == 0.5
     assert pick(hh).n_national == 2
     with pytest.raises(ValueError):

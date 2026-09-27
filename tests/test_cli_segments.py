@@ -40,7 +40,7 @@ def test_paths_come_from_the_layout(tmp_path, parse):
     args = parse(["--data-root", str(tmp_path), "pt-spend"])
     prm = cli.resolve(args)
     cli.fill(args, cli.layout(args, prm), odin=cli.DataLayout.odin,
-             out=lambda l: l.pt_spend())
+             out=lambda lay: lay.pt_spend())
     assert args.odin == str(tmp_path / "inputs/odin/ODIN_22_23_clean.csv")
     assert args.out == str(tmp_path / "intermediate/ownership/pt_spend_utrecht.csv")
 

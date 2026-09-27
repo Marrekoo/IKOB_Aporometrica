@@ -1,6 +1,5 @@
 """Frequency-model public transport skims from GTFS."""
 
-import io
 import zipfile
 
 import numpy as np

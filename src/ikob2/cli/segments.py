@@ -141,7 +141,7 @@ def cmd_fetch(args) -> None:
 def cmd_run(args) -> None:
     prm = resolve(args)
     lay = layout(args, prm)
-    fill(args, lay, kwb=lambda l: l.kwb(args.kwb_year, prm.paths.kwb_version),
+    fill(args, lay, kwb=lambda lay: lay.kwb(args.kwb_year, prm.paths.kwb_version),
          out=DataLayout.segments_gpkg)
     args.statline = args.statline or str(statline_dir(lay))
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
@@ -161,7 +161,7 @@ def cmd_car(args) -> None:
                                                  read_odin_persons)
     prm = resolve(args)
     fill(args, layout(args, prm), odin=DataLayout.odin,
-         out=lambda l: l.car_availability(prm.paths.car_availability_study))
+         out=lambda lay: lay.car_availability(prm.paths.car_availability_study))
     persons = read_odin_persons(args.odin)
     t = car_availability(persons, args.municipality, basis=args.basis,
                          prior=args.car_prior)
@@ -177,7 +177,7 @@ def cmd_pt_spend(args) -> None:
 
     prm = resolve(args)
     fill(args, layout(args, prm), odin=DataLayout.odin,
-         out=lambda l: l.pt_spend(prm.paths.car_availability_study))
+         out=lambda lay: lay.pt_spend(prm.paths.car_availability_study))
     legs = read_odin(args.odin)
     t = pt_spend_by_decile(legs, PtFareModel.from_params(prm.pt_fare),
                            args.municipality, args.spend_prior)
@@ -199,10 +199,10 @@ def cmd_jobs(args) -> None:
 
     prm = resolve(args)
     lay = layout(args, prm)
-    fill(args, lay, kwb=lambda l: l.kwb(args.kwb_year, prm.paths.kwb_version),
+    fill(args, lay, kwb=lambda lay: lay.kwb(args.kwb_year, prm.paths.kwb_version),
          lisa=DataLayout.lisa, ikob_jobs=DataLayout.ikob_jobs,
          education=DataLayout.education_jobs,
-         out=lambda l: l.sector_jobs(args.year))
+         out=lambda lay: lay.sector_jobs(args.year))
     if args.establishments is None:
         args.establishments = str(statline.snapshot_path(
             statline_dir(lay), statline.KWB_ESTABLISHMENTS_SNAPSHOT,

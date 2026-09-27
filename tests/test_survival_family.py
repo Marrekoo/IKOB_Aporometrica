@@ -243,7 +243,7 @@ def test_uniform_cost_margin_block_and_composition():
 # ── Atom at zero ─────────────────────────────────────────────────────
 
 from ikob2.core.decay_curves import with_atom  # noqa: E402
-from ikob2.domain.filter_config import CurveSpec, INDEPENDENCE, ClassFilter  # noqa: E402
+from ikob2.domain.filter_config import INDEPENDENCE, ClassFilter  # noqa: E402
 from ikob2.domain.segments import Segment  # noqa: E402
 from ikob2.engine.runner import SegmentedRunner, evaluate_marginal  # noqa: E402
 

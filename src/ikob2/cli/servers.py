@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-from pathlib import Path
 
 from ikob2.skims import otp_server, valhalla_server
 from ikob2 import params as params_mod

@@ -120,6 +120,9 @@ class SharedBikeTariffs:
         return np.where(np.isfinite(ride), price, np.nan).astype(np.float32)
 
 
+DEFAULT_TARIFFS = SharedBikeTariffs()   # frozen: safe to share as a default
+
+
 # ── price scales by segment (concessions: U-pas, low-income schemes) ─
 
 def load_price_scales(path, household_types=None, income_classes=None
@@ -178,7 +181,7 @@ def _option(store_mode: dict, fare: np.ndarray, *, ov=0.0, lime=None,
 
 
 def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
-                      tariffs: SharedBikeTariffs = SharedBikeTariffs(),
+                      tariffs: SharedBikeTariffs = DEFAULT_TARIFFS,
                       variants=("v0", "v1", "v2"),
                       bike_fixed_min: float = DEFAULTS.bike_leg.fixed_minutes
                       ) -> dict:
@@ -300,7 +303,7 @@ def _legwise(chains, fares, p, dock, dock_bb, fixed, egress, egress_part):
 
 
 def dockless_mode(bike_time: np.ndarray, bike_share: np.ndarray,
-                  tariffs: SharedBikeTariffs = SharedBikeTariffs(),
+                  tariffs: SharedBikeTariffs = DEFAULT_TARIFFS,
                   fixed_min: float = DEFAULTS.bike_leg.fixed_minutes
                   ) -> MixedMode:
     """v4: bicycle accessibility of the whole population when residents

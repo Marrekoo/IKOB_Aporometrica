@@ -126,14 +126,26 @@ safeguards (clips, tolerances).
 * Log statistics are only computed when their level is enabled.
 * The Frechet check can be switched off (`numerics.check_frechet`).
 
-## Tests
+## Tests and checks
 
-`pytest` runs about 550 tests in about 20 seconds: unit tests of the
+`pytest` runs about 550 tests in about 25 seconds: unit tests of the
 numerical building blocks (survival properties, copula bounds, union of
-options, IPF margins, fares against the NS table), the pipeline on small
-synthetic inputs, the scenarios and cost model, and the server clients with
-mocked HTTP. A regression baseline of the segment pipeline is pinned in
-`tests/test_segments.py` (synthetic, and the 2022 KWB file when
-`IKOB_KWB_2022_GPKG` points to it). A few tests skip when local data files
-are absent (set `IKOB_DATA_ROOT` for the data-folder checks). The routers
-are validated against independent engines (`servers.md`).
+options, IPF margins, fares against the NS table), hand computations of the
+measure (bicycle, M0, PT fare spending), the pipeline on small synthetic
+inputs, the scenarios and cost model, and the server clients with mocked HTTP.
+
+* **End to end:** `tests/test_example.py` builds the synthetic data folder of
+  `examples/tiny`, runs `cli.accessibility` and compares all 480 rows with
+  `examples/tiny/expected/accessibility.csv`.
+* **Segment baseline:** `tests/test_segments.py` pins the pipeline's output
+  (synthetic, and the 2022 KWB file when `IKOB_KWB_2022_GPKG` points to it).
+* **Skips:** a few tests need local data (set `IKOB_DATA_ROOT`) or routing
+  inputs, and skip without them.
+* **Lint:** `ruff check` with pyflakes, the pycodestyle errors and bugbear
+  (`[tool.ruff]` in `pyproject.toml`).
+* **Environment:** `requirements-lock.txt` pins every package (Python 3.13;
+  Java 21 for R5 and OTP). CI (`.github/workflows/tests.yml`) runs lint and
+  tests on it on every push; `.pre-commit-config.yaml` runs ruff before each
+  commit and pytest before each push.
+
+The routers are validated against independent engines (`servers.md`).

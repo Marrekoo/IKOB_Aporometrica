@@ -34,8 +34,8 @@ scale (concessions), so that the flat price is comparable across segments.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, replace
-from typing import Callable, Mapping
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Callable, Mapping
 
 import numpy as np
 from scipy import optimize
@@ -44,6 +44,9 @@ from ikob2.engine.runner import evaluate_marginal
 from ikob2.run.accessibility import (WFH_TYPES, MixedMode, OptionSet,
                                      _finite, prepare_inputs)
 from ikob2.segments.bridge import build_segments
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 

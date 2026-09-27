@@ -23,7 +23,6 @@ to split jobs into a WFH-capable and a not-WFH-capable part.
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 from ikob2.segments.lisa import SECTOR_TO_SBI, SECTORS

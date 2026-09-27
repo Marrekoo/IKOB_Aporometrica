@@ -9,8 +9,7 @@ from ikob2.core import families as fam
 from ikob2.run.accessibility import ModeMatrices, run_accessibility
 from ikob2.run.compare import compare_runs
 
-from test_run_accessibility import DESTS, ENV, NAMES, ORIGINS, world
-from ikob2.segments.time_margins import load_time_margins
+from test_run_accessibility import DESTS, NAMES, ORIGINS, world
 
 
 def _table(values, mode="car"):

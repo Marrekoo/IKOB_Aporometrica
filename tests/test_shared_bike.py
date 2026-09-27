@@ -119,7 +119,8 @@ def test_a_slower_cheaper_hub_can_be_the_one_that_passes():
     c["pt_wb_lime"]["time"][:] = 50.0
     out = shared_bike_modes(c, f, np.array([1.0, 1.0, 1.0]), variants=("v1",))
     opts = out["pt_v1"].options
-    ts = np.stack([o.time for o in opts]); cs = np.stack([o.cost for o in opts])
+    ts = np.stack([o.time for o in opts])
+    cs = np.stack([o.cost for o in opts])
     kept = {(float(t[0, 0]), round(float(cc[0, 0]), 2))
             for t, cc, _ in union_terms(ts, cs)}
     assert (50.0, 11.0) in kept and (48.0, 12.8) in kept    # both survive

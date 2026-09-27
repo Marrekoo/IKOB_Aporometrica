@@ -82,7 +82,7 @@ def test_lisa_gemeente_mapping_exact_alias_and_unmapped():
 
 def _wage_raw(overrides=None):
     rows = []
-    for sector, sbi in SECTOR_TO_SBI.items():
+    for sbi in SECTOR_TO_SBI.values():
         for j, k in enumerate(sbi):
             rows.append({"BedrijfstakkenBranchesSBI2008": k + " ",
                          "Banen_1": 100.0 * (j + 1), "Uurloon_3": 20.0 + j})
