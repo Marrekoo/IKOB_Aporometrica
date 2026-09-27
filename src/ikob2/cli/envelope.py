@@ -16,7 +16,9 @@ inputs/envelope/odin/<envelope.aggregates>) and the [envelope] switches, and
 writes to intermediate/envelope/:
 anchors.csv, envelope.csv (residuals per decile and rent scenario),
 tour_bounds.csv, grid.csv (X_M for every scenario) and reference_budgets.csv
-(EUR per home-based tour; the model divides by `legs_per_tour`).
+(EUR per journey with the defaults; a table per tour is divided by
+`legs_per_tour` when the model loads it). `--params envelope/x_m_calc.toml`
+gives the settings of the original R script.
 """
 
 from __future__ import annotations

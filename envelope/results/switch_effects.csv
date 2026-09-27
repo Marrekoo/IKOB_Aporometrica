@@ -1,44 +1,44 @@
 variant,household_type,income_class,low,central,high,upper_bound,gate_slack
-baseline (reproduces the published table),couple,D1,,,,False,False
-baseline (reproduces the published table),couple,D2,2.2136,4.2727,10.6909,False,False
-baseline (reproduces the published table),couple,D3,3.8727,7.5545,33.7091,False,True
-baseline (reproduces the published table),couple,D4,6.3545,12.3273,42.6864,False,True
-baseline (reproduces the published table),couple,D5,10.5273,18.3682,67.35,False,True
-baseline (reproduces the published table),couple,D6,14.3545,23.2,93.0,False,True
-baseline (reproduces the published table),couple,D7,37.2318,38.8636,118.3182,True,True
-baseline (reproduces the published table),couple,D8,48.4545,49.8591,151.5545,True,True
-baseline (reproduces the published table),couple,D9,64.4136,65.7864,199.8318,True,True
-baseline (reproduces the published table),couple,D10,101.9545,103.4545,314.1409,True,True
-baseline (reproduces the published table),couple_children,D1,,,,False,False
-baseline (reproduces the published table),couple_children,D2,1.8773,4.8727,26.3409,False,True
-baseline (reproduces the published table),couple_children,D3,4.2045,7.4364,47.1864,False,True
-baseline (reproduces the published table),couple_children,D4,6.5591,11.1864,78.4227,False,True
-baseline (reproduces the published table),couple_children,D5,19.6909,20.6955,111.6182,True,True
-baseline (reproduces the published table),couple_children,D6,25.8864,27.2273,146.6091,True,True
-baseline (reproduces the published table),couple_children,D7,32.6318,34.2273,184.1727,True,True
-baseline (reproduces the published table),couple_children,D8,40.8727,42.6909,229.5182,True,True
-baseline (reproduces the published table),couple_children,D9,52.85,54.9864,295.3818,True,True
-baseline (reproduces the published table),couple_children,D10,81.2045,81.9364,451.3318,True,True
-baseline (reproduces the published table),single,D1,,,,False,False
-baseline (reproduces the published table),single,D2,0.8409,5.9682,11.6045,False,False
-baseline (reproduces the published table),single,D3,6.2091,15.5591,28.1682,False,True
-baseline (reproduces the published table),single,D4,11.7,21.3227,44.3545,False,True
-baseline (reproduces the published table),single,D5,15.7182,28.5,61.9682,False,True
-baseline (reproduces the published table),single,D6,11.4818,34.4773,79.3818,False,True
-baseline (reproduces the published table),single,D7,19.7136,36.5818,99.05,False,True
-baseline (reproduces the published table),single,D8,55.0273,58.05,103.4727,True,True
-baseline (reproduces the published table),single,D9,73.3682,77.4,137.9545,True,True
-baseline (reproduces the published table),single,D10,118.4,121.2591,219.6045,True,True
-baseline (reproduces the published table),single_parent,D1,,,,False,False
-baseline (reproduces the published table),single_parent,D2,1.6455,4.8636,19.0818,False,True
-baseline (reproduces the published table),single_parent,D3,3.7591,7.1,33.9091,False,True
-baseline (reproduces the published table),single_parent,D4,6.7091,11.4364,58.7682,False,True
-baseline (reproduces the published table),single_parent,D5,19.7273,22.1136,85.1091,True,True
-baseline (reproduces the published table),single_parent,D6,27.2045,29.5364,112.9591,True,True
-baseline (reproduces the published table),single_parent,D7,35.0318,35.5864,142.85,True,True
-baseline (reproduces the published table),single_parent,D8,43.8182,44.5273,178.9364,True,True
-baseline (reproduces the published table),single_parent,D9,56.4864,57.4682,231.35,True,True
-baseline (reproduces the published table),single_parent,D10,87.1773,88.2545,355.4591,True,True
+X_M calc.R settings,couple,D1,,,,False,False
+X_M calc.R settings,couple,D2,2.2136,4.2727,10.6909,False,False
+X_M calc.R settings,couple,D3,3.8727,7.5545,33.7091,False,True
+X_M calc.R settings,couple,D4,6.3545,12.3273,42.6864,False,True
+X_M calc.R settings,couple,D5,10.5273,18.3682,67.35,False,True
+X_M calc.R settings,couple,D6,14.3545,23.2,93.0,False,True
+X_M calc.R settings,couple,D7,37.2318,38.8636,118.3182,True,True
+X_M calc.R settings,couple,D8,48.4545,49.8591,151.5545,True,True
+X_M calc.R settings,couple,D9,64.4136,65.7864,199.8318,True,True
+X_M calc.R settings,couple,D10,101.9545,103.4545,314.1409,True,True
+X_M calc.R settings,couple_children,D1,,,,False,False
+X_M calc.R settings,couple_children,D2,1.8773,4.8727,26.3409,False,True
+X_M calc.R settings,couple_children,D3,4.2045,7.4364,47.1864,False,True
+X_M calc.R settings,couple_children,D4,6.5591,11.1864,78.4227,False,True
+X_M calc.R settings,couple_children,D5,19.6909,20.6955,111.6182,True,True
+X_M calc.R settings,couple_children,D6,25.8864,27.2273,146.6091,True,True
+X_M calc.R settings,couple_children,D7,32.6318,34.2273,184.1727,True,True
+X_M calc.R settings,couple_children,D8,40.8727,42.6909,229.5182,True,True
+X_M calc.R settings,couple_children,D9,52.85,54.9864,295.3818,True,True
+X_M calc.R settings,couple_children,D10,81.2045,81.9364,451.3318,True,True
+X_M calc.R settings,single,D1,,,,False,False
+X_M calc.R settings,single,D2,0.8409,5.9682,11.6045,False,False
+X_M calc.R settings,single,D3,6.2091,15.5591,28.1682,False,True
+X_M calc.R settings,single,D4,11.7,21.3227,44.3545,False,True
+X_M calc.R settings,single,D5,15.7182,28.5,61.9682,False,True
+X_M calc.R settings,single,D6,11.4818,34.4773,79.3818,False,True
+X_M calc.R settings,single,D7,19.7136,36.5818,99.05,False,True
+X_M calc.R settings,single,D8,55.0273,58.05,103.4727,True,True
+X_M calc.R settings,single,D9,73.3682,77.4,137.9545,True,True
+X_M calc.R settings,single,D10,118.4,121.2591,219.6045,True,True
+X_M calc.R settings,single_parent,D1,,,,False,False
+X_M calc.R settings,single_parent,D2,1.6455,4.8636,19.0818,False,True
+X_M calc.R settings,single_parent,D3,3.7591,7.1,33.9091,False,True
+X_M calc.R settings,single_parent,D4,6.7091,11.4364,58.7682,False,True
+X_M calc.R settings,single_parent,D5,19.7273,22.1136,85.1091,True,True
+X_M calc.R settings,single_parent,D6,27.2045,29.5364,112.9591,True,True
+X_M calc.R settings,single_parent,D7,35.0318,35.5864,142.85,True,True
+X_M calc.R settings,single_parent,D8,43.8182,44.5273,178.9364,True,True
+X_M calc.R settings,single_parent,D9,56.4864,57.4682,231.35,True,True
+X_M calc.R settings,single_parent,D10,87.1773,88.2545,355.4591,True,True
 unit: per journey,couple,D1,,,,False,False
 unit: per journey,couple,D2,2.17,4.46,11.32,False,False
 unit: per journey,couple,D3,3.91,7.78,35.68,False,True
@@ -239,86 +239,46 @@ car_all_tariffs,single_parent,D7,35.0318,35.5864,142.85,True,True
 car_all_tariffs,single_parent,D8,43.8182,44.5273,178.9364,True,True
 car_all_tariffs,single_parent,D9,56.4864,57.4682,231.35,True,True
 car_all_tariffs,single_parent,D10,87.1773,88.2545,355.4591,True,True
-quantile_kappa: off,couple,D1,,,,False,False
-quantile_kappa: off,couple,D2,3.15,5.4455,13.5273,False,True
-quantile_kappa: off,couple,D3,4.8545,8.7273,36.55,False,True
-quantile_kappa: off,couple,D4,7.4364,13.4455,45.5273,False,True
-quantile_kappa: off,couple,D5,11.7273,19.5182,70.1909,False,True
-quantile_kappa: off,couple,D6,15.6727,24.3318,95.8364,False,True
-quantile_kappa: off,couple,D7,38.1682,39.8,121.1545,True,True
-quantile_kappa: off,couple,D8,49.3909,50.7955,154.3955,True,True
-quantile_kappa: off,couple,D9,65.35,66.7227,202.6682,True,True
-quantile_kappa: off,couple,D10,102.8909,104.3955,316.9773,True,True
-quantile_kappa: off,couple_children,D1,,,,False,False
-quantile_kappa: off,couple_children,D2,2.5682,5.6909,30.0864,False,True
-quantile_kappa: off,couple_children,D3,4.9864,8.2591,50.9318,False,True
-quantile_kappa: off,couple_children,D4,7.4364,12.0091,82.1682,False,True
-quantile_kappa: off,couple_children,D5,20.3727,21.3955,115.3636,True,True
-quantile_kappa: off,couple_children,D6,26.5682,27.9273,150.3545,True,True
-quantile_kappa: off,couple_children,D7,33.3136,34.9273,187.9182,True,True
-quantile_kappa: off,couple_children,D8,41.5591,43.3909,233.2636,True,True
-quantile_kappa: off,couple_children,D9,53.5318,55.6909,299.1273,True,True
-quantile_kappa: off,couple_children,D10,81.8864,82.6182,455.0773,True,True
-quantile_kappa: off,single,D1,,,,False,False
-quantile_kappa: off,single,D2,0.8773,7.45,13.3636,False,True
-quantile_kappa: off,single,D3,7.3909,16.9955,29.9318,False,True
-quantile_kappa: off,single,D4,12.9773,22.5818,46.1136,False,True
-quantile_kappa: off,single,D5,17.1545,29.8455,63.7318,False,True
-quantile_kappa: off,single,D6,13.0182,35.8818,81.1409,False,True
-quantile_kappa: off,single,D7,21.3227,37.8955,100.8091,False,True
-quantile_kappa: off,single,D8,56.0045,59.0409,105.2318,True,True
-quantile_kappa: off,single,D9,74.3409,78.3909,139.7136,True,True
-quantile_kappa: off,single,D10,119.3773,122.2364,221.3636,True,True
-quantile_kappa: off,single_parent,D1,,,,False,False
-quantile_kappa: off,single_parent,D2,2.3591,5.6818,21.9364,False,True
-quantile_kappa: off,single_parent,D3,4.5773,7.9364,36.7682,False,True
-quantile_kappa: off,single_parent,D4,7.6227,12.2909,61.6273,False,True
-quantile_kappa: off,single_parent,D5,20.4409,22.8636,87.9682,True,True
-quantile_kappa: off,single_parent,D6,27.9182,30.2864,115.8136,True,True
-quantile_kappa: off,single_parent,D7,35.7455,36.3,145.7091,True,True
-quantile_kappa: off,single_parent,D8,44.5318,45.2364,181.7955,True,True
-quantile_kappa: off,single_parent,D9,57.2,58.1818,234.2091,True,True
-quantile_kappa: off,single_parent,D10,87.8909,88.9682,358.3136,True,True
-gamma_anchor: 0,couple,D1,,,,False,False
-gamma_anchor: 0,couple,D2,2.2136,4.2727,10.6909,False,False
-gamma_anchor: 0,couple,D3,4.6682,8.0409,33.7091,False,True
-gamma_anchor: 0,couple,D4,8.9864,13.7818,42.6864,False,True
-gamma_anchor: 0,couple,D5,15.2136,20.8955,67.35,False,True
-gamma_anchor: 0,couple,D6,21.1818,26.6318,93.0,False,True
-gamma_anchor: 0,couple,D7,37.2318,38.8636,118.3182,True,True
-gamma_anchor: 0,couple,D8,48.4545,49.8591,151.5545,True,True
-gamma_anchor: 0,couple,D9,64.4136,65.7864,199.8318,True,True
-gamma_anchor: 0,couple,D10,101.9545,103.4545,314.1409,True,True
-gamma_anchor: 0,couple_children,D1,,,,False,False
-gamma_anchor: 0,couple_children,D2,2.2136,5.0727,26.3409,False,True
-gamma_anchor: 0,couple_children,D3,5.95,8.4182,47.1864,False,True
-gamma_anchor: 0,couple_children,D4,10.0136,13.0136,78.4227,False,True
-gamma_anchor: 0,couple_children,D5,19.6909,20.6955,111.6182,True,True
-gamma_anchor: 0,couple_children,D6,25.8864,27.2273,146.6091,True,True
-gamma_anchor: 0,couple_children,D7,32.6318,34.2273,184.1727,True,True
-gamma_anchor: 0,couple_children,D8,40.8727,42.6909,229.5182,True,True
-gamma_anchor: 0,couple_children,D9,52.85,54.9864,295.3818,True,True
-gamma_anchor: 0,couple_children,D10,81.2045,81.9364,451.3318,True,True
-gamma_anchor: 0,single,D1,,,,False,False
-gamma_anchor: 0,single,D2,1.9,7.4864,11.6045,False,False
-gamma_anchor: 0,single,D3,9.9545,18.0545,28.1682,False,True
-gamma_anchor: 0,single,D4,17.0955,24.3409,44.3545,False,True
-gamma_anchor: 0,single,D5,24.0136,33.1318,61.9682,False,True
-gamma_anchor: 0,single,D6,21.5091,40.0773,79.3818,False,True
-gamma_anchor: 0,single,D7,31.0136,42.3273,99.05,False,True
-gamma_anchor: 0,single,D8,55.0273,58.05,103.4727,True,True
-gamma_anchor: 0,single,D9,73.3682,77.4,137.9545,True,True
-gamma_anchor: 0,single,D10,118.4,121.2591,219.6045,True,True
-gamma_anchor: 0,single_parent,D1,,,,False,False
-gamma_anchor: 0,single_parent,D2,1.6455,4.8636,19.0818,False,True
-gamma_anchor: 0,single_parent,D3,5.5818,8.1,33.9091,False,True
-gamma_anchor: 0,single_parent,D4,10.3182,13.3318,58.7682,False,True
-gamma_anchor: 0,single_parent,D5,19.7273,22.1136,85.1091,True,True
-gamma_anchor: 0,single_parent,D6,27.2045,29.5364,112.9591,True,True
-gamma_anchor: 0,single_parent,D7,35.0318,35.5864,142.85,True,True
-gamma_anchor: 0,single_parent,D8,43.8182,44.5273,178.9364,True,True
-gamma_anchor: 0,single_parent,D9,56.4864,57.4682,231.35,True,True
-gamma_anchor: 0,single_parent,D10,87.1773,88.2545,355.4591,True,True
+price_base: 2022 euros,couple,D1,,,,False,False
+price_base: 2022 euros,couple,D2,1.9773,4.3955,10.8955,False,False
+price_base: 2022 euros,couple,D3,2.2636,6.3045,19.9045,False,True
+price_base: 2022 euros,couple,D4,5.0682,11.3727,41.9636,False,True
+price_base: 2022 euros,couple,D5,8.9545,17.1182,65.7273,False,True
+price_base: 2022 euros,couple,D6,12.4773,21.7273,90.4364,False,True
+price_base: 2022 euros,couple,D7,36.15,37.7227,114.8409,True,True
+price_base: 2022 euros,couple,D8,46.9636,48.3182,146.8636,True,True
+price_base: 2022 euros,couple,D9,62.3318,63.6591,193.3727,True,True
+price_base: 2022 euros,couple,D10,98.5045,99.9545,303.5,True,True
+price_base: 2022 euros,couple_children,D1,,,,False,False
+price_base: 2022 euros,couple_children,D2,1.2818,3.2091,26.35,False,True
+price_base: 2022 euros,couple_children,D3,3.1955,6.7773,46.4909,False,True
+price_base: 2022 euros,couple_children,D4,5.3318,10.3409,76.5864,False,True
+price_base: 2022 euros,couple_children,D5,19.1545,20.1318,108.5682,True,True
+price_base: 2022 euros,couple_children,D6,25.1273,26.4227,142.2818,True,True
+price_base: 2022 euros,couple_children,D7,31.6273,33.1682,178.4727,True,True
+price_base: 2022 euros,couple_children,D8,39.5682,41.3227,222.1591,True,True
+price_base: 2022 euros,couple_children,D9,51.1,53.1682,285.6091,True,True
+price_base: 2022 euros,couple_children,D10,78.4227,79.1273,435.8545,True,True
+price_base: 2022 euros,single,D1,,,,False,False
+price_base: 2022 euros,single,D2,0.0273,4.85,11.5364,False,False
+price_base: 2022 euros,single,D3,4.7227,14.4727,27.4955,False,True
+price_base: 2022 euros,single,D4,9.7091,19.6955,43.25,False,True
+price_base: 2022 euros,single,D5,3.3864,26.3182,59.3545,False,True
+price_base: 2022 euros,single,D6,10.5682,31.2409,77.0045,False,True
+price_base: 2022 euros,single,D7,18.4,33.2364,95.95,False,True
+price_base: 2022 euros,single,D8,53.3545,56.2818,100.3227,True,True
+price_base: 2022 euros,single,D9,71.0455,74.9273,133.5409,True,True
+price_base: 2022 euros,single,D10,114.4364,117.1773,212.2045,True,True
+price_base: 2022 euros,single_parent,D1,,,,False,False
+price_base: 2022 euros,single_parent,D2,0.7136,2.6682,19.1636,False,True
+price_base: 2022 euros,single_parent,D3,2.7409,6.4591,33.5091,False,True
+price_base: 2022 euros,single_parent,D4,5.45,10.5773,57.4591,False,True
+price_base: 2022 euros,single_parent,D5,19.2,21.5227,82.8409,True,True
+price_base: 2022 euros,single_parent,D6,26.4136,28.6773,109.6682,True,True
+price_base: 2022 euros,single_parent,D7,33.9591,34.4955,138.4727,True,True
+price_base: 2022 euros,single_parent,D8,42.4227,43.1091,173.2364,True,True
+price_base: 2022 euros,single_parent,D9,54.6273,55.5773,223.7318,True,True
+price_base: 2022 euros,single_parent,D10,84.1909,85.2364,343.3,True,True
 spread: gamma only,couple,D1,,,,False,False
 spread: gamma only,couple,D2,4.2727,4.2727,4.2727,False,False
 spread: gamma only,couple,D3,6.5818,7.5545,8.5273,False,False
@@ -359,83 +319,83 @@ spread: gamma only,single_parent,D7,35.5864,35.5864,35.5864,True,True
 spread: gamma only,single_parent,D8,44.5273,44.5273,44.5273,True,True
 spread: gamma only,single_parent,D9,57.4682,57.4682,57.4682,True,True
 spread: gamma only,single_parent,D10,88.2545,88.2545,88.2545,True,True
-corrections combined,couple,D1,,,,False,False
-corrections combined,couple,D2,7.43,11.92,12.82,False,False
-corrections combined,couple,D3,8.92,14.42,24.02,False,True
-corrections combined,couple,D4,12.1,19.57,28.38,False,True
-corrections combined,couple,D5,16.4,25.28,40.38,False,True
-corrections combined,couple,D6,20.7,30.17,52.86,False,True
-corrections combined,couple,D7,44.79,46.43,65.18,True,True
-corrections combined,couple,D8,56.38,58.0,81.35,True,True
-corrections combined,couple,D9,73.15,74.77,104.83,True,True
-corrections combined,couple,D10,113.04,114.53,160.44,True,True
-corrections combined,couple_children,D1,,,,False,False
-corrections combined,couple_children,D2,5.11,8.49,10.88,False,False
-corrections combined,couple_children,D3,7.69,10.83,16.28,False,True
-corrections combined,couple_children,D4,10.19,14.92,24.37,False,True
-corrections combined,couple_children,D5,24.58,25.22,32.96,True,True
-corrections combined,couple_children,D6,31.5,32.22,42.03,True,True
-corrections combined,couple_children,D7,39.02,39.73,51.76,True,True
-corrections combined,couple_children,D8,48.03,48.78,63.5,True,True
-corrections combined,couple_children,D9,61.12,61.93,80.56,True,True
-corrections combined,couple_children,D10,92.38,93.13,120.96,True,True
-corrections combined,single,D1,,,,False,False
-corrections combined,single,D2,3.33,14.0,17.79,False,True
-corrections combined,single,D3,10.55,24.5,32.96,False,True
-corrections combined,single,D4,16.41,29.56,47.79,False,True
-corrections combined,single,D5,21.08,37.17,63.92,False,True
-corrections combined,single,D6,16.74,43.48,79.87,False,True
-corrections combined,single,D7,25.67,47.34,97.88,False,True
-corrections combined,single,D8,63.69,70.28,101.93,True,True
-corrections combined,single,D9,82.55,91.05,133.51,True,True
-corrections combined,single,D10,129.28,135.01,208.28,True,True
-corrections combined,single_parent,D1,,,,False,False
-corrections combined,single_parent,D2,3.68,7.43,8.87,False,False
-corrections combined,single_parent,D3,6.64,9.98,13.76,False,False
-corrections combined,single_parent,D4,9.82,14.47,21.96,False,True
-corrections combined,single_parent,D5,24.73,25.95,30.65,True,True
-corrections combined,single_parent,D6,33.05,33.83,39.83,True,True
-corrections combined,single_parent,D7,41.48,42.2,49.69,True,True
-corrections combined,single_parent,D8,51.19,51.97,61.59,True,True
-corrections combined,single_parent,D9,65.34,66.52,78.87,True,True
-corrections combined,single_parent,D10,99.61,100.98,119.8,True,True
-corrections + spread gamma,couple,D1,,,,False,False
-corrections + spread gamma,couple,D2,11.92,11.92,11.92,False,False
-corrections + spread gamma,couple,D3,13.4,14.42,15.43,False,True
-corrections + spread gamma,couple,D4,16.41,19.57,22.74,False,True
-corrections + spread gamma,couple,D5,19.93,25.28,30.63,False,True
-corrections + spread gamma,couple,D6,22.88,30.17,37.47,False,True
-corrections + spread gamma,couple,D7,46.43,46.43,46.43,True,True
-corrections + spread gamma,couple,D8,58.0,58.0,58.0,True,True
-corrections + spread gamma,couple,D9,74.77,74.77,74.77,True,True
-corrections + spread gamma,couple,D10,114.53,114.53,114.53,True,True
-corrections + spread gamma,couple_children,D1,,,,False,False
-corrections + spread gamma,couple_children,D2,8.28,8.49,8.69,False,False
-corrections + spread gamma,couple_children,D3,8.83,10.83,12.82,False,False
-corrections + spread gamma,couple_children,D4,11.07,14.92,18.78,False,True
-corrections + spread gamma,couple_children,D5,25.22,25.22,25.22,True,True
-corrections + spread gamma,couple_children,D6,32.22,32.22,32.22,True,True
-corrections + spread gamma,couple_children,D7,39.73,39.73,39.73,True,True
-corrections + spread gamma,couple_children,D8,48.78,48.78,48.78,True,True
-corrections + spread gamma,couple_children,D9,61.93,61.93,61.93,True,True
-corrections + spread gamma,couple_children,D10,93.13,93.13,93.13,True,True
-corrections + spread gamma,single,D1,,,,False,False
-corrections + spread gamma,single,D2,10.5,14.0,17.5,False,True
-corrections + spread gamma,single,D3,18.75,24.5,30.24,False,True
-corrections + spread gamma,single,D4,22.72,29.56,36.41,False,True
-corrections + spread gamma,single,D5,26.82,37.17,47.52,False,True
-corrections + spread gamma,single,D6,31.08,43.48,55.87,False,True
-corrections + spread gamma,single,D7,34.07,47.34,60.62,False,True
-corrections + spread gamma,single,D8,70.28,70.28,70.28,True,True
-corrections + spread gamma,single,D9,91.05,91.05,91.05,True,True
-corrections + spread gamma,single,D10,135.01,135.01,135.01,True,True
-corrections + spread gamma,single_parent,D1,,,,False,False
-corrections + spread gamma,single_parent,D2,7.43,7.43,7.43,False,False
-corrections + spread gamma,single_parent,D3,7.83,9.98,12.13,False,False
-corrections + spread gamma,single_parent,D4,10.4,14.47,18.53,False,True
-corrections + spread gamma,single_parent,D5,25.95,25.95,25.95,True,True
-corrections + spread gamma,single_parent,D6,33.83,33.83,33.83,True,True
-corrections + spread gamma,single_parent,D7,42.2,42.2,42.2,True,True
-corrections + spread gamma,single_parent,D8,51.97,51.97,51.97,True,True
-corrections + spread gamma,single_parent,D9,66.52,66.52,66.52,True,True
-corrections + spread gamma,single_parent,D10,100.98,100.98,100.98,True,True
+gamma_anchor: 0 (not adopted),couple,D1,,,,False,False
+gamma_anchor: 0 (not adopted),couple,D2,2.2136,4.2727,10.6909,False,False
+gamma_anchor: 0 (not adopted),couple,D3,4.6682,8.0409,33.7091,False,True
+gamma_anchor: 0 (not adopted),couple,D4,8.9864,13.7818,42.6864,False,True
+gamma_anchor: 0 (not adopted),couple,D5,15.2136,20.8955,67.35,False,True
+gamma_anchor: 0 (not adopted),couple,D6,21.1818,26.6318,93.0,False,True
+gamma_anchor: 0 (not adopted),couple,D7,37.2318,38.8636,118.3182,True,True
+gamma_anchor: 0 (not adopted),couple,D8,48.4545,49.8591,151.5545,True,True
+gamma_anchor: 0 (not adopted),couple,D9,64.4136,65.7864,199.8318,True,True
+gamma_anchor: 0 (not adopted),couple,D10,101.9545,103.4545,314.1409,True,True
+gamma_anchor: 0 (not adopted),couple_children,D1,,,,False,False
+gamma_anchor: 0 (not adopted),couple_children,D2,2.2136,5.0727,26.3409,False,True
+gamma_anchor: 0 (not adopted),couple_children,D3,5.95,8.4182,47.1864,False,True
+gamma_anchor: 0 (not adopted),couple_children,D4,10.0136,13.0136,78.4227,False,True
+gamma_anchor: 0 (not adopted),couple_children,D5,19.6909,20.6955,111.6182,True,True
+gamma_anchor: 0 (not adopted),couple_children,D6,25.8864,27.2273,146.6091,True,True
+gamma_anchor: 0 (not adopted),couple_children,D7,32.6318,34.2273,184.1727,True,True
+gamma_anchor: 0 (not adopted),couple_children,D8,40.8727,42.6909,229.5182,True,True
+gamma_anchor: 0 (not adopted),couple_children,D9,52.85,54.9864,295.3818,True,True
+gamma_anchor: 0 (not adopted),couple_children,D10,81.2045,81.9364,451.3318,True,True
+gamma_anchor: 0 (not adopted),single,D1,,,,False,False
+gamma_anchor: 0 (not adopted),single,D2,1.9,7.4864,11.6045,False,False
+gamma_anchor: 0 (not adopted),single,D3,9.9545,18.0545,28.1682,False,True
+gamma_anchor: 0 (not adopted),single,D4,17.0955,24.3409,44.3545,False,True
+gamma_anchor: 0 (not adopted),single,D5,24.0136,33.1318,61.9682,False,True
+gamma_anchor: 0 (not adopted),single,D6,21.5091,40.0773,79.3818,False,True
+gamma_anchor: 0 (not adopted),single,D7,31.0136,42.3273,99.05,False,True
+gamma_anchor: 0 (not adopted),single,D8,55.0273,58.05,103.4727,True,True
+gamma_anchor: 0 (not adopted),single,D9,73.3682,77.4,137.9545,True,True
+gamma_anchor: 0 (not adopted),single,D10,118.4,121.2591,219.6045,True,True
+gamma_anchor: 0 (not adopted),single_parent,D1,,,,False,False
+gamma_anchor: 0 (not adopted),single_parent,D2,1.6455,4.8636,19.0818,False,True
+gamma_anchor: 0 (not adopted),single_parent,D3,5.5818,8.1,33.9091,False,True
+gamma_anchor: 0 (not adopted),single_parent,D4,10.3182,13.3318,58.7682,False,True
+gamma_anchor: 0 (not adopted),single_parent,D5,19.7273,22.1136,85.1091,True,True
+gamma_anchor: 0 (not adopted),single_parent,D6,27.2045,29.5364,112.9591,True,True
+gamma_anchor: 0 (not adopted),single_parent,D7,35.0318,35.5864,142.85,True,True
+gamma_anchor: 0 (not adopted),single_parent,D8,43.8182,44.5273,178.9364,True,True
+gamma_anchor: 0 (not adopted),single_parent,D9,56.4864,57.4682,231.35,True,True
+gamma_anchor: 0 (not adopted),single_parent,D10,87.1773,88.2545,355.4591,True,True
+adopted method (defaults),couple,D1,,,,False,False
+adopted method (defaults),couple,D2,11.8,11.8,11.8,False,False
+adopted method (defaults),couple,D3,11.23,12.87,14.51,False,True
+adopted method (defaults),couple,D4,14.46,18.31,22.16,False,True
+adopted method (defaults),couple,D5,17.75,23.74,29.74,False,True
+adopted method (defaults),couple,D6,20.5,28.41,36.31,False,True
+adopted method (defaults),couple,D7,45.02,45.02,45.02,True,True
+adopted method (defaults),couple,D8,56.17,56.17,56.17,True,True
+adopted method (defaults),couple,D9,72.34,72.34,72.34,True,True
+adopted method (defaults),couple,D10,110.64,110.64,110.64,True,True
+adopted method (defaults),couple_children,D1,,,,False,False
+adopted method (defaults),couple_children,D2,6.01,6.64,7.27,False,False
+adopted method (defaults),couple_children,D3,7.51,10.03,12.56,False,False
+adopted method (defaults),couple_children,D4,9.55,13.92,18.29,False,True
+adopted method (defaults),couple_children,D5,24.5,24.5,24.5,True,True
+adopted method (defaults),couple_children,D6,31.25,31.25,31.25,True,True
+adopted method (defaults),couple_children,D7,38.49,38.49,38.49,True,True
+adopted method (defaults),couple_children,D8,47.2,47.2,47.2,True,True
+adopted method (defaults),couple_children,D9,59.87,59.87,59.87,True,True
+adopted method (defaults),couple_children,D10,89.93,89.93,89.93,True,True
+adopted method (defaults),single,D1,,,,False,False
+adopted method (defaults),single,D2,8.38,12.44,16.51,False,True
+adopted method (defaults),single,D3,16.73,23.01,29.28,False,True
+adopted method (defaults),single,D4,19.76,27.52,35.28,False,True
+adopted method (defaults),single,D5,23.45,34.54,45.63,False,True
+adopted method (defaults),single,D6,27.25,39.7,52.16,False,True
+adopted method (defaults),single,D7,29.95,43.29,56.62,False,True
+adopted method (defaults),single,D8,68.11,68.11,68.11,True,True
+adopted method (defaults),single,D9,88.12,88.12,88.12,True,True
+adopted method (defaults),single,D10,130.45,130.45,130.45,True,True
+adopted method (defaults),single_parent,D1,,,,False,False
+adopted method (defaults),single_parent,D2,4.39,5.04,5.69,False,False
+adopted method (defaults),single_parent,D3,6.48,9.2,11.92,False,False
+adopted method (defaults),single_parent,D4,8.87,13.47,18.07,False,True
+adopted method (defaults),single_parent,D5,25.23,25.23,25.23,True,True
+adopted method (defaults),single_parent,D6,32.83,32.83,32.83,True,True
+adopted method (defaults),single_parent,D7,40.89,40.89,40.89,True,True
+adopted method (defaults),single_parent,D8,50.31,50.31,50.31,True,True
+adopted method (defaults),single_parent,D9,64.33,64.33,64.33,True,True
+adopted method (defaults),single_parent,D10,97.52,97.52,97.52,True,True

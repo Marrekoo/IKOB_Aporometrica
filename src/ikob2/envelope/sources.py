@@ -11,8 +11,8 @@ import pandas as pd
 
 TABLES = ("nibud_basket", "nibud_households", "nibud_posts", "nibud_type_keys",
           "bijstand_published", "warnaar_anchors", "rents", "equivalence_cbs",
-          "cbs_income_percentiles", "price_index", "car_bundles", "car_class",
-          "odin_household_types")
+          "cbs_income_percentiles", "price_index", "price_levels", "basic_premium",
+          "car_bundles", "car_class", "odin_household_types")
 PROVENANCE = ("source", "note")
 
 
@@ -29,6 +29,15 @@ class Sources:
         """Price uprating of the 2022 basket to Warnaar's price level."""
         r = self.tables["price_index"].set_index("name").loc["kappa"]
         return float(r["numerator"]) / float(r["denominator"])
+
+    def cpi(self, name: str) -> float:
+        """A CPI value of price_levels (e.g. cpi_2022, cpi_2023_01)."""
+        return float(self.tables["price_levels"].set_index("name").loc[name, "value"])
+
+    def basic_premium_month(self, year: int) -> float:
+        """Average nominal basic health premium, EUR per month, of a year."""
+        b = self.tables["basic_premium"].set_index("year")
+        return float(b.loc[int(year), "eur_year"]) / 12.0
 
     def rent(self, lineage: str, key: str) -> float:
         """A rent (EUR/month) of a rent lineage."""

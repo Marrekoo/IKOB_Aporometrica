@@ -1,21 +1,25 @@
-# Reference-budget envelope: provenance
+# Reference-budget envelope
 
-`data/envelope/reference_budgets.csv` (the paper's Table 6) gives, per
-household type and income decile, `low` / `high`: the minimum / maximum over a
-scenario grid of X_M, a household's monthly mobility residual divided by its
-number of priced home-based tours per month (EUR per home-based tour), and
-`km_low` / `km_high`, the distances they buy; `central` (the central
-scenario), `unit` (tour or journey), `upper_bound` and `gate_slack` follow.
-It was made by the R script `X_M calc.R` (not in this repository).
-`ikob2.envelope` re-derives it from source tables and published ODiN
-aggregates and reproduces the file exactly; switches in `defaults.toml`
-[envelope] apply the corrections below one at a time.
+`data/envelope/reference_budgets.csv` gives, per household type and income
+decile, the money a household can spend on a priced one-way journey once
+everything a capabilities approach counts as basic (Nussbaum) is paid for:
+`low` / `high` bound a uniform distribution across households, `central` is
+its midpoint, `km_low` / `km_high` are the distances they buy, and `unit`,
+`upper_bound` and `gate_slack` describe the cell. EUR per journey, 2022
+euros (the price level of the KWB population year).
+
+It is built by `ikob2.envelope` from published source tables and ODiN
+aggregates (below). The method starts from the R script `X_M calc.R` (not
+in this repository), whose table the same code reproduces exactly with that
+script's settings (`envelope/x_m_calc.toml` ->
+`data/envelope/reference_budgets_x_m_calc.csv`, EUR per home-based tour);
+the adopted method changes it in the ways listed under *Method*.
 
 ## Re-derivation (`ikob2.envelope`, `cli.envelope`)
 
     python -m ikob2.cli.layout --root <root> create      # seeds inputs/envelope/sources/ and odin/
-    python -m ikob2.cli.envelope --data-root <root> build        # -> intermediate/envelope/
-    python -m ikob2.cli.envelope --data-root <root> --set envelope.unit=journey build
+    python -m ikob2.cli.envelope --data-root <root> build        # the adopted method -> intermediate/envelope/
+    python -m ikob2.cli.envelope --params envelope/x_m_calc.toml --data-root <root> build   # X_M calc.R
     python -m ikob2.cli.envelope --data-root <root> aggregates   # only with ODiN microdata
 
 The ODiN aggregates of 2023 and 2022-23 are published in `data/envelope/odin/`
@@ -51,65 +55,97 @@ reproduce `reference_budgets.csv` (also in CI), that every switch builds a
 valid envelope, and, where the ODiN microdata are available, that a fresh
 aggregation equals the published aggregates.
 
-## Switches: corrections of the R method
+## Method
 
-Each switch is a parameter in `defaults.toml` [envelope]; the defaults
-reproduce the published table.
+**The distribution.** Families facing the same hardship react differently:
+some give up more of the Nibud example basket than others to be able to
+travel. The share given up, gamma, is taken uniform over [0, 1] across the
+households of a cell, so the budget per journey is uniform between the
+residual after the example basket (`low`, gamma = 0) and after the minimum
+basket (`high`, gamma = 1), each spread over the household's journeys. All
+other assumptions sit at their central value (tours per month from ODiN,
+interpolated rent, average unreimbursed commuting, Nibud's PT rate). Warnaar's
+published residual b_norm is the midpoint between his two outer anchors and
+adds no information beyond them (`gamma_anchor` = 0.5).
 
-| Switch | Default (X_M calc.R) | Alternative | What it corrects |
+Where no example basket exists, gamma has no range and the budget is one
+amount (`low` = `high`, a step margin): above the highest Nibud anchor (19
+cells, `upper_bound`: the residual after the minimum basket, the most the
+household could spend) and at couples and couples with children in D2
+(Warnaar's couple at minimum wage implies an example basket below the
+minimum basket). Couples in D2 therefore get the most generous point, which
+lies above the low end of D3.
+
+**The choices**, as parameters in `defaults.toml` [envelope] (the settings of
+X_M calc.R in `envelope/x_m_calc.toml`):
+
+| Parameter | Adopted | X_M calc.R | Why |
 |---|---|---|---|
-| `unit` | `tour`: EUR per priced home-based tour | `journey`: EUR per priced one-way journey | the model prices journeys; counting them directly replaces the divisor `legs_per_tour` (a journey table has `unit` = journey and is not divided) |
-| `n_lower` | `fixed`: 8 tours per household and month | `lowest_decile`: the lowest tour rate of the household type | the fixed floor alone sets `high` in every cell |
-| `income_bridge` | `none` | `per_adult`: + `basic_premium_eur` (137.75) per adult | CBS disposable income is net of the basic health premium, which the Nibud basket also contains |
-| `aggregates` | `2023` | `2022_2023` | ODiN years pooled, as in the rest of the model |
-| `car_all_tariffs` | `false`: car options only in the "chipkaart" scenarios | `true` | a side effect of `tidyr::crossing()` sorting; changes the km columns only |
-| `quantile_kappa` | `true`: decile baskets uprated by kappa | `false`: baskets at their Jan-2023 prices | the price level of the baskets against the 2023 income axis (a choice, not settled) |
-| `gamma_anchor` | `0.5`: Warnaar's b_norm is the midpoint | `0`: b_norm is the example-basket residual | what b_norm means in the source (to be confirmed) |
-| `spread` | `all`: low/high over every assumption | `gamma`: low/high over gamma only, the rest central | separates the spread across households (gamma) from uncertainty about assumptions, which then belongs in sensitivity runs |
+| `unit` | `journey`: EUR per priced one-way journey | `tour`: EUR per priced home-based tour | the model prices journeys; a journey table is not divided by `legs_per_tour` |
+| `spread` | `gamma`: low/high over gamma only | `all`: over every assumption as well | the spread describes differences between households; uncertainty about assumptions belongs in sensitivity runs |
+| `price_base` | `2022`: every amount in 2022 euros | `published`: each input at its own price date | the price level of the KWB population year (below) |
+| `income_bridge` | `per_adult`: + the basic health premium per adult | `none` | CBS disposable income is net of the premium, which the Nibud basket also contains |
+| `n_lower` | `lowest_decile` | `fixed`: 8 tours per household and month | only matters with `spread` all; data-based instead of a constant |
+| `aggregates` | `2022_2023` | `2023` | ODiN years pooled, as in the rest of the model |
+| `car_all_tariffs` | `true` | `false` (car options only in the "chipkaart" scenarios, a side effect of `tidyr::crossing()` sorting) | changes the km columns only |
+| `gamma_anchor` | `0.5` | `0.5` | b_norm is the midpoint of the outer anchors |
 
-Always exported: `central` (gamma 0.5, N_emp, rent interp, commuting
-average, PT nibud_flat), `upper_bound` (the cell lies above the highest
-Nibud anchor: residual after the minimum basket) and `gate_slack` (the high
-budget reaches more than 95% of ODiN's non-commute tours or journeys).
+**Price level.** Every input is converted from its own price date to the
+2022 year average with the CPI (`sources/price_levels.csv`): the Nibud basket,
+the social-assistance incomes and Nibud's PT rates from January 2023 (x
+121.43 / 123.23), Warnaar's anchors and the car costs from Warnaar's level,
+kappa above the basket, the tussenrapport rents from July 2022, the CBS
+incomes and the basic premium (EUR 1,653 a year) from the 2023 average (x
+121.43 / 126.04). Incomes and minima stay those of 2023, the year of the
+Nibud minimum budgets: only the price level changes. (Deflating the minima
+but taking 2022 incomes would compare 2022 incomes with the 2023 social
+minimum, which rose about 10% in real terms in January 2023, and would push
+single parents in D2 below the social-assistance anchor.)
 
-Effect, as the model reads the budgets (EUR per journey; tour tables divided
-by `legs_per_tour` = 2.2), median ratio to the baseline over the cells
-(`envelope/switches.py`; per cell: `results/switch_effects.csv`):
+**Effect** of each choice on its own, from the X_M calc.R settings, and of
+the adopted method as a whole, as the model reads the budgets (EUR per
+journey; tour tables divided by `legs_per_tour` = 2.2); median ratio over
+the cells (`envelope/switches.py`; per cell `results/switch_effects.csv`):
 
 | Variant | low D2-D4 | central D2-D4 | high D2-D4 | low D2-D10 | central D2-D10 | high D2-D10 |
 |---|---|---|---|---|---|---|
-| baseline (reproduces the published table) | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| X_M calc.R settings | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
 | unit: per journey | 1.05 | 1.06 | 1.06 | 1.05 | 1.05 | 1.06 |
 | n_lower: lowest decile | 1.00 | 1.00 | 0.37 | 1.00 | 1.00 | 0.37 |
 | income_bridge: per adult | 1.75 | 1.45 | 1.35 | 1.14 | 1.13 | 1.10 |
 | aggregates: ODiN 2022-23 | 0.97 | 1.00 | 1.00 | 1.03 | 1.02 | 1.00 |
 | car_all_tariffs | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
-| quantile_kappa: off | 1.19 | 1.11 | 1.08 | 1.03 | 1.03 | 1.02 |
-| gamma_anchor: 0 | 1.44 | 1.14 | 1.00 | 1.00 | 1.00 | 1.00 |
+| price_base: 2022 euros | 0.76 | 0.92 | 0.98 | 0.97 | 0.97 | 0.97 |
 | spread: gamma only | 1.59 | 1.00 | 0.26 | 1.10 | 1.00 | 0.27 |
-| corrections combined | 1.87 | 1.55 | 0.56 | 1.25 | 1.22 | 0.49 |
-| corrections + spread gamma | 2.80 | 1.55 | 0.42 | 1.30 | 1.22 | 0.37 |
+| gamma_anchor: 0 (not adopted) | 1.44 | 1.14 | 1.00 | 1.00 | 1.00 | 1.00 |
+| adopted method (defaults) | 2.47 | 1.36 | 0.39 | 1.26 | 1.16 | 0.35 |
 
-"Corrections combined" is `unit` journey, `n_lower` lowest_decile,
-`income_bridge` per_adult, `aggregates` 2022_2023 and `car_all_tariffs`;
-`quantile_kappa`, `gamma_anchor` and `spread` are choices that need a
-decision rather than corrections. Per journey the budgets rise by about 5%
-against the tour table divided by 2.2, because a priced tour has 2.08 priced
-journeys (2.2 counts all journeys, walking and cycling included).
+The residuals of D2-D4 are small differences between large amounts (income
+minus rent minus basket), so a few per cent on an input moves them by much
+more: the 2022 price level alone (inputs 1.5-3.7% lower) lowers their low
+end by 24%.
 
-Two properties of the R script are reproduced by default and marked in the
-code: the car bundles only enter the scenarios of the "chipkaart" PT tariff
-(`car_all_tariffs`), and Warnaar's couple at minimum wage implies an example
-basket below the minimum basket, so that anchor has no gamma range.
+**Income and rent between anchors.** The deciles are ordered by CBS
+disposable income, which includes the allowances actually received, so the
+loss of allowances as gross income rises (the poverty trap) compresses the
+deciles but cannot make a higher decile poorer. Rent, however, is
+interpolated between Warnaar's anchors: couples in D3 already lie above his
+modal anchor, whose rent is much higher (no rent allowance, no social
+housing), so from D2 to D3 a couple's rent rises by EUR 237 of a EUR 393
+income gain and its residual after the minimum basket by only EUR 156. For
+the other household types the rent step is small (single parents +46,
+couples with children +49, singles -8). Income-tested benefits outside cash
+income (remission of local taxes, special assistance, discount passes) are
+not modelled: the Nibud basket charges full local taxes at every income.
 
-## Analyses of the current table
+## Analyses of the X_M calc.R table
 
 | Script | What it shows |
 |---|---|
 | `breakdown.py` | for every cell, the scenario that sets `low` and `high`, and the share of the width each assumption accounts for on its own |
 | `export_sources_from_r.R` | writes the literal tables of `X_M calc.R`, the numbers of `data/envelope/sources/` |
 | `switches.py` | the effect of every switch on the budgets (`results/switch_effects.csv`, `results/switch_summary.csv`) |
-| `journeys_per_tour.py` | one-way journeys per home-based tour in ODiN: the divisor that turns the per-tour budgets into the per-journey budgets the model uses (`accessibility.legs_per_tour` = 2.2) |
+| `journeys_per_tour.py` | one-way journeys per home-based tour in ODiN: the divisor for a table per tour (`accessibility.legs_per_tour` = 2.2) |
 
     Rscript "X_M calc.R"                          # in a folder with data/ODIN_23.csv; writes out/
     python envelope/breakdown.py <that folder>/out --csv envelope/results/breakdown.csv

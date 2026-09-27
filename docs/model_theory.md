@@ -85,11 +85,14 @@ for decile 1, so no priced journey is acceptable to it. The atom is reported
 per row (`atom`), and `accessibility_normalised = accessibility / (1 - atom)`.
 Free modes have `S_M = 1`.
 
-The envelope gives budgets per home-based tour (a chain of one-way journeys
-from home back to home), while `c_ijm` is the cost of one one-way journey.
-The bounds are therefore divided by the number of journeys per tour,
-`legs_per_tour` = 2.2 (ODiN 2022-23; `segments.bridge.rescale_budgets`). The
-bounds need not increase with income (see `segments.md`).
+The budgets are per priced one-way journey, in 2022 euros: what a household
+can spend on travel once everything a capabilities approach counts as basic
+is paid for (the Nibud minimum basket and rent), spread over its journeys.
+The uniform distribution between `low` and `high` is across households of a
+segment, which give up different shares (gamma) of the Nibud example basket;
+where no example basket exists the margin is a step (`low` = `high`).
+`ikob2.envelope` builds the table (`envelope/README.md`); a table per
+home-based tour is divided by `legs_per_tour` = 2.2 on loading.
 
 ## 4. Dependence between the gates
 

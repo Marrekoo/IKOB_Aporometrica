@@ -62,32 +62,25 @@ loads it:
   (no priced journey acceptable); `"drop"` leaves it out.
 * `onbekend` has no row; `envelope_segment_names(env)` lists the 40 segments
   with a budget, and only those are run.
-* **Basis: per home-based tour, converted to per journey.** The envelope
-  script divides a household's monthly mobility residual by its number of
-  priced *home-based tours*: a person's regular trips in order, a new tour
-  starting after every trip that ends at home. A tour is therefore a chain of
-  one-way journeys (ODiN verplaatsingen) from home back to home. The model
-  prices one one-way journey door to door (the whole fare plus shared-bicycle
-  rentals), so the bounds are divided by the number of journeys per tour,
-  `accessibility.legs_per_tour` = 2.2. On ODiN 2022-23 (and on ODiN 2023, the
-  envelope script's input) a priced home-based tour has 2.19 journeys on
-  average (2.17 weighted); 12% of tours have one journey, 66% two, 15% three;
-  the median tour is 19 km against 8 km per priced journey
-  (`envelope/journeys_per_tour.py`). The parameter name is historical: it
-  counts journeys, not the legs ("ritten") within a journey.
-* **What sets the bounds.** `low` and `high` are the minimum and maximum of
-  the per-tour budget over the envelope script's scenario grid (share of the
-  example basket given up, tours per month, rent bracket, commuting, PT
-  tariff); `envelope/breakdown.py` shows which scenario sets each bound.
-  `high` is set in every cell by a fixed 8 tours per month, `low` by the
-  highest tour rate of the household type; the tour count accounts for 60-99%
-  of the width. Above the highest Nibud anchor (19 of the 36 cells: singles
-  from D8, couples from D7, families from D5) the bounds rest on the minimum
-  basket and are upper bounds.
-* **Non-monotone in income.** Single households: D6 low 25.26 against D5
-  34.58. The high-rent scenario of D6 jumps to the anchor rent of 880 EUR a
-  month (a free-market rent at 1.5 x modal income) where D5 still has 540; it
-  is a property of the rent bracket, not of travel behaviour.
+* **Basis: per journey, 2022 euros.** The table gives EUR per priced
+  one-way journey (column `unit` = journey), the money a household can
+  spend on it once the Nibud basket and rent are paid, spread over the
+  household's priced journeys per month (ODiN 2022-23), at the 2022 price
+  level. `ikob2.envelope` builds it; `envelope/README.md` describes the
+  method. The spread between `low` and `high` is across households: how much
+  of the example basket each gives up (gamma, uniform on [0, 1]); cells
+  without an example basket have `low` = `high`.
+* **Tables per tour.** A table per home-based tour (`unit` = tour, or no
+  `unit` column, such as `reference_budgets_x_m_calc.csv` of the original R
+  script) is divided by `accessibility.legs_per_tour` = 2.2, the one-way
+  journeys per home-based tour in ODiN 2022-23 (2.19; 2.17 weighted;
+  `envelope/journeys_per_tour.py`).
+* **Upper bounds and steps.** Above the highest Nibud anchor (19 of the 36
+  cells: singles from D8, couples from D7, families from D5; `upper_bound`)
+  the budget is the residual after the minimum basket. Couples in D2 get
+  that point as well (Warnaar's minimum-wage couple has no example basket
+  above the minimum), so it lies above the low end of D3; couples' D3 also
+  carries a rent step (envelope README, *Income and rent between anchors*).
 * **Other bases.** `legs_per_tour` (a number, or a mapping per household
   type) sets the divisor: `load_reference_budgets(path, legs_per_tour=1)`
   reads the table as per journey, `rescale_budgets(env, ...)` converts a

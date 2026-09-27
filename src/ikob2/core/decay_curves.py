@@ -81,10 +81,9 @@ def uniform(cost: np.ndarray, low: float, high: float) -> np.ndarray:
 
     This is the paper's cost margin within one segment: the reference-
     budget envelope gives an interval [low, high] of plausible per-trip
-    budgets, taken uniform, so S_M is piecewise linear. It expresses
-    identification uncertainty over budget assumptions, not observed
-    dispersion across households. high == low is the degenerate
-    (isochrone-like) step: 1 up to and including low, 0 above.
+    budgets, taken uniform across the households of a segment, so S_M is
+    piecewise linear. high == low is the degenerate (isochrone-like)
+    step: 1 up to and including low, 0 above.
 
     Left-continuous like every survival function here, so a trip costing
     exactly `low` still clears the gate, and free travel (c = 0) always

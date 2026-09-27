@@ -31,6 +31,7 @@ import pandas as pd
 from ikob2.envelope.sources import Sources
 
 HH_TYPES = ("single", "couple", "single_parent", "couple_children")
+PRICE_BASES = ("published", "2022")
 ADULTS = {"single": 1, "couple": 2, "single_parent": 1, "couple_children": 2}
 
 
@@ -57,6 +58,35 @@ def basket_aggregates(src: Sources) -> pd.DataFrame:
     if (ident.abs() >= 0.5).any():
         raise ValueError("total != shelter + mob_min + m_bas.")
     return agg.join(hh[["hh_type", "aow", "n_child"]])
+
+
+def price_factors(src: Sources, prm) -> dict:
+    """Multipliers that bring each input to the price base.
+
+    `published` keeps every input at its own price date (as X_M calc.R):
+    factors 1, the Warnaar rows and (with `quantile_kappa`) the deciles
+    carry the basket uprating kappa. `2022` converts everything to 2022
+    euros with the CPI (price_levels): the Nibud basket, social-assistance
+    incomes and Nibud PT rates from January 2023, Warnaar's anchors from
+    kappa above that, the tussenrapport rents from July 2022, the CBS
+    incomes and the basic premium from their year's average (`income_year`);
+    kappa then no longer applies. Incomes and minima keep their own year
+    (2023: the minima of the Nibud tussenrapport); only the price level
+    changes."""
+    base = prm.envelope.price_base
+    if base not in PRICE_BASES:
+        raise ValueError(f"envelope.price_base must be one of {PRICE_BASES}.")
+    if base == "published":
+        return {"basket": 1.0, "warnaar": 1.0, "rent": 1.0, "kappa": src.kappa,
+                "quantile_kappa": src.kappa if prm.envelope.quantile_kappa else 1.0,
+                "premium": prm.envelope.basic_premium_eur, "income": 1.0}
+    year = int(prm.envelope.income_year)
+    income = src.cpi("cpi_2022") / src.cpi(f"cpi_{year}")
+    basket = src.cpi("cpi_2022") / src.cpi("cpi_2023_01")
+    return {"basket": basket, "warnaar": basket / src.kappa,
+            "rent": src.cpi("cpi_2022") / src.cpi("cpi_2022_07"),
+            "kappa": 1.0, "quantile_kappa": 1.0, "income": income,
+            "premium": src.basic_premium_month(year) * income}
 
 
 def type_baskets(src: Sources) -> pd.DataFrame:
@@ -87,16 +117,21 @@ def anchors(src: Sources, prm) -> pd.DataFrame:
     m_ex (and its donor bracket m_ex_lo, m_ex_hi), kappa_row, b_bas, b_ex."""
     e = prm.envelope
     eqv = src.eqv()
-    kappa = src.kappa
+    pf = price_factors(src, prm)
+    kappa = pf["kappa"]
     tb = type_baskets(src)
+    tb = tb.assign(m_bas=tb["m_bas"] * pf["basket"], shelter=tb["shelter"] * pf["rent"])
 
     war = src["warnaar_anchors"].assign(price_base="warnaar")
+    for c in ("y_disp", "rent", "b_norm"):
+        war[c] = war[c] * pf["warnaar"]
     bij = (tb.reset_index()[["hh_type", "shelter"]]
            .sort_values("hh_type", key=lambda s: s.map(
                {t: k for t, k in src["nibud_type_keys"][["hh_type", "hh_key"]]
                 .itertuples(index=False)}))
            .rename(columns={"shelter": "rent"})
-           .merge(src["bijstand_published"][["hh_type", "y_disp"]], on="hh_type")
+           .merge(src["bijstand_published"][["hh_type", "y_disp"]]
+                  .assign(y_disp=lambda d: d["y_disp"] * pf["basket"]), on="hh_type")
            .assign(level="bijstand", b_norm=np.nan, price_base="vdb2023"))
     cc = war[war["hh_type"] == "couple_children"]
     ratio_y = eqv["single_parent"] / eqv["couple_children"]
@@ -190,12 +225,13 @@ def quantile_envelope(anch: pd.DataFrame, axis: pd.DataFrame, src: Sources,
     env_bas_ok (b_bas defined), gamma_identified (a usable example basket)
     and b_kind (gamma_indexed, point, b_bas_above_anchors)."""
     e = prm.envelope
-    kappa = src.kappa if e.quantile_kappa else 1.0
+    pf = price_factors(src, prm)
+    kappa = pf["quantile_kappa"]
     if e.income_bridge not in ("none", "per_adult"):
         raise ValueError("income_bridge must be 'none' or 'per_adult'.")
     rows = []
     for t, d in anch.groupby("hh_type", sort=False):
-        bridge = e.basic_premium_eur * ADULTS[t] if e.income_bridge == "per_adult" else 0.0
+        bridge = pf["premium"] * ADULTS[t] if e.income_bridge == "per_adult" else 0.0
         y, r, mx = (d[c].to_numpy(float) for c in ("y_std", "rent", "m_ex"))
         m_bas, eqv = float(d["m_bas"].iloc[0]), float(d["eqv"].iloc[0])
         for q in axis.itertuples(index=False):
@@ -209,7 +245,7 @@ def quantile_envelope(anch: pd.DataFrame, axis: pd.DataFrame, src: Sources,
             if censored or below or above:
                 mraw = np.nan
             base = dict(hh_type=t, point_id=q.quantile, y_std=z,
-                        y_disp=z * eqv + bridge,
+                        y_disp=z * eqv * pf["income"] + bridge,
                         env_eligible=q.env_eligible, m_bas=m_bas,
                         m_ex=max(mraw, m_bas) if np.isfinite(mraw) else np.nan,
                         below_floor=below, above_ceiling=above, kappa_row=kappa)

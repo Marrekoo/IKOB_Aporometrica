@@ -435,7 +435,7 @@ from ikob2.segments.bridge import (  # noqa: E402
     load_reference_budgets,
 )
 
-BUDGETS = "data/envelope/reference_budgets.csv"
+BUDGETS = "data/envelope/reference_budgets_x_m_calc.csv"   # per home-based tour
 
 
 def test_reference_budgets_match_the_published_table():

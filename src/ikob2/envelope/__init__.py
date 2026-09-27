@@ -12,10 +12,11 @@ return tables:
   nibud     minimum and example baskets, the anchor residuals, the residual
             per household type, income decile and rent scenario;
   income    the income axis: the income of each decile from CBS percentiles;
-  xm        tours per month, commuting costs and the scenario grid of X_M
-            (EUR per home-based tour); its minimum and maximum per cell are
-            the envelope.
+  xm        journeys (or tours) per month, commuting costs and the scenario
+            grid of X_M, the budget per journey (tour); per cell its range
+            over gamma (or over the whole grid) is the envelope.
 
-With the parameters of `defaults.toml` [envelope] the result reproduces
-`data/envelope/reference_budgets.csv`.
+With the parameters of `defaults.toml` [envelope] the result is
+`data/envelope/reference_budgets.csv`; with `envelope/x_m_calc.toml` it
+reproduces the original R script's `reference_budgets_x_m_calc.csv`.
 """

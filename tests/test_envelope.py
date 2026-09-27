@@ -1,5 +1,7 @@
 """The reference-budget envelope (ikob2.envelope): source tables, stages,
-and the regression against data/envelope/reference_budgets.csv."""
+and the regressions against data/envelope/reference_budgets.csv (the
+adopted method) and reference_budgets_x_m_calc.csv (the settings of the R
+script, envelope/x_m_calc.toml)."""
 
 import os
 from pathlib import Path
@@ -14,6 +16,14 @@ from ikob2.params import DEFAULTS as P
 
 SOURCES = Path(__file__).resolve().parents[1] / "data" / "envelope" / "sources"
 REFERENCE = SOURCES.parent / "reference_budgets.csv"
+REFERENCE_R = SOURCES.parent / "reference_budgets_x_m_calc.csv"
+X_M_CALC = Path(__file__).resolve().parents[1] / "envelope" / "x_m_calc.toml"
+
+
+@pytest.fixture(scope="module")
+def r_prm():
+    from ikob2.params import load
+    return load(X_M_CALC)
 
 
 @pytest.fixture(scope="module")
@@ -51,8 +61,8 @@ def test_a_wrong_basket_entry_is_refused(src):
 
 # ── anchors, income axis, residuals ──────────────────────────────────
 
-def test_anchors_reproduce_b_norm_and_the_published_saldi(src):
-    a = nibud.anchors(src, P)
+def test_anchors_reproduce_b_norm_and_the_published_saldi(src, r_prm):
+    a = nibud.anchors(src, r_prm)
     war = a[a["b_norm"].notna()]
     # Warnaar's couple at minimum wage (b_norm 316) implies an example basket
     # below the minimum basket: floored at m_bas, no gamma range there
@@ -73,8 +83,8 @@ def test_anchors_reproduce_b_norm_and_the_published_saldi(src):
     assert (sp["m_ex_lo"] <= sp["m_ex"] + 1e-9).all() and (sp["m_ex"] <= sp["m_ex_hi"] + 1e-9).all()
 
 
-def test_income_axis(src):
-    ax = income.income_axis(src, P).set_index("quantile")
+def test_income_axis(src, r_prm):
+    ax = income.income_axis(src, r_prm).set_index("quantile")
     assert ax.loc["Q1", "y_std"] == pytest.approx(19.9e3 / 12)       # p10, censored
     assert not ax.loc["Q1", "env_eligible"] and ax.loc["Q2":, "env_eligible"].all()
     assert (np.diff(ax["y_std"]) > 0).all()
@@ -85,8 +95,9 @@ def test_income_axis(src):
     assert 30.8e3 / 12 < ax.loc["Q5", "y_std"] < 34.6e3 / 12
 
 
-def test_envelope_residuals(src):
-    env = nibud.quantile_envelope(nibud.anchors(src, P), income.income_axis(src, P), src, P)
+def test_envelope_residuals(src, r_prm):
+    env = nibud.quantile_envelope(nibud.anchors(src, r_prm), income.income_axis(src, r_prm),
+                                  src, r_prm)
     ok = env[env["env_bas_ok"]]
     np.testing.assert_allclose(
         ok["b_bas"], ok["y_disp"] - ok["rent"] - src.kappa * ok["m_bas"])
@@ -149,7 +160,7 @@ def test_pairwise_pava():
     assert np.isnan(xm.pairwise_pava([1, np.nan, 0])).any()   # unchanged
 
 
-def test_budget_per_tour_is_residual_over_tours(src):
+def test_budget_per_tour_is_residual_over_tours(src, r_prm):
     env = pd.DataFrame([{"hh_type": "single", "point_id": "Q5", "rent_scenario": "lo",
                          "b_ex": 500.0, "b_bas": 900.0, "env_bas_ok": True,
                          "gamma_identified": True, "b_kind": "gamma_indexed"}])
@@ -158,8 +169,8 @@ def test_budget_per_tour_is_residual_over_tours(src):
     comm = pd.DataFrame([{"hh_type": "single", "quantile": "Q5",
                           "eur_per_tour": 5.0, "n_commute_pm": 10.0}])
     agg = {"pt_km": pd.DataFrame({"train_km": [1.0], "btm_km": [1.0]})}
-    bund = xm.bundles(agg, src, P)
-    g = xm.grid(env, nb, comm, bund, src, P).set_index(
+    bund = xm.bundles(agg, src, r_prm)
+    g = xm.grid(env, nb, comm, bund, src, r_prm).set_index(
         ["gamma", "N_source", "commute_scenario", "pt_basis"])
     # gamma 0.5: b = 700; average commuting: 4 x 5 = 20; N_emp 20 -> 34
     assert g.loc[(0.5, "N_emp", "average", "nibud_flat"), "X_M"] == pytest.approx(680 / 20)
@@ -175,12 +186,33 @@ def test_budget_per_tour_is_residual_over_tours(src):
 AGGREGATES = SOURCES.parent / "odin"
 
 
-def test_sources_and_aggregates_reproduce_reference_budgets():
+def test_r_settings_reproduce_the_r_table(r_prm):
     from ikob2.cli.envelope import build
 
-    got = build(SOURCES, AGGREGATES / "2023", P)["reference_budgets"]
-    want = pd.read_csv(REFERENCE)
-    pd.testing.assert_frame_equal(got, want, check_dtype=False)
+    got = build(SOURCES, AGGREGATES / "2023", r_prm)["reference_budgets"]
+    pd.testing.assert_frame_equal(got, pd.read_csv(REFERENCE_R), check_dtype=False)
+
+
+def test_defaults_reproduce_the_adopted_table():
+    from ikob2.cli.envelope import build
+
+    got = build(SOURCES, AGGREGATES / P.envelope.aggregates, P)["reference_budgets"]
+    pd.testing.assert_frame_equal(got, pd.read_csv(REFERENCE), check_dtype=False)
+    assert set(got["unit"]) == {"journey"}
+
+
+def test_price_base_2022_converts_every_input_from_its_own_date(src, r_prm):
+    pf = nibud.price_factors(src, P)
+    assert pf["basket"] == pytest.approx(121.43 / 123.23)
+    assert pf["warnaar"] == pytest.approx(121.43 / 123.23 / src.kappa)
+    assert pf["income"] == pytest.approx(121.43 / 126.04)
+    assert pf["kappa"] == 1.0
+    assert nibud.price_factors(src, r_prm)["basket"] == 1.0
+    a0 = nibud.anchors(src, r_prm).set_index(["hh_type", "level"])
+    a1 = nibud.anchors(src, P).set_index(["hh_type", "level"])
+    war = a0["price_base"] == "warnaar"
+    # an anchor residual is the published one in 2022 euros
+    np.testing.assert_allclose(a1.loc[war, "b_bas"], a0.loc[war, "b_bas"] * pf["warnaar"])
 
 
 def test_published_aggregates_match_a_fresh_aggregation_when_odin_is_there():
@@ -198,15 +230,15 @@ def test_published_aggregates_match_a_fresh_aggregation_when_odin_is_there():
 
 
 @pytest.mark.parametrize("switch, value", [
-    ("unit", "journey"), ("n_lower", "lowest_decile"), ("spread", "gamma"),
-    ("gamma_anchor", 0.0), ("income_bridge", "per_adult"),
-    ("quantile_kappa", False), ("aggregates", "2022_2023"), ("car_all_tariffs", True)])
+    ("unit", "tour"), ("n_lower", "fixed"), ("spread", "all"),
+    ("gamma_anchor", 0.0), ("income_bridge", "none"), ("price_base", "published"),
+    ("aggregates", "2023"), ("car_all_tariffs", False)])
 def test_every_switch_builds_a_valid_envelope(switch, value):
     from ikob2.cli.envelope import build
     from ikob2.segments.bridge import validate_envelope
 
     prm = P.with_values({f"envelope.{switch}": value})
-    agg = AGGREGATES / (value if switch == "aggregates" else "2023")
+    agg = AGGREGATES / prm.envelope.aggregates
     t = build(SOURCES, agg, prm)["reference_budgets"]
     ok = t.dropna(subset=["low", "high"])
     assert len(ok) == 36 and (ok["low"] <= ok["central"] + 1e-9).all() \

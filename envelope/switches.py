@@ -1,6 +1,7 @@
 """
-Effect of each envelope switch (defaults.toml [envelope]) on the reference
-budgets, one at a time and combined.
+Effect of each method choice (defaults.toml [envelope]) on the reference
+budgets: from the settings of X_M calc.R (envelope/x_m_calc.toml), one
+choice at a time, and the adopted method (the defaults) as a whole.
 
     python envelope/switches.py [--out envelope/results]
 
@@ -22,30 +23,30 @@ import numpy as np
 import pandas as pd
 
 from ikob2.cli.envelope import build
-from ikob2.params import DEFAULTS
+from ikob2.params import DEFAULTS, load
 
 ROOT = Path(__file__).resolve().parents[1] / "data" / "envelope"
-CORRECTIONS = {"unit": "journey", "n_lower": "lowest_decile",
-               "income_bridge": "per_adult", "aggregates": "2022_2023",
-               "car_all_tariffs": True}
+R_SETTINGS = Path(__file__).resolve().parent / "x_m_calc.toml"
+ADOPTED = "adopted method (defaults)"
 VARIANTS = {
-    "baseline (reproduces the published table)": {},
+    "X_M calc.R settings": {},
     "unit: per journey": {"unit": "journey"},
     "n_lower: lowest decile": {"n_lower": "lowest_decile"},
     "income_bridge: per adult": {"income_bridge": "per_adult"},
     "aggregates: ODiN 2022-23": {"aggregates": "2022_2023"},
     "car_all_tariffs": {"car_all_tariffs": True},
-    "quantile_kappa: off": {"quantile_kappa": False},
-    "gamma_anchor: 0": {"gamma_anchor": 0.0},
+    "price_base: 2022 euros": {"price_base": "2022"},
     "spread: gamma only": {"spread": "gamma"},
-    "corrections combined": CORRECTIONS,
-    "corrections + spread gamma": {**CORRECTIONS, "spread": "gamma"},
+    "gamma_anchor: 0 (not adopted)": {"gamma_anchor": 0.0},
+    ADOPTED: None,
 }
 
 
 def variant(changes: dict) -> pd.DataFrame:
-    """The reference budgets of one variant, EUR per journey."""
-    prm = DEFAULTS.with_values({f"envelope.{k}": v for k, v in changes.items()})
+    """The reference budgets of one variant, EUR per journey (None: the
+    defaults; otherwise changes to the X_M calc.R settings)."""
+    prm = DEFAULTS if changes is None else load(R_SETTINGS).with_values(
+        {f"envelope.{k}": v for k, v in changes.items()})
     t = build(ROOT / "sources", ROOT / "odin" / prm.envelope.aggregates, prm)["reference_budgets"]
     div = 1.0 if prm.envelope.unit == "journey" else prm.accessibility.legs_per_tour
     for c in ("low", "central", "high"):

@@ -1,0 +1,6 @@
+name,value,unit,source,note
+cpi_2022,121.43,CPI 2015=100,"CBS StatLine 83131NED, Consumentenprijzen; prijsindex 2015=100, alle bestedingen, 2022 (year average)",
+cpi_2022_07,121.57,CPI 2015=100,"CBS StatLine 83131NED, alle bestedingen, July 2022",price date of the tussenrapport rents (peildatum 1-7-2022)
+cpi_2022_01,114.53,CPI 2015=100,"CBS StatLine 83131NED, alle bestedingen, January 2022",
+cpi_2023_01,123.23,CPI 2015=100,"derived: January 2022 (114.53) x 1.076, CBS year-on-year inflation January 2023 of 7.6% (CBS news 2023-06, 'Inflatie daalt naar 7,6 procent in januari')","price date of the Nibud basket (prijspeil 1 January 2023); +/- 0.06 from the rounding of 7.6%"
+cpi_2023,126.04,CPI 2015=100,"derived: 2022 year average (121.43) x 1.038, CBS annual inflation 2023 of 3.8% (CBS news 2024-02, 'Inflatie 3,8 procent in 2023')",+/- 0.06 from the rounding of 3.8%

@@ -44,6 +44,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ikob2.envelope.nibud import price_factors
 from ikob2.envelope.sources import Sources
 
 AGE_BAND_OF = {"hh_lft1": ("u6", False), "hh_lft2": ("a6_11", True),
@@ -131,13 +132,15 @@ def bundles(agg: dict, src: Sources, prm) -> pd.DataFrame:
     """Priced bundles: one PT bundle per tariff basis and the car classes,
     with fixed EUR/month, EUR/km and fixed EUR per tour (or journey)."""
     e = prm.envelope
+    pf = price_factors(src, prm)
+    fb = pf["basket"]                    # PT rates: Nibud, January 2023
     km = agg["pt_km"].iloc[0]
     tot = km["train_km"] + km["btm_km"]
     w_train = km["train_km"] / tot if tot > 0 else 0.5
-    chip = w_train * e.pt_train_eur_km + (1 - w_train) * e.pt_btm_eur_km
+    chip = (w_train * e.pt_train_eur_km + (1 - w_train) * e.pt_btm_eur_km) * fb
     boardings = e.boardings_per_journey if _unit(prm) == "journey" else e.boardings_per_tour
-    pt = {"nibud_flat": (e.pt_nibud_eur_km, 0.0),
-          "chipkaart": (chip, boardings * e.pt_btm_board_eur)}
+    pt = {"nibud_flat": (e.pt_nibud_eur_km * fb, 0.0),
+          "chipkaart": (chip, boardings * e.pt_btm_board_eur * fb)}
     rows = [{"bundle": "pt_payg", "kind": "pt", "pt_basis": k, "fixed_eur": 0.0,
              "cost_per_km": v[0], "cost_fixed_per_tour": v[1]}
             for k, v in pt.items() if k in e.pt_bases]
@@ -148,11 +151,14 @@ def bundles(agg: dict, src: Sources, prm) -> pd.DataFrame:
     # max_km, not X_M (PT, without fixed costs, always leaves more per tour).
     # `car_all_tariffs` puts them in every PT-tariff scenario.
     car_bases = list(e.pt_bases) if e.car_all_tariffs else [sorted(e.pt_bases)[0]]
+    # car costs are uprated by kappa to Warnaar's level (as X_M calc.R);
+    # at price base 2022 that is kappa x warnaar factor = the basket factor
+    fc = src.kappa * pf["warnaar"] if e.price_base == "2022" else src.kappa
     for basis in car_bases:
         for r in cars[cars["kind"] == "car"].itertuples(index=False):
             rows.append({"bundle": r.bundle, "kind": "car", "pt_basis": basis,
-                         "fixed_eur": r.fixed_eur * src.kappa,
-                         "cost_per_km": r.eur_per_km * src.kappa,
+                         "fixed_eur": r.fixed_eur * fc,
+                         "cost_per_km": r.eur_per_km * fc,
                          "cost_fixed_per_tour": 0.0})
     return pd.DataFrame(rows)
 

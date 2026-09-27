@@ -47,7 +47,7 @@ unreachable_minutes = 1e4  # fill for unreachable pairs
 time_shape = "weibull"     # weibull, exponential, step
 cutoff = 45.0              # minutes, for step / exponential
 exp_calibration = "mean"   # mean, half
-legs_per_tour = 2.2        # one-way journeys per home-based tour: the reference budgets are per home-based tour, the model prices one-way journeys (docs/segments.md; envelope/journeys_per_tour.py)
+legs_per_tour = 2.2        # one-way journeys per home-based tour: divides a budget table per tour (unit = tour); tables per journey are not divided (docs/segments.md)
 censored = "atom"          # atom, drop
 population_basis = "population_scaled"
 kwb_year = 2022
@@ -285,18 +285,20 @@ slack_tol = 1e-6
 sp_donors = ["single", "couple_children"]   # households whose basket slack is lent to single parents
 sp_donor_point = "couple_children"
 income_measure = "gest"    # CBS percentiles: gest (standardised) or disp
-income_year = 2023
+income_year = 2023         # CBS incomes: the year of the Nibud minima (2023); price_base sets the price level
 top_decile_rule = "pareto_p95"   # pareto_p95 or boundary_p90
-# ---- switches (defaults reproduce data/envelope/reference_budgets.csv; effects: envelope/README.md)
-aggregates = "2023"        # ODiN aggregates under inputs/envelope/odin/: 2023 (as X_M calc.R) or 2022_2023
-unit = "tour"              # budget per priced home-based tour, or per priced one-way "journey"
-n_lower = "fixed"          # lower bound on tours per month: fixed (n_min_fixed) or lowest_decile of the household type
-spread = "all"             # low/high over all scenario assumptions, or over "gamma" only (others central)
+# ---- the method's choices (envelope/README.md). envelope/x_m_calc.toml gives the settings of
+# X_M calc.R, which reproduce data/envelope/reference_budgets_x_m_calc.csv.
+aggregates = "2022_2023"        # ODiN aggregates under inputs/envelope/odin/: 2023 (as X_M calc.R) or 2022_2023
+unit = "journey"           # budget per priced home-based tour, or per priced one-way "journey"
+n_lower = "lowest_decile"  # lower bound on tours per month: fixed (n_min_fixed) or lowest_decile of the household type
+spread = "gamma"           # low/high over all scenario assumptions, or over "gamma" only (others central)
 gamma_anchor = 0.5         # where Warnaar's b_norm lies: 0.5 (midpoint, as X_M calc.R) or 0 (the example-basket residual)
-income_bridge = "none"     # none (as X_M calc.R) or per_adult: add the basic health premium per adult to CBS incomes
+income_bridge = "per_adult" # none (as X_M calc.R) or per_adult: add the basic health premium per adult to CBS incomes
 basic_premium_eur = 137.75 # average nominal basic health premium 2023, EUR/month per adult
-quantile_kappa = true      # uprate the decile baskets by kappa (as X_M calc.R) or not (baskets at Jan-2023 prices)
-car_all_tariffs = false    # car options in every PT-tariff scenario (X_M calc.R: only in "chipkaart")
+quantile_kappa = true      # published price base only: uprate the decile baskets by kappa (as X_M calc.R) or not
+price_base = "2022"        # published (each input at its own price date, as X_M calc.R) or "2022": every amount in 2022 euros (CPI), the price level of the KWB population year
+car_all_tariffs = true     # car options in every PT-tariff scenario (X_M calc.R: only in "chipkaart")
 boardings_per_journey = 1
 slack_share = 0.95         # gate_slack flag: the high budget reaches more than this share of tours
 days_per_month = 30.44
