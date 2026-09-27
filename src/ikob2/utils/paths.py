@@ -11,7 +11,7 @@ $IKOB_DATA_ROOT or `paths.data_root` (ikob2.params.data_root).
         osm/                     OpenStreetMap extracts (.pbf)
         gtfs/                    GTFS feeds
         survey/                  fitted time margins (S_T_*.csv)
-        envelope/                reference budgets per segment
+        envelope/                reference budgets per segment; sources/: their inputs
         tariffs/                 price and fare multipliers per segment
         odin/                    ODiN tables and codebook
         veh_owners/              vehicle ownership per buurt (bicycle share)
@@ -24,6 +24,7 @@ $IKOB_DATA_ROOT or `paths.data_root` (ikob2.params.data_root).
         jobs/                    imputed sector jobs per buurt
         ownership/               car availability and PT fare spending (ODiN)
         hubs/                    hubs made by the model (scenario S2)
+        envelope/                reference-budget envelope (cli.envelope)
         skims/<study>/           skim stores
         calibration/             detour model and other calibrations
         valhalla/                local routing server: config, tiles, logs
@@ -54,7 +55,7 @@ from ikob2.params import DEFAULTS
 INPUT_DIRS = ("kwb", "lisa", "legacy_ikob", "osm", "gtfs", "survey",
               "envelope", "tariffs", "odin", "veh_owners", "hubs", "ovfiets")
 CACHE_DIRS = ("statline",)
-INTERMEDIATE_DIRS = ("segments", "jobs", "ownership", "hubs", "skims",
+INTERMEDIATE_DIRS = ("segments", "jobs", "ownership", "hubs", "envelope", "skims",
                      "calibration", "valhalla", "otp", "osm_peak", "osm_walk")
 OUTPUT_DIRS = ("runs", "comparisons")
 
@@ -95,6 +96,7 @@ intermediate/ and outputs/ can be deleted and rebuilt from inputs/.
 # reference files `DataLayout.seed` copies into a data folder
 SEED = (
     ("envelope", "inputs", "envelope", "*.csv"),
+    ("envelope/sources", "inputs", "envelope/sources", "*.csv"),
     ("margins", "inputs", "survey", "*.csv"),
     ("tariffs", "inputs", "tariffs", "*.csv"),
     ("statline", "cache", "statline", "*.csv"),
@@ -183,6 +185,12 @@ class DataLayout:
 
     def budgets(self, name: str = DEFAULTS.paths.budgets) -> Path:
         return resolve_input(name, self.inputs / "envelope")
+
+    def envelope_sources(self) -> Path:
+        return self.inputs / "envelope" / DEFAULTS.envelope.sources
+
+    def envelope_dir(self) -> Path:
+        return self.intermediate / "envelope"
 
     def survey_margins(self, name: str = DEFAULTS.paths.survey_margins) -> Path:
         return resolve_input(name, self.inputs / "survey")

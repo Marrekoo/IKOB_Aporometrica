@@ -1,0 +1,13 @@
+hh_key,hh_type,aow,n_child,child_ages,published_total,source
+single,single,False,0,,1633,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+couple,couple,False,0,,2400,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+single_aow,single,True,0,,1649,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+couple_aow,couple,True,0,,2408,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+ep_1k8,single_parent,False,1,8,2110,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+ep_2k813,single_parent,False,2,"8,13",2493,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+ep_3k111315,single_parent,False,3,"11,13,15",2928,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+pk_1k8,couple_children,False,1,8,2738,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+pk_2k813,couple_children,False,2,"8,13",3100,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+pk_3k111315,couple_children,False,3,"11,13,15",3522,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+pk_adultchild,couple_children,False,0,18+,3110,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"
+wlz_aow,single,True,0,,1142,"Van den Brakel et al. (2023), tussenrapport minimum budgets, bijlage B.4.1: household types and published column totals"

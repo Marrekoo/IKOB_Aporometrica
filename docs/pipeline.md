@@ -78,6 +78,16 @@ car table feeds `--ownership`; the spending table feeds the public cost of PT
 fare concessions (`scenarios.md`). Bicycle ownership is an input file
 (`inputs/veh_owners/bike_ownership_buurten.csv`).
 
+## Reference budgets (optional)
+
+    python -m ikob2.cli.envelope --data-root <root> aggregates
+    python -m ikob2.cli.envelope --data-root <root> build
+
+re-derive `reference_budgets.csv` from its source tables and ODiN 2023
+(linked as `inputs/odin/ODIN_23.csv`); the result equals the shipped table
+(`envelope/README.md`). The runs read the table from
+`inputs/envelope/reference_budgets.csv`.
+
 ## 5. Car, bicycle and walking skims
 
     python -m ikob2.cli.skims build --kwb <gpkg> --study GM0344 \

@@ -1,0 +1,6 @@
+bundle,fixed_eur,eur_per_km,substitutes_minimal,kind,source
+pt_payg,0,,False,pt,X_M calc.R (BUNDLES_BASE): fixed EUR/month and EUR/km per car class at Warnaar's price level (uprated by the price index); source not stated in the script
+car_mini,132,0.179,True,car,X_M calc.R (BUNDLES_BASE): fixed EUR/month and EUR/km per car class at Warnaar's price level (uprated by the price index); source not stated in the script
+car_compact,169,0.184,True,car,X_M calc.R (BUNDLES_BASE): fixed EUR/month and EUR/km per car class at Warnaar's price level (uprated by the price index); source not stated in the script
+car_midsize,200,0.192,True,car,X_M calc.R (BUNDLES_BASE): fixed EUR/month and EUR/km per car class at Warnaar's price level (uprated by the price index); source not stated in the script
+motor,176,0.19,True,car,X_M calc.R (BUNDLES_BASE): fixed EUR/month and EUR/km per car class at Warnaar's price level (uprated by the price index); source not stated in the script

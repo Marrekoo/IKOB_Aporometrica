@@ -9,6 +9,7 @@ explicit `fetch`, download and server steps use the network.
     cli/        command-line entry points (python -m ikob2.cli.<name>)
     run/        accessibility per origin/segment/mode, scenarios, R, gap, costs
     segments/   population segments, jobs, margins, budgets, specifications
+    envelope/   the reference-budget envelope from its sources
     skims/      travel time, distance and cost matrices; routing servers
     engine/     SegmentedRunner, lazy matrix registry
     core/       numerics: survival families, copulas, Hansen/Shen
@@ -41,6 +42,7 @@ these; `cli` uses everything.
 | segments | `time_margins`, `bridge`, `specs` | Weibull margins, reference budgets, specifications M0-M3 |
 | segments | `car_availability`, `ownership`, `pt_spend` | mode availability; PT fare spending by decile (ODiN) |
 | segments | `statline` | CBS StatLine snapshots |
+| envelope | `sources`, `odin`, `nibud`, `income`, `xm` | the reference-budget envelope from its source tables and ODiN aggregates (`envelope/README.md`) |
 | skims | `store` | on-disk memory-mapped skim store |
 | skims | `router`, `build`, `walk`, `zones` | r5py/R5 routing, zone points, walking times |
 | skims | `car`, `distance`, `osrm`, `valhalla_server` | car time and cost, route distances, detour calibration |
@@ -61,6 +63,7 @@ these; `cli` uses everything.
 |---|---|
 | `cli.layout` | `create`, `link`: data folder |
 | `cli.segments` | `fetch`, `run`, `jobs`, `car-availability`, `pt-spend` |
+| `cli.envelope` | `aggregates`, `build`: the reference-budget envelope |
 | `cli.skims` | `build`, `calibrate-detour`, `build-distance`, `make-peak`, `build-pt`, `inspect` |
 | `cli.servers` | `valhalla build/start/stop/status`, `otp prepare/build/start/stop/status` |
 | `cli.accessibility` | one accessibility run |
