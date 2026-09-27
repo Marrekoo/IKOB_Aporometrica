@@ -106,4 +106,4 @@ measured congestion (peak load is a road-class factor), timetable-based PT
 waiting and transfer penalties, competition for jobs in the paper runs
 (Shen is available for square runs only), supply limits of shared bicycles.
 
-Cite as in [CITATION.cff](CITATION.cff). Licence: see [LICENSE](LICENSE).
+Cite as in [CITATION.cff](CITATION.cff). Licence: MIT ([LICENSE](LICENSE)). The data have their own licences (see [CLAUDE.md](CLAUDE.md), *Data*).

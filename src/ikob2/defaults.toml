@@ -287,8 +287,7 @@ sp_donor_point = "couple_children"
 income_measure = "gest"    # CBS percentiles: gest (standardised) or disp
 income_year = 2023         # CBS incomes: the year of the Nibud minima (2023); price_base sets the price level
 top_decile_rule = "pareto_p95"   # pareto_p95 or boundary_p90
-# ---- the method's choices (envelope/README.md). envelope/x_m_calc.toml gives the settings of
-# X_M calc.R, which reproduce data/envelope/reference_budgets_x_m_calc.csv.
+# ---- the method's choices (envelope/README.md; sensitivity: envelope/switches.py)
 aggregates = "2022_2023"        # ODiN aggregates under inputs/envelope/odin/: 2023 (as X_M calc.R) or 2022_2023
 unit = "journey"           # budget per priced home-based tour, or per priced one-way "journey"
 n_lower = "lowest_decile"  # lower bound on tours per month: fixed (n_min_fixed) or lowest_decile of the household type

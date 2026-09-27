@@ -1,11 +1,10 @@
 variant,low_D2-D10,central_D2-D10,high_D2-D10,low_D2-D4,central_D2-D4,high_D2-D4
-X_M calc.R settings,1.0,1.0,1.0,1.0,1.0,1.0
-unit: per journey,1.053,1.055,1.059,1.046,1.06,1.059
-n_lower: lowest decile,1.0,1.0,0.373,1.0,1.0,0.373
-income_bridge: per adult,1.142,1.127,1.105,1.755,1.446,1.349
-aggregates: ODiN 2022-23,1.03,1.019,1.0,0.969,1.002,1.0
-car_all_tariffs,1.0,1.0,1.0,1.0,1.0,1.0
-price_base: 2022 euros,0.966,0.966,0.97,0.76,0.917,0.984
-spread: gamma only,1.103,1.0,0.265,1.59,1.0,0.264
-gamma_anchor: 0 (not adopted),1.0,1.0,1.0,1.438,1.136,1.0
-adopted method (defaults),1.262,1.155,0.352,2.472,1.356,0.391
+defaults,1.0,1.0,1.0,1.0,1.0,1.0
+unit: per tour,0.943,0.943,0.943,0.943,0.943,0.943
+n_lower: fixed 8 tours,1.0,1.0,1.0,1.0,1.0,1.0
+income_bridge: none,0.88,0.885,0.902,0.583,0.68,0.739
+aggregates: ODiN 2023,0.981,0.981,0.981,0.984,0.985,0.986
+car_all_tariffs: false,1.0,1.0,1.0,1.0,1.0,1.0
+price_base: published,1.035,1.035,1.033,1.174,1.077,1.029
+spread: all assumptions,0.927,1.0,1.302,0.718,1.0,1.219
+gamma_anchor: 0,1.0,1.0,1.0,1.355,1.131,1.0

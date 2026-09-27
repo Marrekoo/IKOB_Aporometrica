@@ -1,9 +1,9 @@
 """
-The reference-budget envelope: from source tables to the per-tour money
+The reference-budget envelope: from source tables to the per-journey money
 budgets of `reference_budgets.csv`.
 
-A Python re-derivation of `X_M calc.R`, in stages that each take tables and
-return tables:
+The method of the envelope script `X_M calc.R`, in stages that each take
+tables and return tables:
 
   sources   the published inputs (Nibud basket, Warnaar anchors, CBS income
             percentiles, car costs), one CSV each with its source;
@@ -17,6 +17,5 @@ return tables:
             over gamma (or over the whole grid) is the envelope.
 
 With the parameters of `defaults.toml` [envelope] the result is
-`data/envelope/reference_budgets.csv`; with `envelope/x_m_calc.toml` it
-reproduces the original R script's `reference_budgets_x_m_calc.csv`.
+`data/envelope/reference_budgets.csv`.
 """

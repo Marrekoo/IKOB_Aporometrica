@@ -116,11 +116,11 @@ def rescale_budgets(envelope: pd.DataFrame,
                     legs_per_tour: float | Mapping[str, float]) -> pd.DataFrame:
     """Convert per-tour budgets to per-journey budgets.
 
-    The reference budgets are per HOME-BASED TOUR: the envelope script
+    An envelope built per HOME-BASED TOUR (`envelope.unit = "tour"`)
     divides a household's monthly mobility residual by its number of
     home-based tours (chains of one-way journeys from home back to home).
     The cost matrices price one one-way journey (an ODiN verplaatsing,
-    door to door), so the budgets are divided by the number of one-way
+    door to door), so such budgets are divided by the number of one-way
     journeys per tour (low / n, high / n, the km equivalents likewise);
     ODiN 2022-23 gives 2.2 (envelope/journeys_per_tour.py), the default
     `accessibility.legs_per_tour`. 1.0 leaves the table as it is.
@@ -173,9 +173,10 @@ def load_reference_budgets(path: str | Path, *,
       "error" : raise.
 
     legs_per_tour : one-way journeys per home-based tour (a number, or a
-    mapping household type -> number): the table's budgets are per
-    home-based tour and are divided by it to give per-journey budgets;
-    default `accessibility.legs_per_tour` (2.2); see `rescale_budgets`.
+    mapping household type -> number): rows per home-based tour (`unit`
+    "tour") are divided by it to give per-journey budgets, rows per
+    journey are kept; default `accessibility.legs_per_tour` (2.2); see
+    `rescale_budgets`.
 
     Extra columns (km_low, km_high, the distance equivalents of the
     budgets) are kept.

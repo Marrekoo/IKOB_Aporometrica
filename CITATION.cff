@@ -15,6 +15,7 @@ authors:
 version: "0.1.0"
 date-released: "2026-09-27"
 repository-code: "https://github.com/Marrekoo/IKOB_Aporometrica"
+license: MIT
 keywords:
   - accessibility
   - transport equity

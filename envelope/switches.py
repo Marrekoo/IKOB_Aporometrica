@@ -1,7 +1,7 @@
 """
-Effect of each method choice (defaults.toml [envelope]) on the reference
-budgets: from the settings of X_M calc.R (envelope/x_m_calc.toml), one
-choice at a time, and the adopted method (the defaults) as a whole.
+Sensitivity of the reference budgets to each method choice
+(defaults.toml [envelope]): every switch set to its alternative, one at a
+time, against the defaults.
 
     python envelope/switches.py [--out envelope/results]
 
@@ -10,7 +10,7 @@ ODiN aggregates, and expressed per one-way journey as the model reads it
 (tables per tour divided by `accessibility.legs_per_tour`). Writes
 switch_effects.csv (every variant x cell: low, central, high, EUR per
 journey) and switch_summary.csv (per variant: the median ratio to the
-baseline of low, central and high, over D2-D10 and over D2-D4, where the
+defaults of low, central and high, over D2-D10 and over D2-D4, where the
 money gate binds).
 """
 
@@ -23,30 +23,26 @@ import numpy as np
 import pandas as pd
 
 from ikob2.cli.envelope import build
-from ikob2.params import DEFAULTS, load
+from ikob2.params import DEFAULTS
 
 ROOT = Path(__file__).resolve().parents[1] / "data" / "envelope"
-R_SETTINGS = Path(__file__).resolve().parent / "x_m_calc.toml"
-ADOPTED = "adopted method (defaults)"
+BASE = "defaults"
 VARIANTS = {
-    "X_M calc.R settings": {},
-    "unit: per journey": {"unit": "journey"},
-    "n_lower: lowest decile": {"n_lower": "lowest_decile"},
-    "income_bridge: per adult": {"income_bridge": "per_adult"},
-    "aggregates: ODiN 2022-23": {"aggregates": "2022_2023"},
-    "car_all_tariffs": {"car_all_tariffs": True},
-    "price_base: 2022 euros": {"price_base": "2022"},
-    "spread: gamma only": {"spread": "gamma"},
-    "gamma_anchor: 0 (not adopted)": {"gamma_anchor": 0.0},
-    ADOPTED: None,
+    BASE: {},
+    "unit: per tour": {"unit": "tour"},
+    "n_lower: fixed 8 tours": {"n_lower": "fixed"},
+    "income_bridge: none": {"income_bridge": "none"},
+    "aggregates: ODiN 2023": {"aggregates": "2023"},
+    "car_all_tariffs: false": {"car_all_tariffs": False},
+    "price_base: published": {"price_base": "published"},
+    "spread: all assumptions": {"spread": "all"},
+    "gamma_anchor: 0": {"gamma_anchor": 0.0},
 }
 
 
 def variant(changes: dict) -> pd.DataFrame:
-    """The reference budgets of one variant, EUR per journey (None: the
-    defaults; otherwise changes to the X_M calc.R settings)."""
-    prm = DEFAULTS if changes is None else load(R_SETTINGS).with_values(
-        {f"envelope.{k}": v for k, v in changes.items()})
+    """The reference budgets of the defaults with `changes`, EUR per journey."""
+    prm = DEFAULTS.with_values({f"envelope.{k}": v for k, v in changes.items()})
     t = build(ROOT / "sources", ROOT / "odin" / prm.envelope.aggregates, prm)["reference_budgets"]
     div = 1.0 if prm.envelope.unit == "journey" else prm.accessibility.legs_per_tour
     for c in ("low", "central", "high"):
@@ -63,7 +59,7 @@ def main(argv=None) -> None:
     eff = pd.concat(rows, ignore_index=True)[
         ["variant", "household_type", "income_class", "low", "central", "high",
          "upper_bound", "gate_slack"]]
-    base = eff[eff["variant"] == next(iter(VARIANTS))].set_index(
+    base = eff[eff["variant"] == BASE].set_index(
         ["household_type", "income_class"])[["low", "central", "high"]]
     summ = []
     for name, d in eff.groupby("variant", sort=False):
@@ -80,7 +76,7 @@ def main(argv=None) -> None:
     eff.round(4).to_csv(args.out / "switch_effects.csv", index=False)
     summ.round(3).to_csv(args.out / "switch_summary.csv", index=False)
     pd.set_option("display.width", 200)
-    print("Median ratio to the baseline (EUR per journey as the model reads it):")
+    print("Median ratio to the defaults (EUR per journey as the model reads it):")
     print(summ.round(2).to_string(index=False))
 
 

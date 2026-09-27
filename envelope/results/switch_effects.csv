@@ -1,401 +1,361 @@
 variant,household_type,income_class,low,central,high,upper_bound,gate_slack
-X_M calc.R settings,couple,D1,,,,False,False
-X_M calc.R settings,couple,D2,2.2136,4.2727,10.6909,False,False
-X_M calc.R settings,couple,D3,3.8727,7.5545,33.7091,False,True
-X_M calc.R settings,couple,D4,6.3545,12.3273,42.6864,False,True
-X_M calc.R settings,couple,D5,10.5273,18.3682,67.35,False,True
-X_M calc.R settings,couple,D6,14.3545,23.2,93.0,False,True
-X_M calc.R settings,couple,D7,37.2318,38.8636,118.3182,True,True
-X_M calc.R settings,couple,D8,48.4545,49.8591,151.5545,True,True
-X_M calc.R settings,couple,D9,64.4136,65.7864,199.8318,True,True
-X_M calc.R settings,couple,D10,101.9545,103.4545,314.1409,True,True
-X_M calc.R settings,couple_children,D1,,,,False,False
-X_M calc.R settings,couple_children,D2,1.8773,4.8727,26.3409,False,True
-X_M calc.R settings,couple_children,D3,4.2045,7.4364,47.1864,False,True
-X_M calc.R settings,couple_children,D4,6.5591,11.1864,78.4227,False,True
-X_M calc.R settings,couple_children,D5,19.6909,20.6955,111.6182,True,True
-X_M calc.R settings,couple_children,D6,25.8864,27.2273,146.6091,True,True
-X_M calc.R settings,couple_children,D7,32.6318,34.2273,184.1727,True,True
-X_M calc.R settings,couple_children,D8,40.8727,42.6909,229.5182,True,True
-X_M calc.R settings,couple_children,D9,52.85,54.9864,295.3818,True,True
-X_M calc.R settings,couple_children,D10,81.2045,81.9364,451.3318,True,True
-X_M calc.R settings,single,D1,,,,False,False
-X_M calc.R settings,single,D2,0.8409,5.9682,11.6045,False,False
-X_M calc.R settings,single,D3,6.2091,15.5591,28.1682,False,True
-X_M calc.R settings,single,D4,11.7,21.3227,44.3545,False,True
-X_M calc.R settings,single,D5,15.7182,28.5,61.9682,False,True
-X_M calc.R settings,single,D6,11.4818,34.4773,79.3818,False,True
-X_M calc.R settings,single,D7,19.7136,36.5818,99.05,False,True
-X_M calc.R settings,single,D8,55.0273,58.05,103.4727,True,True
-X_M calc.R settings,single,D9,73.3682,77.4,137.9545,True,True
-X_M calc.R settings,single,D10,118.4,121.2591,219.6045,True,True
-X_M calc.R settings,single_parent,D1,,,,False,False
-X_M calc.R settings,single_parent,D2,1.6455,4.8636,19.0818,False,True
-X_M calc.R settings,single_parent,D3,3.7591,7.1,33.9091,False,True
-X_M calc.R settings,single_parent,D4,6.7091,11.4364,58.7682,False,True
-X_M calc.R settings,single_parent,D5,19.7273,22.1136,85.1091,True,True
-X_M calc.R settings,single_parent,D6,27.2045,29.5364,112.9591,True,True
-X_M calc.R settings,single_parent,D7,35.0318,35.5864,142.85,True,True
-X_M calc.R settings,single_parent,D8,43.8182,44.5273,178.9364,True,True
-X_M calc.R settings,single_parent,D9,56.4864,57.4682,231.35,True,True
-X_M calc.R settings,single_parent,D10,87.1773,88.2545,355.4591,True,True
-unit: per journey,couple,D1,,,,False,False
-unit: per journey,couple,D2,2.17,4.46,11.32,False,False
-unit: per journey,couple,D3,3.91,7.78,35.68,False,True
-unit: per journey,couple,D4,6.6,12.69,45.19,False,True
-unit: per journey,couple,D5,10.9,19.01,71.29,False,True
-unit: per journey,couple,D6,14.73,23.97,98.44,False,True
-unit: per journey,couple,D7,38.52,40.31,125.24,True,True
-unit: per journey,couple,D8,50.21,51.73,160.42,True,True
-unit: per journey,couple,D9,66.81,68.26,211.52,True,True
-unit: per journey,couple,D10,105.82,107.35,332.52,True,True
-unit: per journey,couple_children,D1,,,,False,False
-unit: per journey,couple_children,D2,2.01,5.17,27.88,False,True
-unit: per journey,couple_children,D3,4.41,7.7,49.95,False,True
-unit: per journey,couple_children,D4,6.88,11.61,83.01,False,True
-unit: per journey,couple_children,D5,20.83,21.67,118.15,True,True
-unit: per journey,couple_children,D6,27.35,28.5,155.19,True,True
-unit: per journey,couple_children,D7,34.52,35.84,194.95,True,True
-unit: per journey,couple_children,D8,43.25,44.71,242.95,True,True
-unit: per journey,couple_children,D9,55.92,57.59,312.66,True,True
-unit: per journey,couple_children,D10,85.97,86.79,477.74,True,True
-unit: per journey,single,D1,,,,False,False
-unit: per journey,single,D2,0.23,6.61,12.28,False,False
-unit: per journey,single,D3,6.72,17.32,29.82,False,True
-unit: per journey,single,D4,12.31,23.57,46.95,False,True
-unit: per journey,single,D5,17.06,31.47,65.6,False,True
-unit: per journey,single,D6,12.64,37.54,84.03,False,True
-unit: per journey,single,D7,21.09,39.98,104.84,False,True
-unit: per journey,single,D8,59.06,63.44,109.53,True,True
-unit: per journey,single,D9,79.02,84.63,146.02,True,True
-unit: per journey,single,D10,128.27,131.6,232.45,True,True
-unit: per journey,single_parent,D1,,,,False,False
-unit: per journey,single_parent,D2,1.68,5.2,20.2,False,True
-unit: per journey,single_parent,D3,3.92,7.54,35.89,False,True
-unit: per journey,single_parent,D4,7.09,12.1,62.21,False,True
-unit: per journey,single_parent,D5,21.15,23.45,90.09,True,True
-unit: per journey,single_parent,D6,28.95,31.26,119.57,True,True
-unit: per journey,single_parent,D7,36.93,37.61,151.21,True,True
-unit: per journey,single_parent,D8,46.0,46.97,189.41,True,True
-unit: per journey,single_parent,D9,59.21,60.58,244.89,True,True
-unit: per journey,single_parent,D10,91.5,93.11,376.26,True,True
-n_lower: lowest decile,couple,D1,,,,False,False
-n_lower: lowest decile,couple,D2,2.2136,4.2727,4.8136,False,False
-n_lower: lowest decile,couple,D3,3.8727,7.5545,15.1818,False,True
-n_lower: lowest decile,couple,D4,6.3545,12.3273,19.2227,False,True
-n_lower: lowest decile,couple,D5,10.5273,18.3682,30.3318,False,True
-n_lower: lowest decile,couple,D6,14.3545,23.2,41.8818,False,True
-n_lower: lowest decile,couple,D7,37.2318,38.8636,53.2864,True,True
-n_lower: lowest decile,couple,D8,48.4545,49.8591,68.2545,True,True
-n_lower: lowest decile,couple,D9,64.4136,65.7864,89.9955,True,True
-n_lower: lowest decile,couple,D10,101.9545,103.4545,141.4773,True,True
-n_lower: lowest decile,couple_children,D1,,,,False,False
-n_lower: lowest decile,couple_children,D2,1.8773,4.8727,6.0682,False,False
-n_lower: lowest decile,couple_children,D3,4.2045,7.4364,10.8727,False,False
-n_lower: lowest decile,couple_children,D4,6.5591,11.1864,18.0727,False,True
-n_lower: lowest decile,couple_children,D5,19.6909,20.6955,25.7182,True,True
-n_lower: lowest decile,couple_children,D6,25.8864,27.2273,33.7818,True,True
-n_lower: lowest decile,couple_children,D7,32.6318,34.2273,42.4409,True,True
-n_lower: lowest decile,couple_children,D8,40.8727,42.6909,52.8909,True,True
-n_lower: lowest decile,couple_children,D9,52.85,54.9864,68.0636,True,True
-n_lower: lowest decile,couple_children,D10,81.2045,81.9364,104.0,True,True
-n_lower: lowest decile,single,D1,,,,False,False
-n_lower: lowest decile,single,D2,0.8409,5.9682,9.1955,False,False
-n_lower: lowest decile,single,D3,6.2091,15.5591,22.3273,False,True
-n_lower: lowest decile,single,D4,11.7,21.3227,35.1545,False,True
-n_lower: lowest decile,single,D5,15.7182,28.5,49.1182,False,True
-n_lower: lowest decile,single,D6,11.4818,34.4773,62.9182,False,True
-n_lower: lowest decile,single,D7,19.7136,36.5818,78.5091,False,True
-n_lower: lowest decile,single,D8,55.0273,58.05,82.0136,True,True
-n_lower: lowest decile,single,D9,73.3682,77.4,109.3455,True,True
-n_lower: lowest decile,single,D10,118.4,121.2591,174.0636,True,True
-n_lower: lowest decile,single_parent,D1,,,,False,False
-n_lower: lowest decile,single_parent,D2,1.6455,4.8636,5.6591,False,False
-n_lower: lowest decile,single_parent,D3,3.7591,7.1,10.0545,False,False
-n_lower: lowest decile,single_parent,D4,6.7091,11.4364,17.4227,False,True
-n_lower: lowest decile,single_parent,D5,19.7273,22.1136,25.2318,True,True
-n_lower: lowest decile,single_parent,D6,27.2045,29.5364,33.4909,True,True
-n_lower: lowest decile,single_parent,D7,35.0318,35.5864,42.35,True,True
-n_lower: lowest decile,single_parent,D8,43.8182,44.5273,53.05,True,True
-n_lower: lowest decile,single_parent,D9,56.4864,57.4682,68.5909,True,True
-n_lower: lowest decile,single_parent,D10,87.1773,88.2545,105.3818,True,True
-income_bridge: per adult,couple,D1,,,,False,False
-income_bridge: per adult,couple,D2,7.3818,10.7364,26.3455,False,True
-income_bridge: per adult,couple,D3,9.0409,13.8636,49.3636,False,True
-income_bridge: per adult,couple,D4,11.5227,18.0409,58.3409,False,True
-income_bridge: per adult,couple,D5,15.6955,23.9409,83.0045,False,True
-income_bridge: per adult,couple,D6,19.5227,28.3955,108.6545,False,True
-income_bridge: per adult,couple,D7,42.4,44.0318,133.9727,True,True
-income_bridge: per adult,couple,D8,53.6227,55.0273,167.2091,True,True
-income_bridge: per adult,couple,D9,69.5818,70.9545,215.4818,True,True
-income_bridge: per adult,couple,D10,107.1227,108.6273,329.7909,True,True
-income_bridge: per adult,couple_children,D1,,,,False,False
-income_bridge: per adult,couple_children,D2,4.7318,8.2591,41.9955,False,True
-income_bridge: per adult,couple_children,D3,7.0591,10.6409,62.8409,False,True
-income_bridge: per adult,couple_children,D4,9.4136,14.2045,94.0773,False,True
-income_bridge: per adult,couple_children,D5,22.5409,23.6227,127.2682,True,True
-income_bridge: per adult,couple_children,D6,28.7364,30.1545,162.2636,True,True
-income_bridge: per adult,couple_children,D7,35.4864,37.1591,199.8273,True,True
-income_bridge: per adult,couple_children,D8,43.7273,45.6182,245.1727,True,True
-income_bridge: per adult,couple_children,D9,55.7,57.9182,311.0318,True,True
-income_bridge: per adult,couple_children,D10,84.0591,84.7864,466.9864,True,True
-income_bridge: per adult,single,D1,,,,False,False
-income_bridge: per adult,single,D2,4.1182,12.1727,19.4318,False,True
-income_bridge: per adult,single,D3,10.5409,21.3318,35.9955,False,True
-income_bridge: per adult,single,D4,16.0318,26.1727,52.1818,False,True
-income_bridge: per adult,single,D5,20.05,33.3409,69.7955,False,True
-income_bridge: per adult,single,D6,15.8182,39.3182,87.2091,False,True
-income_bridge: per adult,single,D7,24.05,40.9909,106.8773,False,True
-income_bridge: per adult,single,D8,59.3636,62.4545,111.3,True,True
-income_bridge: per adult,single,D9,77.7045,81.8091,145.7818,True,True
-income_bridge: per adult,single,D10,122.7364,125.5955,227.4318,True,True
-income_bridge: per adult,single_parent,D1,,,,False,False
-income_bridge: per adult,single_parent,D2,3.6,7.1045,26.9091,False,True
-income_bridge: per adult,single_parent,D3,5.7136,9.2409,41.7364,False,True
-income_bridge: per adult,single_parent,D4,8.6636,13.4909,66.5955,False,True
-income_bridge: per adult,single_parent,D5,21.6818,24.1682,92.9364,True,True
-income_bridge: per adult,single_parent,D6,29.1591,31.5909,120.7864,True,True
-income_bridge: per adult,single_parent,D7,36.9864,37.5409,150.6773,True,True
-income_bridge: per adult,single_parent,D8,45.7727,46.4773,186.7636,True,True
-income_bridge: per adult,single_parent,D9,58.4409,59.4227,239.1773,True,True
-income_bridge: per adult,single_parent,D10,89.1318,90.2091,363.2864,True,True
-aggregates: ODiN 2022-23,couple,D1,,,,False,False
-aggregates: ODiN 2022-23,couple,D2,2.0182,4.5045,10.6909,False,False
-aggregates: ODiN 2022-23,couple,D3,3.5273,7.5273,33.7091,False,True
-aggregates: ODiN 2022-23,couple,D4,6.5818,12.8273,42.6864,False,True
-aggregates: ODiN 2022-23,couple,D5,10.6909,18.6955,67.35,False,True
-aggregates: ODiN 2022-23,couple,D6,14.8909,23.6545,93.0,False,True
-aggregates: ODiN 2022-23,couple,D7,38.2273,39.7409,118.3182,True,True
-aggregates: ODiN 2022-23,couple,D8,49.4773,50.9591,151.5545,True,True
-aggregates: ODiN 2022-23,couple,D9,65.7409,67.2227,199.8318,True,True
-aggregates: ODiN 2022-23,couple,D10,104.3318,105.7636,314.1409,True,True
-aggregates: ODiN 2022-23,couple_children,D1,,,,False,False
-aggregates: ODiN 2022-23,couple_children,D2,1.8955,4.7227,26.3409,False,True
-aggregates: ODiN 2022-23,couple_children,D3,4.3409,7.2045,47.1864,False,True
-aggregates: ODiN 2022-23,couple_children,D4,6.7909,11.2545,78.4227,False,True
-aggregates: ODiN 2022-23,couple_children,D5,20.4818,21.0409,111.6182,True,True
-aggregates: ODiN 2022-23,couple_children,D6,27.0727,27.7136,146.6091,True,True
-aggregates: ODiN 2022-23,couple_children,D7,34.2182,34.8591,184.1727,True,True
-aggregates: ODiN 2022-23,couple_children,D8,42.7909,43.4636,229.5182,True,True
-aggregates: ODiN 2022-23,couple_children,D9,55.2545,55.9773,295.3818,True,True
-aggregates: ODiN 2022-23,couple_children,D10,84.9818,85.6682,451.3318,True,True
-aggregates: ODiN 2022-23,single,D1,,,,False,False
-aggregates: ODiN 2022-23,single,D2,0.6909,6.0864,11.6045,False,False
-aggregates: ODiN 2022-23,single,D3,5.1864,15.8318,28.1682,False,True
-aggregates: ODiN 2022-23,single,D4,10.8545,21.7455,44.3545,False,True
-aggregates: ODiN 2022-23,single,D5,15.0182,29.1136,61.9682,False,True
-aggregates: ODiN 2022-23,single,D6,10.8955,35.2409,79.3818,False,True
-aggregates: ODiN 2022-23,single,D7,19.3955,39.4545,99.05,False,True
-aggregates: ODiN 2022-23,single,D8,54.2455,59.9045,103.4727,True,True
-aggregates: ODiN 2022-23,single,D9,71.4727,77.2182,137.9545,True,True
-aggregates: ODiN 2022-23,single,D10,114.2909,118.9318,219.6045,True,True
-aggregates: ODiN 2022-23,single_parent,D1,,,,False,False
-aggregates: ODiN 2022-23,single_parent,D2,1.4545,4.7773,19.0818,False,True
-aggregates: ODiN 2022-23,single_parent,D3,4.1818,7.0864,33.9091,False,True
-aggregates: ODiN 2022-23,single_parent,D4,7.1136,11.3864,58.7682,False,True
-aggregates: ODiN 2022-23,single_parent,D5,20.9227,22.0182,85.1091,True,True
-aggregates: ODiN 2022-23,single_parent,D6,28.7636,29.3455,112.9591,True,True
-aggregates: ODiN 2022-23,single_parent,D7,36.7091,37.1273,142.85,True,True
-aggregates: ODiN 2022-23,single_parent,D8,45.8455,46.4818,178.9364,True,True
-aggregates: ODiN 2022-23,single_parent,D9,59.15,60.0909,231.35,True,True
-aggregates: ODiN 2022-23,single_parent,D10,91.1636,92.2909,355.4591,True,True
-car_all_tariffs,couple,D1,,,,False,False
-car_all_tariffs,couple,D2,2.2136,4.2727,10.6909,False,False
-car_all_tariffs,couple,D3,3.8727,7.5545,33.7091,False,True
-car_all_tariffs,couple,D4,6.3545,12.3273,42.6864,False,True
-car_all_tariffs,couple,D5,10.5273,18.3682,67.35,False,True
-car_all_tariffs,couple,D6,14.3545,23.2,93.0,False,True
-car_all_tariffs,couple,D7,37.2318,38.8636,118.3182,True,True
-car_all_tariffs,couple,D8,48.4545,49.8591,151.5545,True,True
-car_all_tariffs,couple,D9,64.4136,65.7864,199.8318,True,True
-car_all_tariffs,couple,D10,101.9545,103.4545,314.1409,True,True
-car_all_tariffs,couple_children,D1,,,,False,False
-car_all_tariffs,couple_children,D2,1.8773,4.8727,26.3409,False,True
-car_all_tariffs,couple_children,D3,4.2045,7.4364,47.1864,False,True
-car_all_tariffs,couple_children,D4,6.5591,11.1864,78.4227,False,True
-car_all_tariffs,couple_children,D5,19.6909,20.6955,111.6182,True,True
-car_all_tariffs,couple_children,D6,25.8864,27.2273,146.6091,True,True
-car_all_tariffs,couple_children,D7,32.6318,34.2273,184.1727,True,True
-car_all_tariffs,couple_children,D8,40.8727,42.6909,229.5182,True,True
-car_all_tariffs,couple_children,D9,52.85,54.9864,295.3818,True,True
-car_all_tariffs,couple_children,D10,81.2045,81.9364,451.3318,True,True
-car_all_tariffs,single,D1,,,,False,False
-car_all_tariffs,single,D2,0.8409,5.9682,11.6045,False,False
-car_all_tariffs,single,D3,6.2091,15.5591,28.1682,False,True
-car_all_tariffs,single,D4,11.7,21.3227,44.3545,False,True
-car_all_tariffs,single,D5,15.7182,28.5,61.9682,False,True
-car_all_tariffs,single,D6,11.4818,34.4773,79.3818,False,True
-car_all_tariffs,single,D7,19.7136,36.5818,99.05,False,True
-car_all_tariffs,single,D8,55.0273,58.05,103.4727,True,True
-car_all_tariffs,single,D9,73.3682,77.4,137.9545,True,True
-car_all_tariffs,single,D10,118.4,121.2591,219.6045,True,True
-car_all_tariffs,single_parent,D1,,,,False,False
-car_all_tariffs,single_parent,D2,1.6455,4.8636,19.0818,False,True
-car_all_tariffs,single_parent,D3,3.7591,7.1,33.9091,False,True
-car_all_tariffs,single_parent,D4,6.7091,11.4364,58.7682,False,True
-car_all_tariffs,single_parent,D5,19.7273,22.1136,85.1091,True,True
-car_all_tariffs,single_parent,D6,27.2045,29.5364,112.9591,True,True
-car_all_tariffs,single_parent,D7,35.0318,35.5864,142.85,True,True
-car_all_tariffs,single_parent,D8,43.8182,44.5273,178.9364,True,True
-car_all_tariffs,single_parent,D9,56.4864,57.4682,231.35,True,True
-car_all_tariffs,single_parent,D10,87.1773,88.2545,355.4591,True,True
-price_base: 2022 euros,couple,D1,,,,False,False
-price_base: 2022 euros,couple,D2,1.9773,4.3955,10.8955,False,False
-price_base: 2022 euros,couple,D3,2.2636,6.3045,19.9045,False,True
-price_base: 2022 euros,couple,D4,5.0682,11.3727,41.9636,False,True
-price_base: 2022 euros,couple,D5,8.9545,17.1182,65.7273,False,True
-price_base: 2022 euros,couple,D6,12.4773,21.7273,90.4364,False,True
-price_base: 2022 euros,couple,D7,36.15,37.7227,114.8409,True,True
-price_base: 2022 euros,couple,D8,46.9636,48.3182,146.8636,True,True
-price_base: 2022 euros,couple,D9,62.3318,63.6591,193.3727,True,True
-price_base: 2022 euros,couple,D10,98.5045,99.9545,303.5,True,True
-price_base: 2022 euros,couple_children,D1,,,,False,False
-price_base: 2022 euros,couple_children,D2,1.2818,3.2091,26.35,False,True
-price_base: 2022 euros,couple_children,D3,3.1955,6.7773,46.4909,False,True
-price_base: 2022 euros,couple_children,D4,5.3318,10.3409,76.5864,False,True
-price_base: 2022 euros,couple_children,D5,19.1545,20.1318,108.5682,True,True
-price_base: 2022 euros,couple_children,D6,25.1273,26.4227,142.2818,True,True
-price_base: 2022 euros,couple_children,D7,31.6273,33.1682,178.4727,True,True
-price_base: 2022 euros,couple_children,D8,39.5682,41.3227,222.1591,True,True
-price_base: 2022 euros,couple_children,D9,51.1,53.1682,285.6091,True,True
-price_base: 2022 euros,couple_children,D10,78.4227,79.1273,435.8545,True,True
-price_base: 2022 euros,single,D1,,,,False,False
-price_base: 2022 euros,single,D2,0.0273,4.85,11.5364,False,False
-price_base: 2022 euros,single,D3,4.7227,14.4727,27.4955,False,True
-price_base: 2022 euros,single,D4,9.7091,19.6955,43.25,False,True
-price_base: 2022 euros,single,D5,3.3864,26.3182,59.3545,False,True
-price_base: 2022 euros,single,D6,10.5682,31.2409,77.0045,False,True
-price_base: 2022 euros,single,D7,18.4,33.2364,95.95,False,True
-price_base: 2022 euros,single,D8,53.3545,56.2818,100.3227,True,True
-price_base: 2022 euros,single,D9,71.0455,74.9273,133.5409,True,True
-price_base: 2022 euros,single,D10,114.4364,117.1773,212.2045,True,True
-price_base: 2022 euros,single_parent,D1,,,,False,False
-price_base: 2022 euros,single_parent,D2,0.7136,2.6682,19.1636,False,True
-price_base: 2022 euros,single_parent,D3,2.7409,6.4591,33.5091,False,True
-price_base: 2022 euros,single_parent,D4,5.45,10.5773,57.4591,False,True
-price_base: 2022 euros,single_parent,D5,19.2,21.5227,82.8409,True,True
-price_base: 2022 euros,single_parent,D6,26.4136,28.6773,109.6682,True,True
-price_base: 2022 euros,single_parent,D7,33.9591,34.4955,138.4727,True,True
-price_base: 2022 euros,single_parent,D8,42.4227,43.1091,173.2364,True,True
-price_base: 2022 euros,single_parent,D9,54.6273,55.5773,223.7318,True,True
-price_base: 2022 euros,single_parent,D10,84.1909,85.2364,343.3,True,True
-spread: gamma only,couple,D1,,,,False,False
-spread: gamma only,couple,D2,4.2727,4.2727,4.2727,False,False
-spread: gamma only,couple,D3,6.5818,7.5545,8.5273,False,False
-spread: gamma only,couple,D4,9.4136,12.3273,15.2364,False,True
-spread: gamma only,couple,D5,13.3091,18.3682,23.4227,False,True
-spread: gamma only,couple,D6,16.3318,23.2,30.0636,False,True
-spread: gamma only,couple,D7,38.8636,38.8636,38.8636,True,True
-spread: gamma only,couple,D8,49.8591,49.8591,49.8591,True,True
-spread: gamma only,couple,D9,65.7864,65.7864,65.7864,True,True
-spread: gamma only,couple,D10,103.4545,103.4545,103.4545,True,True
-spread: gamma only,couple_children,D1,,,,False,False
-spread: gamma only,couple_children,D2,4.6773,4.8727,5.0727,False,False
-spread: gamma only,couple_children,D3,5.4773,7.4364,9.3955,False,False
-spread: gamma only,couple_children,D4,7.5273,11.1864,14.8409,False,True
-spread: gamma only,couple_children,D5,20.6955,20.6955,20.6955,True,True
-spread: gamma only,couple_children,D6,27.2273,27.2273,27.2273,True,True
-spread: gamma only,couple_children,D7,34.2273,34.2273,34.2273,True,True
-spread: gamma only,couple_children,D8,42.6909,42.6909,42.6909,True,True
-spread: gamma only,couple_children,D9,54.9864,54.9864,54.9864,True,True
-spread: gamma only,couple_children,D10,81.9364,81.9364,81.9364,True,True
-spread: gamma only,single,D1,,,,False,False
-spread: gamma only,single,D2,2.9409,5.9682,9.0,False,False
-spread: gamma only,single,D3,10.5682,15.5591,20.5455,False,True
-spread: gamma only,single,D4,15.2818,21.3227,27.3591,False,True
-spread: gamma only,single,D5,19.2318,28.5,37.7636,False,True
-spread: gamma only,single,D6,23.2818,34.4773,45.6773,False,True
-spread: gamma only,single,D7,25.0955,36.5818,48.0682,False,True
-spread: gamma only,single,D8,58.05,58.05,58.05,True,True
-spread: gamma only,single,D9,77.4,77.4,77.4,True,True
-spread: gamma only,single,D10,121.2591,121.2591,121.2591,True,True
-spread: gamma only,single_parent,D1,,,,False,False
-spread: gamma only,single_parent,D2,4.8636,4.8636,4.8636,False,False
-spread: gamma only,single_parent,D3,5.1,7.1,9.1,False,False
-spread: gamma only,single_parent,D4,7.6409,11.4364,15.2318,False,True
-spread: gamma only,single_parent,D5,22.1136,22.1136,22.1136,True,True
-spread: gamma only,single_parent,D6,29.5364,29.5364,29.5364,True,True
-spread: gamma only,single_parent,D7,35.5864,35.5864,35.5864,True,True
-spread: gamma only,single_parent,D8,44.5273,44.5273,44.5273,True,True
-spread: gamma only,single_parent,D9,57.4682,57.4682,57.4682,True,True
-spread: gamma only,single_parent,D10,88.2545,88.2545,88.2545,True,True
-gamma_anchor: 0 (not adopted),couple,D1,,,,False,False
-gamma_anchor: 0 (not adopted),couple,D2,2.2136,4.2727,10.6909,False,False
-gamma_anchor: 0 (not adopted),couple,D3,4.6682,8.0409,33.7091,False,True
-gamma_anchor: 0 (not adopted),couple,D4,8.9864,13.7818,42.6864,False,True
-gamma_anchor: 0 (not adopted),couple,D5,15.2136,20.8955,67.35,False,True
-gamma_anchor: 0 (not adopted),couple,D6,21.1818,26.6318,93.0,False,True
-gamma_anchor: 0 (not adopted),couple,D7,37.2318,38.8636,118.3182,True,True
-gamma_anchor: 0 (not adopted),couple,D8,48.4545,49.8591,151.5545,True,True
-gamma_anchor: 0 (not adopted),couple,D9,64.4136,65.7864,199.8318,True,True
-gamma_anchor: 0 (not adopted),couple,D10,101.9545,103.4545,314.1409,True,True
-gamma_anchor: 0 (not adopted),couple_children,D1,,,,False,False
-gamma_anchor: 0 (not adopted),couple_children,D2,2.2136,5.0727,26.3409,False,True
-gamma_anchor: 0 (not adopted),couple_children,D3,5.95,8.4182,47.1864,False,True
-gamma_anchor: 0 (not adopted),couple_children,D4,10.0136,13.0136,78.4227,False,True
-gamma_anchor: 0 (not adopted),couple_children,D5,19.6909,20.6955,111.6182,True,True
-gamma_anchor: 0 (not adopted),couple_children,D6,25.8864,27.2273,146.6091,True,True
-gamma_anchor: 0 (not adopted),couple_children,D7,32.6318,34.2273,184.1727,True,True
-gamma_anchor: 0 (not adopted),couple_children,D8,40.8727,42.6909,229.5182,True,True
-gamma_anchor: 0 (not adopted),couple_children,D9,52.85,54.9864,295.3818,True,True
-gamma_anchor: 0 (not adopted),couple_children,D10,81.2045,81.9364,451.3318,True,True
-gamma_anchor: 0 (not adopted),single,D1,,,,False,False
-gamma_anchor: 0 (not adopted),single,D2,1.9,7.4864,11.6045,False,False
-gamma_anchor: 0 (not adopted),single,D3,9.9545,18.0545,28.1682,False,True
-gamma_anchor: 0 (not adopted),single,D4,17.0955,24.3409,44.3545,False,True
-gamma_anchor: 0 (not adopted),single,D5,24.0136,33.1318,61.9682,False,True
-gamma_anchor: 0 (not adopted),single,D6,21.5091,40.0773,79.3818,False,True
-gamma_anchor: 0 (not adopted),single,D7,31.0136,42.3273,99.05,False,True
-gamma_anchor: 0 (not adopted),single,D8,55.0273,58.05,103.4727,True,True
-gamma_anchor: 0 (not adopted),single,D9,73.3682,77.4,137.9545,True,True
-gamma_anchor: 0 (not adopted),single,D10,118.4,121.2591,219.6045,True,True
-gamma_anchor: 0 (not adopted),single_parent,D1,,,,False,False
-gamma_anchor: 0 (not adopted),single_parent,D2,1.6455,4.8636,19.0818,False,True
-gamma_anchor: 0 (not adopted),single_parent,D3,5.5818,8.1,33.9091,False,True
-gamma_anchor: 0 (not adopted),single_parent,D4,10.3182,13.3318,58.7682,False,True
-gamma_anchor: 0 (not adopted),single_parent,D5,19.7273,22.1136,85.1091,True,True
-gamma_anchor: 0 (not adopted),single_parent,D6,27.2045,29.5364,112.9591,True,True
-gamma_anchor: 0 (not adopted),single_parent,D7,35.0318,35.5864,142.85,True,True
-gamma_anchor: 0 (not adopted),single_parent,D8,43.8182,44.5273,178.9364,True,True
-gamma_anchor: 0 (not adopted),single_parent,D9,56.4864,57.4682,231.35,True,True
-gamma_anchor: 0 (not adopted),single_parent,D10,87.1773,88.2545,355.4591,True,True
-adopted method (defaults),couple,D1,,,,False,False
-adopted method (defaults),couple,D2,11.8,11.8,11.8,False,False
-adopted method (defaults),couple,D3,11.23,12.87,14.51,False,True
-adopted method (defaults),couple,D4,14.46,18.31,22.16,False,True
-adopted method (defaults),couple,D5,17.75,23.74,29.74,False,True
-adopted method (defaults),couple,D6,20.5,28.41,36.31,False,True
-adopted method (defaults),couple,D7,45.02,45.02,45.02,True,True
-adopted method (defaults),couple,D8,56.17,56.17,56.17,True,True
-adopted method (defaults),couple,D9,72.34,72.34,72.34,True,True
-adopted method (defaults),couple,D10,110.64,110.64,110.64,True,True
-adopted method (defaults),couple_children,D1,,,,False,False
-adopted method (defaults),couple_children,D2,6.01,6.64,7.27,False,False
-adopted method (defaults),couple_children,D3,7.51,10.03,12.56,False,False
-adopted method (defaults),couple_children,D4,9.55,13.92,18.29,False,True
-adopted method (defaults),couple_children,D5,24.5,24.5,24.5,True,True
-adopted method (defaults),couple_children,D6,31.25,31.25,31.25,True,True
-adopted method (defaults),couple_children,D7,38.49,38.49,38.49,True,True
-adopted method (defaults),couple_children,D8,47.2,47.2,47.2,True,True
-adopted method (defaults),couple_children,D9,59.87,59.87,59.87,True,True
-adopted method (defaults),couple_children,D10,89.93,89.93,89.93,True,True
-adopted method (defaults),single,D1,,,,False,False
-adopted method (defaults),single,D2,8.38,12.44,16.51,False,True
-adopted method (defaults),single,D3,16.73,23.01,29.28,False,True
-adopted method (defaults),single,D4,19.76,27.52,35.28,False,True
-adopted method (defaults),single,D5,23.45,34.54,45.63,False,True
-adopted method (defaults),single,D6,27.25,39.7,52.16,False,True
-adopted method (defaults),single,D7,29.95,43.29,56.62,False,True
-adopted method (defaults),single,D8,68.11,68.11,68.11,True,True
-adopted method (defaults),single,D9,88.12,88.12,88.12,True,True
-adopted method (defaults),single,D10,130.45,130.45,130.45,True,True
-adopted method (defaults),single_parent,D1,,,,False,False
-adopted method (defaults),single_parent,D2,4.39,5.04,5.69,False,False
-adopted method (defaults),single_parent,D3,6.48,9.2,11.92,False,False
-adopted method (defaults),single_parent,D4,8.87,13.47,18.07,False,True
-adopted method (defaults),single_parent,D5,25.23,25.23,25.23,True,True
-adopted method (defaults),single_parent,D6,32.83,32.83,32.83,True,True
-adopted method (defaults),single_parent,D7,40.89,40.89,40.89,True,True
-adopted method (defaults),single_parent,D8,50.31,50.31,50.31,True,True
-adopted method (defaults),single_parent,D9,64.33,64.33,64.33,True,True
-adopted method (defaults),single_parent,D10,97.52,97.52,97.52,True,True
+defaults,couple,D1,,,,False,False
+defaults,couple,D2,11.8,11.8,11.8,False,False
+defaults,couple,D3,11.23,12.87,14.51,False,True
+defaults,couple,D4,14.46,18.31,22.16,False,True
+defaults,couple,D5,17.75,23.74,29.74,False,True
+defaults,couple,D6,20.5,28.41,36.31,False,True
+defaults,couple,D7,45.02,45.02,45.02,True,True
+defaults,couple,D8,56.17,56.17,56.17,True,True
+defaults,couple,D9,72.34,72.34,72.34,True,True
+defaults,couple,D10,110.64,110.64,110.64,True,True
+defaults,couple_children,D1,,,,False,False
+defaults,couple_children,D2,6.01,6.64,7.27,False,False
+defaults,couple_children,D3,7.51,10.03,12.56,False,False
+defaults,couple_children,D4,9.55,13.92,18.29,False,True
+defaults,couple_children,D5,24.5,24.5,24.5,True,True
+defaults,couple_children,D6,31.25,31.25,31.25,True,True
+defaults,couple_children,D7,38.49,38.49,38.49,True,True
+defaults,couple_children,D8,47.2,47.2,47.2,True,True
+defaults,couple_children,D9,59.87,59.87,59.87,True,True
+defaults,couple_children,D10,89.93,89.93,89.93,True,True
+defaults,single,D1,,,,False,False
+defaults,single,D2,8.38,12.44,16.51,False,True
+defaults,single,D3,16.73,23.01,29.28,False,True
+defaults,single,D4,19.76,27.52,35.28,False,True
+defaults,single,D5,23.45,34.54,45.63,False,True
+defaults,single,D6,27.25,39.7,52.16,False,True
+defaults,single,D7,29.95,43.29,56.62,False,True
+defaults,single,D8,68.11,68.11,68.11,True,True
+defaults,single,D9,88.12,88.12,88.12,True,True
+defaults,single,D10,130.45,130.45,130.45,True,True
+defaults,single_parent,D1,,,,False,False
+defaults,single_parent,D2,4.39,5.04,5.69,False,False
+defaults,single_parent,D3,6.48,9.2,11.92,False,False
+defaults,single_parent,D4,8.87,13.47,18.07,False,True
+defaults,single_parent,D5,25.23,25.23,25.23,True,True
+defaults,single_parent,D6,32.83,32.83,32.83,True,True
+defaults,single_parent,D7,40.89,40.89,40.89,True,True
+defaults,single_parent,D8,50.31,50.31,50.31,True,True
+defaults,single_parent,D9,64.33,64.33,64.33,True,True
+defaults,single_parent,D10,97.52,97.52,97.52,True,True
+unit: per tour,couple,D1,,,,False,False
+unit: per tour,couple,D2,11.2273,11.2273,11.2273,False,False
+unit: per tour,couple,D3,10.7864,12.3591,13.9273,False,True
+unit: per tour,couple,D4,13.8955,17.5864,21.2727,False,True
+unit: per tour,couple,D5,17.1227,22.9,28.6773,False,True
+unit: per tour,couple,D6,19.6818,27.2591,34.8364,False,True
+unit: per tour,couple,D7,43.6636,43.6636,43.6636,True,True
+unit: per tour,couple,D8,54.4727,54.4727,54.4727,True,True
+unit: per tour,couple,D9,70.1409,70.1409,70.1409,True,True
+unit: per tour,couple,D10,107.2727,107.2727,107.2727,True,True
+unit: per tour,couple_children,D1,,,,False,False
+unit: per tour,couple_children,D2,5.6727,6.2682,6.8636,False,False
+unit: per tour,couple_children,D3,7.1545,9.5591,11.9636,False,False
+unit: per tour,couple_children,D4,9.1591,13.3409,17.5182,False,True
+unit: per tour,couple_children,D5,23.3409,23.3409,23.3409,True,True
+unit: per tour,couple_children,D6,29.7682,29.7682,29.7682,True,True
+unit: per tour,couple_children,D7,36.65,36.65,36.65,True,True
+unit: per tour,couple_children,D8,44.9409,44.9409,44.9409,True,True
+unit: per tour,couple_children,D9,57.0,57.0,57.0,True,True
+unit: per tour,couple_children,D10,85.6045,85.6045,85.6045,True,True
+unit: per tour,single,D1,,,,False,False
+unit: per tour,single,D2,7.45,11.0364,14.6273,False,True
+unit: per tour,single,D3,14.8455,20.4136,25.9864,False,True
+unit: per tour,single,D4,17.8545,24.8636,31.8773,False,True
+unit: per tour,single,D5,21.5,31.6591,41.8182,False,True
+unit: per tour,single,D6,25.1864,36.7045,48.2182,False,True
+unit: per tour,single,D7,27.9773,40.4227,52.8682,False,True
+unit: per tour,single,D8,62.4636,62.4636,62.4636,True,True
+unit: per tour,single,D9,78.9909,78.9909,78.9909,True,True
+unit: per tour,single,D10,119.0318,119.0318,119.0318,True,True
+unit: per tour,single_parent,D1,,,,False,False
+unit: per tour,single_parent,D2,4.1318,4.7455,5.3591,False,False
+unit: per tour,single_parent,D3,5.9909,8.5,11.0091,False,False
+unit: per tour,single_parent,D4,8.2273,12.5,16.7727,False,True
+unit: per tour,single_parent,D5,23.4,23.4,23.4,True,True
+unit: per tour,single_parent,D6,30.4591,30.4591,30.4591,True,True
+unit: per tour,single_parent,D7,37.9545,37.9545,37.9545,True,True
+unit: per tour,single_parent,D8,46.9682,46.9682,46.9682,True,True
+unit: per tour,single_parent,D9,60.0818,60.0818,60.0818,True,True
+unit: per tour,single_parent,D10,91.1,91.1,91.1,True,True
+n_lower: fixed 8 tours,couple,D1,,,,False,False
+n_lower: fixed 8 tours,couple,D2,11.8,11.8,11.8,False,False
+n_lower: fixed 8 tours,couple,D3,11.23,12.87,14.51,False,True
+n_lower: fixed 8 tours,couple,D4,14.46,18.31,22.16,False,True
+n_lower: fixed 8 tours,couple,D5,17.75,23.74,29.74,False,True
+n_lower: fixed 8 tours,couple,D6,20.5,28.41,36.31,False,True
+n_lower: fixed 8 tours,couple,D7,45.02,45.02,45.02,True,True
+n_lower: fixed 8 tours,couple,D8,56.17,56.17,56.17,True,True
+n_lower: fixed 8 tours,couple,D9,72.34,72.34,72.34,True,True
+n_lower: fixed 8 tours,couple,D10,110.64,110.64,110.64,True,True
+n_lower: fixed 8 tours,couple_children,D1,,,,False,False
+n_lower: fixed 8 tours,couple_children,D2,6.01,6.64,7.27,False,False
+n_lower: fixed 8 tours,couple_children,D3,7.51,10.03,12.56,False,False
+n_lower: fixed 8 tours,couple_children,D4,9.55,13.92,18.29,False,True
+n_lower: fixed 8 tours,couple_children,D5,24.5,24.5,24.5,True,True
+n_lower: fixed 8 tours,couple_children,D6,31.25,31.25,31.25,True,True
+n_lower: fixed 8 tours,couple_children,D7,38.49,38.49,38.49,True,True
+n_lower: fixed 8 tours,couple_children,D8,47.2,47.2,47.2,True,True
+n_lower: fixed 8 tours,couple_children,D9,59.87,59.87,59.87,True,True
+n_lower: fixed 8 tours,couple_children,D10,89.93,89.93,89.93,True,True
+n_lower: fixed 8 tours,single,D1,,,,False,False
+n_lower: fixed 8 tours,single,D2,8.38,12.44,16.51,False,True
+n_lower: fixed 8 tours,single,D3,16.73,23.01,29.28,False,True
+n_lower: fixed 8 tours,single,D4,19.76,27.52,35.28,False,True
+n_lower: fixed 8 tours,single,D5,23.45,34.54,45.63,False,True
+n_lower: fixed 8 tours,single,D6,27.25,39.7,52.16,False,True
+n_lower: fixed 8 tours,single,D7,29.95,43.29,56.62,False,True
+n_lower: fixed 8 tours,single,D8,68.11,68.11,68.11,True,True
+n_lower: fixed 8 tours,single,D9,88.12,88.12,88.12,True,True
+n_lower: fixed 8 tours,single,D10,130.45,130.45,130.45,True,True
+n_lower: fixed 8 tours,single_parent,D1,,,,False,False
+n_lower: fixed 8 tours,single_parent,D2,4.39,5.04,5.69,False,False
+n_lower: fixed 8 tours,single_parent,D3,6.48,9.2,11.92,False,False
+n_lower: fixed 8 tours,single_parent,D4,8.87,13.47,18.07,False,True
+n_lower: fixed 8 tours,single_parent,D5,25.23,25.23,25.23,True,True
+n_lower: fixed 8 tours,single_parent,D6,32.83,32.83,32.83,True,True
+n_lower: fixed 8 tours,single_parent,D7,40.89,40.89,40.89,True,True
+n_lower: fixed 8 tours,single_parent,D8,50.31,50.31,50.31,True,True
+n_lower: fixed 8 tours,single_parent,D9,64.33,64.33,64.33,True,True
+n_lower: fixed 8 tours,single_parent,D10,97.52,97.52,97.52,True,True
+income_bridge: none,couple,D1,,,,False,False
+income_bridge: none,couple,D2,4.86,4.86,4.86,False,False
+income_bridge: none,couple,D3,4.89,6.53,8.17,False,False
+income_bridge: none,couple,D4,8.47,12.32,16.16,False,True
+income_bridge: none,couple,D5,12.07,18.06,24.06,False,True
+income_bridge: none,couple,D6,15.18,23.08,30.98,False,True
+income_bridge: none,couple,D7,39.77,39.77,39.77,True,True
+income_bridge: none,couple,D8,50.92,50.92,50.92,True,True
+income_bridge: none,couple,D9,67.09,67.09,67.09,True,True
+income_bridge: none,couple,D10,105.39,105.39,105.39,True,True
+income_bridge: none,couple_children,D1,,,,False,False
+income_bridge: none,couple_children,D2,2.65,3.28,3.92,False,False
+income_bridge: none,couple_children,D3,4.36,6.89,9.41,False,False
+income_bridge: none,couple_children,D4,6.48,10.85,15.22,False,True
+income_bridge: none,couple_children,D5,21.48,21.48,21.48,True,True
+income_bridge: none,couple_children,D6,28.23,28.23,28.23,True,True
+income_bridge: none,couple_children,D7,35.47,35.47,35.47,True,True
+income_bridge: none,couple_children,D8,44.18,44.18,44.18,True,True
+income_bridge: none,couple_children,D9,56.85,56.85,56.85,True,True
+income_bridge: none,couple_children,D10,86.92,86.92,86.92,True,True
+income_bridge: none,single,D1,,,,False,False
+income_bridge: none,single,D2,1.48,5.54,9.61,False,False
+income_bridge: none,single,D3,10.33,16.6,22.87,False,True
+income_bridge: none,single,D4,14.46,22.22,29.99,False,True
+income_bridge: none,single,D5,18.24,29.33,40.42,False,True
+income_bridge: none,single,D6,22.08,34.54,46.99,False,True
+income_bridge: none,single,D7,25.04,38.38,51.72,False,True
+income_bridge: none,single,D8,63.33,63.33,63.33,True,True
+income_bridge: none,single,D9,83.39,83.39,83.39,True,True
+income_bridge: none,single,D10,125.94,125.94,125.94,True,True
+income_bridge: none,single_parent,D1,,,,False,False
+income_bridge: none,single_parent,D2,2.11,2.76,3.42,False,False
+income_bridge: none,single_parent,D3,4.26,6.98,9.7,False,False
+income_bridge: none,single_parent,D4,6.75,11.35,15.96,False,True
+income_bridge: none,single_parent,D5,23.11,23.11,23.11,True,True
+income_bridge: none,single_parent,D6,30.71,30.71,30.71,True,True
+income_bridge: none,single_parent,D7,38.77,38.77,38.77,True,True
+income_bridge: none,single_parent,D8,48.2,48.2,48.2,True,True
+income_bridge: none,single_parent,D9,62.22,62.22,62.22,True,True
+income_bridge: none,single_parent,D10,95.42,95.42,95.42,True,True
+aggregates: ODiN 2023,couple,D1,,,,False,False
+aggregates: ODiN 2023,couple,D2,11.11,11.11,11.11,False,False
+aggregates: ODiN 2023,couple,D3,11.14,12.75,14.37,False,True
+aggregates: ODiN 2023,couple,D4,13.74,17.38,21.02,False,True
+aggregates: ODiN 2023,couple,D5,17.41,23.28,29.15,False,True
+aggregates: ODiN 2023,couple,D6,19.94,27.63,35.31,False,True
+aggregates: ODiN 2023,couple,D7,44.3,44.3,44.3,True,True
+aggregates: ODiN 2023,couple,D8,55.3,55.3,55.3,True,True
+aggregates: ODiN 2023,couple,D9,71.22,71.22,71.22,True,True
+aggregates: ODiN 2023,couple,D10,108.88,108.88,108.88,True,True
+aggregates: ODiN 2023,couple_children,D1,,,,False,False
+aggregates: ODiN 2023,couple_children,D2,6.21,6.86,7.51,False,False
+aggregates: ODiN 2023,couple_children,D3,7.65,10.22,12.78,False,False
+aggregates: ODiN 2023,couple_children,D4,9.45,13.76,18.08,False,True
+aggregates: ODiN 2023,couple_children,D5,24.04,24.04,24.04,True,True
+aggregates: ODiN 2023,couple_children,D6,30.62,30.62,30.62,True,True
+aggregates: ODiN 2023,couple_children,D7,37.69,37.69,37.69,True,True
+aggregates: ODiN 2023,couple_children,D8,46.23,46.23,46.23,True,True
+aggregates: ODiN 2023,couple_children,D9,58.64,58.64,58.64,True,True
+aggregates: ODiN 2023,couple_children,D10,86.73,86.73,86.73,True,True
+aggregates: ODiN 2023,single,D1,,,,False,False
+aggregates: ODiN 2023,single,D2,8.1,12.02,15.94,False,True
+aggregates: ODiN 2023,single,D3,16.24,22.3,28.36,False,True
+aggregates: ODiN 2023,single,D4,19.36,26.94,34.52,False,True
+aggregates: ODiN 2023,single,D5,23.25,34.22,45.18,False,True
+aggregates: ODiN 2023,single,D6,26.84,39.09,51.34,False,True
+aggregates: ODiN 2023,single,D7,28.34,40.96,53.59,False,True
+aggregates: ODiN 2023,single,D8,66.15,66.15,66.15,True,True
+aggregates: ODiN 2023,single,D9,86.57,86.57,86.57,True,True
+aggregates: ODiN 2023,single,D10,131.7,131.7,131.7,True,True
+aggregates: ODiN 2023,single_parent,D1,,,,False,False
+aggregates: ODiN 2023,single_parent,D2,4.5,5.16,5.82,False,False
+aggregates: ODiN 2023,single_parent,D3,6.37,9.05,11.74,False,False
+aggregates: ODiN 2023,single_parent,D4,8.74,13.29,17.83,False,True
+aggregates: ODiN 2023,single_parent,D5,24.91,24.91,24.91,True,True
+aggregates: ODiN 2023,single_parent,D6,32.45,32.45,32.45,True,True
+aggregates: ODiN 2023,single_parent,D7,38.45,38.45,38.45,True,True
+aggregates: ODiN 2023,single_parent,D8,47.46,47.46,47.46,True,True
+aggregates: ODiN 2023,single_parent,D9,60.58,60.58,60.58,True,True
+aggregates: ODiN 2023,single_parent,D10,91.91,91.91,91.91,True,True
+car_all_tariffs: false,couple,D1,,,,False,False
+car_all_tariffs: false,couple,D2,11.8,11.8,11.8,False,False
+car_all_tariffs: false,couple,D3,11.23,12.87,14.51,False,True
+car_all_tariffs: false,couple,D4,14.46,18.31,22.16,False,True
+car_all_tariffs: false,couple,D5,17.75,23.74,29.74,False,True
+car_all_tariffs: false,couple,D6,20.5,28.41,36.31,False,True
+car_all_tariffs: false,couple,D7,45.02,45.02,45.02,True,True
+car_all_tariffs: false,couple,D8,56.17,56.17,56.17,True,True
+car_all_tariffs: false,couple,D9,72.34,72.34,72.34,True,True
+car_all_tariffs: false,couple,D10,110.64,110.64,110.64,True,True
+car_all_tariffs: false,couple_children,D1,,,,False,False
+car_all_tariffs: false,couple_children,D2,6.01,6.64,7.27,False,False
+car_all_tariffs: false,couple_children,D3,7.51,10.03,12.56,False,False
+car_all_tariffs: false,couple_children,D4,9.55,13.92,18.29,False,True
+car_all_tariffs: false,couple_children,D5,24.5,24.5,24.5,True,True
+car_all_tariffs: false,couple_children,D6,31.25,31.25,31.25,True,True
+car_all_tariffs: false,couple_children,D7,38.49,38.49,38.49,True,True
+car_all_tariffs: false,couple_children,D8,47.2,47.2,47.2,True,True
+car_all_tariffs: false,couple_children,D9,59.87,59.87,59.87,True,True
+car_all_tariffs: false,couple_children,D10,89.93,89.93,89.93,True,True
+car_all_tariffs: false,single,D1,,,,False,False
+car_all_tariffs: false,single,D2,8.38,12.44,16.51,False,True
+car_all_tariffs: false,single,D3,16.73,23.01,29.28,False,True
+car_all_tariffs: false,single,D4,19.76,27.52,35.28,False,True
+car_all_tariffs: false,single,D5,23.45,34.54,45.63,False,True
+car_all_tariffs: false,single,D6,27.25,39.7,52.16,False,True
+car_all_tariffs: false,single,D7,29.95,43.29,56.62,False,True
+car_all_tariffs: false,single,D8,68.11,68.11,68.11,True,True
+car_all_tariffs: false,single,D9,88.12,88.12,88.12,True,True
+car_all_tariffs: false,single,D10,130.45,130.45,130.45,True,True
+car_all_tariffs: false,single_parent,D1,,,,False,False
+car_all_tariffs: false,single_parent,D2,4.39,5.04,5.69,False,False
+car_all_tariffs: false,single_parent,D3,6.48,9.2,11.92,False,False
+car_all_tariffs: false,single_parent,D4,8.87,13.47,18.07,False,True
+car_all_tariffs: false,single_parent,D5,25.23,25.23,25.23,True,True
+car_all_tariffs: false,single_parent,D6,32.83,32.83,32.83,True,True
+car_all_tariffs: false,single_parent,D7,40.89,40.89,40.89,True,True
+car_all_tariffs: false,single_parent,D8,50.31,50.31,50.31,True,True
+car_all_tariffs: false,single_parent,D9,64.33,64.33,64.33,True,True
+car_all_tariffs: false,single_parent,D10,97.52,97.52,97.52,True,True
+price_base: published,couple,D1,,,,False,False
+price_base: published,couple,D2,11.92,11.92,11.92,False,False
+price_base: published,couple,D3,13.4,14.42,15.43,False,True
+price_base: published,couple,D4,16.41,19.57,22.74,False,True
+price_base: published,couple,D5,19.93,25.28,30.63,False,True
+price_base: published,couple,D6,22.88,30.17,37.47,False,True
+price_base: published,couple,D7,46.43,46.43,46.43,True,True
+price_base: published,couple,D8,58.0,58.0,58.0,True,True
+price_base: published,couple,D9,74.77,74.77,74.77,True,True
+price_base: published,couple,D10,114.53,114.53,114.53,True,True
+price_base: published,couple_children,D1,,,,False,False
+price_base: published,couple_children,D2,8.28,8.49,8.69,False,False
+price_base: published,couple_children,D3,8.83,10.83,12.82,False,False
+price_base: published,couple_children,D4,11.07,14.92,18.78,False,True
+price_base: published,couple_children,D5,25.22,25.22,25.22,True,True
+price_base: published,couple_children,D6,32.22,32.22,32.22,True,True
+price_base: published,couple_children,D7,39.73,39.73,39.73,True,True
+price_base: published,couple_children,D8,48.78,48.78,48.78,True,True
+price_base: published,couple_children,D9,61.93,61.93,61.93,True,True
+price_base: published,couple_children,D10,93.13,93.13,93.13,True,True
+price_base: published,single,D1,,,,False,False
+price_base: published,single,D2,10.5,14.0,17.5,False,True
+price_base: published,single,D3,18.75,24.5,30.24,False,True
+price_base: published,single,D4,22.72,29.56,36.41,False,True
+price_base: published,single,D5,26.82,37.17,47.52,False,True
+price_base: published,single,D6,31.08,43.48,55.87,False,True
+price_base: published,single,D7,34.07,47.34,60.62,False,True
+price_base: published,single,D8,70.28,70.28,70.28,True,True
+price_base: published,single,D9,91.05,91.05,91.05,True,True
+price_base: published,single,D10,135.01,135.01,135.01,True,True
+price_base: published,single_parent,D1,,,,False,False
+price_base: published,single_parent,D2,7.43,7.43,7.43,False,False
+price_base: published,single_parent,D3,7.83,9.98,12.13,False,False
+price_base: published,single_parent,D4,10.4,14.47,18.53,False,True
+price_base: published,single_parent,D5,25.95,25.95,25.95,True,True
+price_base: published,single_parent,D6,33.83,33.83,33.83,True,True
+price_base: published,single_parent,D7,42.2,42.2,42.2,True,True
+price_base: published,single_parent,D8,51.97,51.97,51.97,True,True
+price_base: published,single_parent,D9,66.52,66.52,66.52,True,True
+price_base: published,single_parent,D10,100.98,100.98,100.98,True,True
+spread: all assumptions,couple,D1,,,,False,False
+spread: all assumptions,couple,D2,6.99,11.8,12.64,False,False
+spread: all assumptions,couple,D3,7.04,12.87,17.02,False,True
+spread: all assumptions,couple,D4,10.54,18.31,27.75,False,True
+spread: all assumptions,couple,D5,14.54,23.74,39.31,False,True
+spread: all assumptions,couple,D6,18.51,28.41,51.33,False,True
+spread: all assumptions,couple,D7,43.44,45.02,63.21,True,True
+spread: all assumptions,couple,D8,54.62,56.17,78.78,True,True
+spread: all assumptions,couple,D9,70.77,72.34,101.41,True,True
+spread: all assumptions,couple,D10,109.2,110.64,154.99,True,True
+spread: all assumptions,couple_children,D1,,,,False,False
+spread: all assumptions,couple_children,D2,4.34,6.64,10.73,False,False
+spread: all assumptions,couple_children,D3,6.46,10.03,15.95,False,True
+spread: all assumptions,couple_children,D4,8.73,13.92,23.74,False,True
+spread: all assumptions,couple_children,D5,23.88,24.5,32.03,True,True
+spread: all assumptions,couple_children,D6,30.56,31.25,40.76,True,True
+spread: all assumptions,couple_children,D7,37.8,38.49,50.13,True,True
+spread: all assumptions,couple_children,D8,46.47,47.2,61.45,True,True
+spread: all assumptions,couple_children,D9,59.09,59.87,77.88,True,True
+spread: all assumptions,couple_children,D10,89.2,89.93,116.8,True,True
+spread: all assumptions,single,D1,,,,False,False
+spread: all assumptions,single,D2,1.96,12.44,17.47,False,True
+spread: all assumptions,single,D3,8.8,23.01,32.09,False,True
+spread: all assumptions,single,D4,14.11,27.52,46.52,False,True
+spread: all assumptions,single,D5,7.62,34.54,61.26,False,True
+spread: all assumptions,single,D6,15.59,39.7,77.43,False,True
+spread: all assumptions,single,D7,24.09,43.29,94.78,False,True
+spread: all assumptions,single,D8,61.73,68.11,98.78,True,True
+spread: all assumptions,single,D9,79.89,88.12,129.21,True,True
+spread: all assumptions,single,D10,124.89,130.45,201.25,True,True
+spread: all assumptions,single_parent,D1,,,,False,False
+spread: all assumptions,single_parent,D2,2.56,5.04,8.81,False,False
+spread: all assumptions,single_parent,D3,5.41,9.2,13.54,False,False
+spread: all assumptions,single_parent,D4,8.33,13.47,21.44,False,True
+spread: all assumptions,single_parent,D5,24.06,25.23,29.8,True,True
+spread: all assumptions,single_parent,D6,32.08,32.83,38.65,True,True
+spread: all assumptions,single_parent,D7,40.19,40.89,48.15,True,True
+spread: all assumptions,single_parent,D8,49.55,50.31,59.61,True,True
+spread: all assumptions,single_parent,D9,63.18,64.33,76.27,True,True
+spread: all assumptions,single_parent,D10,96.19,97.52,115.7,True,True
+gamma_anchor: 0,couple,D1,,,,False,False
+gamma_anchor: 0,couple,D2,11.8,11.8,11.8,False,False
+gamma_anchor: 0,couple,D3,12.87,13.69,14.51,False,True
+gamma_anchor: 0,couple,D4,18.31,20.23,22.16,False,True
+gamma_anchor: 0,couple,D5,23.74,26.74,29.74,False,True
+gamma_anchor: 0,couple,D6,28.41,32.36,36.31,False,True
+gamma_anchor: 0,couple,D7,45.02,45.02,45.02,True,True
+gamma_anchor: 0,couple,D8,56.17,56.17,56.17,True,True
+gamma_anchor: 0,couple,D9,72.34,72.34,72.34,True,True
+gamma_anchor: 0,couple,D10,110.64,110.64,110.64,True,True
+gamma_anchor: 0,couple_children,D1,,,,False,False
+gamma_anchor: 0,couple_children,D2,6.64,6.96,7.27,False,False
+gamma_anchor: 0,couple_children,D3,10.03,11.3,12.56,False,False
+gamma_anchor: 0,couple_children,D4,13.92,16.11,18.29,False,True
+gamma_anchor: 0,couple_children,D5,24.5,24.5,24.5,True,True
+gamma_anchor: 0,couple_children,D6,31.25,31.25,31.25,True,True
+gamma_anchor: 0,couple_children,D7,38.49,38.49,38.49,True,True
+gamma_anchor: 0,couple_children,D8,47.2,47.2,47.2,True,True
+gamma_anchor: 0,couple_children,D9,59.87,59.87,59.87,True,True
+gamma_anchor: 0,couple_children,D10,89.93,89.93,89.93,True,True
+gamma_anchor: 0,single,D1,,,,False,False
+gamma_anchor: 0,single,D2,12.44,14.48,16.51,False,True
+gamma_anchor: 0,single,D3,23.01,26.14,29.28,False,True
+gamma_anchor: 0,single,D4,27.52,31.4,35.28,False,True
+gamma_anchor: 0,single,D5,34.54,40.08,45.63,False,True
+gamma_anchor: 0,single,D6,39.7,45.93,52.16,False,True
+gamma_anchor: 0,single,D7,43.29,49.96,56.62,False,True
+gamma_anchor: 0,single,D8,68.11,68.11,68.11,True,True
+gamma_anchor: 0,single,D9,88.12,88.12,88.12,True,True
+gamma_anchor: 0,single,D10,130.45,130.45,130.45,True,True
+gamma_anchor: 0,single_parent,D1,,,,False,False
+gamma_anchor: 0,single_parent,D2,5.04,5.36,5.69,False,False
+gamma_anchor: 0,single_parent,D3,9.2,10.56,11.92,False,False
+gamma_anchor: 0,single_parent,D4,13.47,15.77,18.07,False,True
+gamma_anchor: 0,single_parent,D5,25.23,25.23,25.23,True,True
+gamma_anchor: 0,single_parent,D6,32.83,32.83,32.83,True,True
+gamma_anchor: 0,single_parent,D7,40.89,40.89,40.89,True,True
+gamma_anchor: 0,single_parent,D8,50.31,50.31,50.31,True,True
+gamma_anchor: 0,single_parent,D9,64.33,64.33,64.33,True,True
+gamma_anchor: 0,single_parent,D10,97.52,97.52,97.52,True,True

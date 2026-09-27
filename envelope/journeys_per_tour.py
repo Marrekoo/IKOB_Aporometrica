@@ -3,13 +3,13 @@ One-way journeys per home-based tour in ODiN: the basis of `legs_per_tour`.
 
     python envelope/journeys_per_tour.py <ODiN csv> [<ODiN csv> ...]
 
-The envelope script (`X_M calc.R`, section 12) divides a household's monthly
+An envelope per tour (`envelope.unit = "tour"`) divides a household's monthly
 mobility residual by its number of TOURS, where a tour is a home-based chain:
 a person's regular trips (ODiN verplaatsingen, `Verpl` = 1) in order, a new
 tour starting after every trip whose destination is home (`Doel` = 1), after
 dropping touring (`MotiefV` 9) and business trips (2, 3); only tours with a
 priced main mode (car driver or passenger, train, bus/tram/metro, other:
-`KHvm` 1, 2, 3, 4, 7) count. So X_M is EUR per home-based tour, while the
+`KHvm` 1, 2, 3, 4, 7) count. So X_M is then EUR per home-based tour, while the
 accessibility model prices one one-way journey (door to door) at a time. The
 number of journeys per tour converts one into the other
 (`accessibility.legs_per_tour`).

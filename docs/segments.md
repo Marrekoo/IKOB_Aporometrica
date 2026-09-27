@@ -71,8 +71,7 @@ loads it:
   of the example basket each gives up (gamma, uniform on [0, 1]); cells
   without an example basket have `low` = `high`.
 * **Tables per tour.** A table per home-based tour (`unit` = tour, or no
-  `unit` column, such as `reference_budgets_x_m_calc.csv` of the original R
-  script) is divided by `accessibility.legs_per_tour` = 2.2, the one-way
+  `unit` column) is divided by `accessibility.legs_per_tour` = 2.2, the one-way
   journeys per home-based tour in ODiN 2022-23 (2.19; 2.17 weighted;
   `envelope/journeys_per_tour.py`).
 * **Upper bounds and steps.** Above the highest Nibud anchor (19 of the 36
