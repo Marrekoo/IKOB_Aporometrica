@@ -190,16 +190,6 @@ def from_args(args, flags: Mapping[str, str] | None = None) -> Params:
     return p.with_values(over) if over else p
 
 
-def repo_path(path: str | Path) -> Path:
-    """A path of the parameters: as given if it exists, else relative to the
-    repository (a source checkout), so `data/...` also works from elsewhere."""
-    p = Path(path).expanduser()
-    if p.exists() or p.is_absolute():
-        return p
-    root = Path(__file__).resolve().parents[2]
-    return root / p if (root / p).exists() else p
-
-
 def data_root(explicit: str | Path | None, params: Params) -> Path:
     """Data folder: --data-root, else $IKOB_DATA_ROOT, else paths.data_root.
     No location is built in."""

@@ -13,10 +13,15 @@ import numpy as np
 import pytest
 
 from ikob2.domain.filter_config import INDEPENDENCE, ClassFilter, CurveSpec
-from ikob2.domain.segments import CarAccess, Income, Preference, Segment
+from ikob2.domain.segments import Segment
 from ikob2.domain.state import ModelState
 from ikob2.engine.runner import SegmentedRunner
-from ikob2.variants.base import MultiplyGeneralizedCost
+
+
+def _scaled(state, factor):
+    """The state with its cost matrix multiplied by `factor`."""
+    return state.with_updates(
+        generalized_cost=(state.generalized_cost * factor).astype(np.float32))
 
 
 def _filter(curve, *params, scaling=1.0):
@@ -49,11 +54,11 @@ def make_segments() -> list[Segment]:
     slow = _filter("exponential", 0.08)
     return [
         # a and b share a weight_key on purpose (aliasing + batching tests)
-        Segment("seg_a", Income.HIGH, CarAccess.WITH_CAR, Preference.CAR, fast,
+        Segment("seg_a", "hoog", fast,
                 time_cost_id="time"),
-        Segment("seg_b", Income.LOW, CarAccess.WITH_CAR, Preference.CAR, fast,
+        Segment("seg_b", "laag", fast,
                 time_cost_id="time"),
-        Segment("seg_c", Income.LOW, CarAccess.NO_CAR, Preference.PT, slow,
+        Segment("seg_c", "laag", slow,
                 time_cost_id="time"),
     ]
 
@@ -86,26 +91,21 @@ def populations(state, segments):
 
 @pytest.mark.parametrize("pin_decay", [False, True])
 def test_second_run_sees_new_cost_matrix(state, segments, populations, pin_decay):
-    """A reused runner must recompute decay matrices when a variant
-    changes the cost matrix — the strongest form of the assertion is
+    """A reused runner must recompute decay matrices when the cost
+    matrix changes — the strongest form of the assertion is
     equality with a FRESH runner, not just difference from baseline."""
     reused = SegmentedRunner(decay_epsilon=None, pin_decay=pin_decay)
     baseline = reused.run(state, segments, populations)
-    varied = reused.run(
-        state, segments, populations,
-        variants=[MultiplyGeneralizedCost(1.5)],
-    )
+    varied = reused.run(_scaled(state, 1.5), segments, populations)
 
     fresh = SegmentedRunner(decay_epsilon=None, pin_decay=pin_decay).run(
-        state, segments, populations,
-        variants=[MultiplyGeneralizedCost(1.5)],
-    )
+        _scaled(state, 1.5), segments, populations)
 
     # The buggy runner returns varied == baseline. Guard against that
     # explicitly so the failure message points at staleness, not at a
     # subtle numeric mismatch.
     assert not np.allclose(varied.total, baseline.total), (
-        "Second run returned baseline results despite a cost variant: "
+        "Second run returned baseline results despite a changed cost matrix: "
         "the registry served a stale decay matrix."
     )
 
@@ -132,13 +132,12 @@ def test_baseline_rerun_is_reproducible(state, segments, populations, pin_decay)
 
 
 def test_interleaved_runs_do_not_cross_contaminate(state, segments, populations):
-    """baseline -> variant -> baseline: the third run must reproduce the
+    """baseline -> scaled cost -> baseline: the third run must reproduce the
     first exactly. Catches one-way fixes that refresh recipes on the
-    variant run but leave the variant matrix behind for the next."""
+    second run but leave its matrix behind for the next."""
     runner = SegmentedRunner(decay_epsilon=None, pin_decay=True)
     r1 = runner.run(state, segments, populations)
-    runner.run(state, segments, populations,
-               variants=[MultiplyGeneralizedCost(1.5)])
+    runner.run(_scaled(state, 1.5), segments, populations)
     r3 = runner.run(state, segments, populations)
     np.testing.assert_array_equal(r1.total, r3.total)
 
@@ -157,11 +156,11 @@ def test_no_pins_leak_after_mid_run_failure(state, populations):
     good = _filter("exponential", 0.04)
     bad = _filter("no_such_curve", 0.04)
     segments = [
-        Segment("seg_a", Income.HIGH, CarAccess.WITH_CAR, Preference.CAR, good,
+        Segment("seg_a", "hoog", good,
                 time_cost_id="time"),
-        Segment("seg_b", Income.LOW, CarAccess.WITH_CAR, Preference.CAR, good,
+        Segment("seg_b", "laag", good,
                 time_cost_id="time"),
-        Segment("seg_c", Income.LOW, CarAccess.NO_CAR, Preference.PT, bad,
+        Segment("seg_c", "laag", bad,
                 time_cost_id="time"),
     ]
     runner = SegmentedRunner(decay_epsilon=None, pin_decay=True)

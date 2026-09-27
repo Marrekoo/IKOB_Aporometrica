@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
 from ikob2.skims.pt_fare import PtFareModel
 
 _COLS = ["OPID", "HHGestInkG", "WoGem", "FactorP", "VerplID", "Verpl", "RitID",
@@ -65,7 +66,8 @@ def pt_trips(legs: pd.DataFrame, fare_model: PtFareModel) -> pd.DataFrame:
 
 
 def pt_spend_by_decile(legs: pd.DataFrame, fare_model: PtFareModel | None = None,
-                       municipality: int | None = 344, prior: float = 100.0
+                       municipality: int | None = DEFAULTS.ownership.municipality,
+                       prior: float = DEFAULTS.ownership.pt_spend_prior
                        ) -> pd.DataFrame:
     """Table income_class, trips_per_year, mean_fare_eur, spend_eur_year with the
     national and local respondent counts (see the module doc)."""

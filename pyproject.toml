@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest>=7.0"]
 routing = ["r5py>=1.1", "pyvalhalla>=3.9"]   # R5 (Java 21) and a local Valhalla server
-legacy = ["openpyxl>=3.1"]   # read the legacy IKOB Excel inputs
+legacy = ["openpyxl>=3.1"]   # read the Excel inputs (LISA, IKOB job table)
 
 [tool.setuptools.packages.find]
 where = ["src"]

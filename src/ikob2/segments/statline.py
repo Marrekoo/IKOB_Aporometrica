@@ -1,8 +1,10 @@
 """
 CBS StatLine access for the segment pipeline.
 
-Only two tables are needed, and both are tiny, so they are downloaded
-once and cached as CSV snapshots under data/statline/. Runs then read
+The tables are small (86161NED, 71487ned, 81431ned, the KWB establishments
+table, 85718NED, 82072NED), so they are downloaded once and kept as CSV
+snapshots (<data root>/cache/statline, or data/statline/ in the
+repository). Runs then read
 the snapshots and are offline and reproducible; the snapshot files are
 the exact inputs a reviewer can inspect. `fetch_*` is the only network
 code and is only called by the `fetch` CLI subcommand.

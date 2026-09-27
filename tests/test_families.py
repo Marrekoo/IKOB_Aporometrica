@@ -1,6 +1,5 @@
 """Survival families, their hazard tools, and the curve integration."""
 
-import json
 
 import numpy as np
 import pytest
@@ -17,7 +16,6 @@ from ikob2.core.numerics import DTYPE, ensure_dense
 from ikob2.domain.filter_config import (
     CurveSpec,
     FilterConfigError,
-    load_filter_config,
 )
 from ikob2.engine.runner import evaluate_marginal
 
@@ -234,15 +232,12 @@ def test_evaluate_marginal_applies_atom_to_new_families():
     assert out[0, 1] == pytest.approx(0.8 * base, rel=1e-5)
 
 
-def _config(tmp_path, time_block):
-    cls = {"time": time_block}
-    p = tmp_path / "f.json"
-    p.write_text(json.dumps({"modes": {"fiets": {"classes": {
-        c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}))
-    return p
+def _curve(block):
+    """Parse a curve block as a run configuration would."""
+    return CurveSpec.from_dict(block, "time")
 
 
-def test_config_accepts_all_new_curves_and_validates_parameters(tmp_path):
+def test_curve_blocks_accept_all_families_and_validate_parameters():
     blocks = [
         {"curve": "lomax", "alpha": 2.2, "scale": 36},
         {"curve": "pareto", "alpha": 1.5, "z0": 10},
@@ -253,10 +248,9 @@ def test_config_accepts_all_new_curves_and_validates_parameters(tmp_path):
         {"curve": "step", "threshold": 30},
     ]
     for b in blocks:
-        cf = load_filter_config(_config(tmp_path, b)).filters["fiets"]["laag"]
-        assert cf.time.curve == b["curve"]
+        cf = _curve(b)
+        assert cf.curve == b["curve"]
     with pytest.raises(FilterConfigError, match="shape must be positive"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "gamma", "shape": -1, "scale": 10}))
+        _curve({"curve": "gamma", "shape": -1, "scale": 10})
     with pytest.raises(FilterConfigError, match="missing parameter"):
-        load_filter_config(_config(tmp_path, {"curve": "tanner", "rho": 1}))
+        _curve({"curve": "tanner", "rho": 1})

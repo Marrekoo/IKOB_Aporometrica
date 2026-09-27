@@ -2,7 +2,7 @@
 Impute LISA sector jobs onto buurten (GSPREE-style).
 
 Known: jobs per municipality x 15 LISA sectors (LISA), and a job total
-per buurt (legacy NRM-derived table). Unknown: how each municipality's
+per buurt (the NRM-derived IKOB job table). Unknown: how each municipality's
 sector jobs are spread over its buurten. The imputation
 
   1. fits a log-linear model of the municipal sector composition on
@@ -190,7 +190,7 @@ def impute_sector_jobs(
     establishments : optional KWB establishments per buurt (total + the
         eight SBI groups, establishments.read_establishments output).
         They enter twice: (a) the buurt job shares within a
-        municipality become a blend of the legacy job shares and the
+        municipality become a blend of the IKOB job table shares and the
         establishment shares, with weight `establishment_weight` on the
         latter (0.25 minimised the error against LISA 2016 buurt jobs;
         0 ignores establishments for the totals); (b) the seed of each

@@ -4,9 +4,7 @@ Central numeric conventions for ikob2.
 Every module imports DTYPE / sparse helpers from here, so precision and
 sparsity policy can be changed in exactly one place.
 
-Ported from the legacy ikob.utils performance knobs, extended with the
-safe-division and unreachable-masking idioms that were previously
-copy-pasted throughout the old codebase.
+It also holds the safe-division idiom and memory accounting.
 """
 
 import numpy as np
@@ -25,8 +23,6 @@ DTYPE = np.float32       # float32 halves memory; switch to float64 if needed
 USE_SPARSE = DEFAULTS.numerics.use_sparse   # weight matrices as CSR when sparse
 SPARSE_MAX_DENSITY = DEFAULTS.numerics.sparse_max_density
 # ─────────────────────────────────────────────────────────────────────
-
-IKOB_INFINITE = 9999.0   # sentinel generalized cost for unreachable OD pairs
 
 
 # ── Basic construction / coercion ────────────────────────────────────
@@ -67,17 +63,6 @@ def ensure_dense(arr) -> np.ndarray:
     return np.asarray(arr)
 
 
-def sparse_maximum(a, b):
-    """Element-wise maximum working for any dense/sparse combination."""
-    if is_sparse(a) and is_sparse(b):
-        return a.maximum(b)
-    if is_sparse(a):
-        a = ensure_dense(a)
-    if is_sparse(b):
-        b = ensure_dense(b)
-    return np.maximum(a, b)
-
-
 # ── Sparse/dense safe linear algebra ─────────────────────────────────
 
 def matvec(W, v) -> np.ndarray:
@@ -101,27 +86,12 @@ def matvec_T(W, v) -> np.ndarray:
 def safe_divide(numerator, denominator, fill: float = 0.0) -> np.ndarray:
     """numerator / denominator where denominator > 0, else *fill*.
 
-    Replaces the `np.where(x > 0, a / np.where(x > 0, x, 1), 0)` pattern
-    repeated throughout the legacy competition/reachability code.
+    Used where zero-competition or empty zones must contribute nothing.
     """
     num = as_dtype(numerator)
     den = as_dtype(denominator)
     safe = np.where(den > 0, den, 1.0)
     return np.where(den > 0, num / safe, fill).astype(DTYPE, copy=False)
-
-
-def mask_unreachable(time_matrix, money_matrix=None, threshold: float = 0.5):
-    """Unreachable OD pairs (time <= threshold) get time = IKOB_INFINITE.
-
-    If a money matrix is supplied, its unreachable entries become 0 so
-    that t + tau * m == IKOB_INFINITE regardless of tau (legacy PT-skim
-    convention from ikob.utils.compute_pt_time_money).
-    """
-    t = np.where(time_matrix > threshold, time_matrix, IKOB_INFINITE).astype(DTYPE)
-    if money_matrix is None:
-        return t
-    m = np.where(time_matrix > threshold, money_matrix, 0.0).astype(DTYPE)
-    return t, m
 
 
 # ── Memory accounting ────────────────────────────────────────────────

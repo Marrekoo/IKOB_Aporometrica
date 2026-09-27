@@ -29,6 +29,7 @@ from ikob2.skims.router import MODES, R5Router, TimeRequest
 from ikob2.skims.store import SkimStore
 from ikob2.skims.walk import walk_time_matrix
 from ikob2.skims.zones import coarse_cells, zone_points
+from ikob2.utils.paths import DataLayout
 
 logger = logging.getLogger("ikob2.cli.skims")
 
@@ -154,7 +155,13 @@ def cmd_calibrate_detour(args) -> None:
     from ikob2.skims import osrm
 
     prm = resolve(args, CALIBRATE_FLAGS)
-    args.out = args.out or prm.paths.detour_model_out
+    if not args.out:
+        root = args.data_root or os.environ.get(params_mod.ENV_ROOT) \
+            or prm.paths.data_root
+        if not root:
+            raise SystemExit("Give --out or --data-root.")
+        args.out = str(DataLayout(Path(root)).detour_model())
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     zones, _ = load_cbs_buurten(args.kwb)
@@ -228,7 +235,13 @@ def cmd_build_pt(args) -> None:
 
     prm = resolve(args, PT_FLAGS)
     if args.hub_file:
-        prm = prm.with_values({"pt.hub_files": list(args.hub_file)})
+        try:
+            pairs = [hubs_mod.parse_hub_file_arg(
+                v, prm.shared_bike.hub_tariffs) for v in args.hub_file]
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from None
+        prm = prm.with_values({"pt.hub_files": [f for f, _ in pairs],
+                               "pt.hub_kinds": [k for _, k in pairs]})
     args.window = args.window or prm.pt.window_h
     logging.getLogger("ikob2.data.geopackage").setLevel(logging.ERROR)
     store = SkimStore.open(args.store)
@@ -255,8 +268,8 @@ def cmd_build_pt(args) -> None:
     if args.egress == "bike" and args.egress_hubs == "file":
         root = args.data_root or os.environ.get(params_mod.ENV_ROOT) \
             or prm.paths.data_root
-        inputs = Path(root) / "inputs" if root else None
-        hubs = hubs_mod.load_hubs(prm.pt.hub_files, inputs,
+        hubs = hubs_mod.load_hubs(prm.pt.hub_files,
+                                  hubs_mod.search_dirs(root),
                                   kinds=prm.pt.hub_kinds,
                                   tariffs=prm.shared_bike.hub_tariffs)
         if args.hub_kind:            # one tariff class per skim mode
@@ -346,7 +359,10 @@ def main(argv=None) -> None:
                        help="fit crow-fly -> route distance factors via OSRM")
     c.add_argument("--kwb", required=True)
     c.add_argument("--study", nargs="+", required=True, metavar="GMxxxx")
-    c.add_argument("--out", default=None)
+    c.add_argument("--out", default=None,
+                   help="detour model JSON (default: <root>/intermediate/"
+                        "calibration/car_detour.json)")
+    c.add_argument("--data-root", default=None)
     c.add_argument("--osrm-url", default=None,
                    help="demo server: light use only; self-host for more")
     c.add_argument("--origins", type=int, default=None)
@@ -403,10 +419,12 @@ def main(argv=None) -> None:
                         "from files (pt.hub_files or --hub-file), rail stops, "
                         "or every stop")
     t.add_argument("--hub-file", action="append", default=[],
-                   metavar="FILE",
+                   metavar="FILE:KIND",
                    help="hub locations (CSV with lat, lon, or the OV-fiets "
-                        "JSON), relative to <data root>/inputs; repeatable; "
-                        "replaces pt.hub_files")
+                        "JSON) and their tariff kind, e.g. "
+                        "hubs/utrecht_hubs.csv:lime; relative paths under "
+                        "<data root>/inputs or /intermediate; repeatable; "
+                        "replaces pt.hub_files and pt.hub_kinds")
     t.add_argument("--hub-kind", default=None,
                    help="use only the hub files of this kind (pt.hub_kinds: "
                         "lime, ovfiets); the tariff differs by kind, so each "

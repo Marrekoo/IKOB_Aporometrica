@@ -10,23 +10,27 @@
 # Data folder (see utils/paths.py). Empty: taken from $IKOB_DATA_ROOT or
 # --data-root; there is no built-in location.
 data_root = ""
-budgets = "data/envelope/reference_budgets.csv"      # relative to the repository
+# Reference files: a name is looked up in its folder of the data layout (a path
+# that exists as given is used as it is); `cli.layout create` seeds these
+# folders from the repository's data/ folder.
+budgets = "reference_budgets.csv"                     # under inputs/envelope
 # multipliers on the Lime price by household type / income class (concessions such
 # as the U-pas); rows "household_type,income_class,scale", "*" = all, later rows
 # override earlier ones; "" = none
-lime_price_scales = "data/tariffs/lime_price_scales.csv"
+lime_price_scales = "lime_price_scales.csv"           # under inputs/tariffs
 # multipliers on the public transport FARE by household type / income class (concessions);
 # same layout; "" = none
-pt_fare_scales = ""
-margins_fallback = "data/margins/S_T_work.csv"
-statline_fallback = "data/statline"
+pt_fare_scales = ""                                   # under inputs/tariffs
 kwb_version = "v3"
-detour_model_out = "data/calibration/car_detour.json"
 car_availability_study = "utrecht"
 osm_national = "netherlands-260822.osm.pbf"          # under inputs/osm
 osm_regions = ["utrecht", "noord-holland", "zuid-holland", "flevoland"]   # <name>.osm.pbf
-survey_margins = "S_T_work.csv"                       # under inputs/survey
+survey_margins = "S_T_work.csv"                       # under inputs/survey: Weibull time margins
 bike_ownership = "bike_ownership_buurten.csv"         # under inputs/veh_owners
+lisa = "LISA_Gemeenten_2025.xlsx"                     # under inputs/lisa
+ikob_jobs = "Alle_Zones_2030_2040.xlsx"               # under inputs/legacy_ikob: buurt job totals
+education_jobs = "Ralph_Sahar_CBS_buurten_met_banen_naar_opleidingsniveau.xlsx"   # under inputs/legacy_ikob
+odin = "ODIN_22_23_clean.csv"                         # under inputs/odin
 
 [vot]                      # EUR per hour (LMS/NRM), used by M1
 car = 12.05
@@ -36,8 +40,8 @@ pt_other = 10.80           # bus, tram, metro
 [accessibility]
 spec = "m2"                # m0, m1, m1c, m1p, m2, m3 (segments/specs.py)
 m1c_cost_mean_eur = 0.0    # M1c: mean acceptable cost (EUR per trip); 0 = median of the segment means
-copula = "independence"    # independence, gumbel, comonotone, countermonotone
-theta = 1.5                # Gumbel-Hougaard, M3
+copula = "independence"    # M2: independence, gumbel, frank, comonotone, countermonotone
+theta = 1.5                # Gumbel-Hougaard (M3, --copula gumbel) or Frank
 epsilon = 1e-9             # sparsification of composed filters
 unreachable_minutes = 1e4  # fill for unreachable pairs
 time_shape = "weibull"     # weibull, exponential, step
@@ -120,8 +124,8 @@ rail_anchors = false       # true: power law through the two anchors above
 ovfiets_eur = 4.80
 dockless_unlock_eur = 1.00
 dockless_per_min_eur = 0.20
-# how a dockless (access) rental is priced: "lime_tiers" (baseline, from Jan 2026)
-# or "unlock_per_minute" (unlock fee + rate per riding minute, the earlier structure)
+# how a dockless (access) rental is priced: "lime_tiers" (baseline, from Jan 2026),
+# "unlock_per_minute" (unlock fee + rate per riding minute) or "flat" (S4)
 dockless_model = "lime_tiers"
 lime_scale = 1.0           # multiplier on every Lime price (S1: 0.5)
 flat_eur = 0.0             # dockless_model "flat" (S4): EUR per rental; 0 = calibrate for revenue neutrality
@@ -130,7 +134,7 @@ flat_method = "fixed_point"   # calibration: fixed_point (revenue neutral after 
 # Lime (municipal hubs, from Jan 2026, RTV Utrecht 2025-11-03): price by rental
 # duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
 lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]
-hub_tariffs = ["ovfiets", "lime"]      # tariff class ids of skim variable egress_kind
+hub_tariffs = ["ovfiets", "lime"]      # known hub tariff kinds (pt.hub_kinds, egress_hub_kinds)
 egress_suffix = {}                     # skim mode suffix per hub kind, e.g. {lime = "_s2"} reads pt_wb_lime_s2
 egress_hub_kinds = ["lime", "ovfiets"]   # egress skim modes pt_wb_<kind>, pt_bb_<kind>; [] = plain pt_wb, pt_bb
 
@@ -219,6 +223,8 @@ unclassified = 1.05
 living_street = 1.05
 
 [segments]
+income_period = "2022JJ00"     # CBS 86161NED
+children_period = "2022JJ00"   # CBS 71487ned
 ipf_tol = 1e-8
 ipf_max_iter = 200
 single_parent_fallback_share = 0.20
@@ -240,8 +246,17 @@ couple_children = 0.24
 
 [jobs]
 establishment_weight = 0.25   # weight of the establishment seed (jobs imputation)
+train_year = 2016             # LISA year matching the education shares
+ikob_jobs_year = "2018"       # year column of the IKOB job table (buurt totals)
+kwb_establishments_table = "85318NED"   # StatLine KWB table with establishments by SBI group
 tol = 1e-8
 max_iter = 500
+
+[ownership]                # car availability and PT fare spending from ODiN
+municipality = 344         # CBS municipality number of the study area (344 = Utrecht)
+car_basis = "household_car"   # household_car, car_and_licence
+car_prior = 30.0           # respondents of prior weight for the national cell
+pt_spend_prior = 100.0     # persons of prior weight for the national rate
 
 [servers]
 valhalla_port = 8002

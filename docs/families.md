@@ -7,7 +7,7 @@ fast acceptance is lost per extra unit. All families below are proper
 survival functions (f(0) = 1, non-increasing, tending to 0), so any of
 them can be a time or cost marginal in the gate `f(t, c) = S_T(t) S_M(c)`.
 
-| curve (`"curve"` in the filter config) | parameters | f(z) | hazard | notes |
+| curve (`"curve"` in a curve block, `CurveSpec.from_dict`) | parameters | f(z) | hazard | notes |
 |---|---|---|---|---|
 | `exponential` | `beta` (rate) | exp(-beta z) | constant | the gravity/GC corner |
 | `weibull` | `shape`, `scale` | exp(-(z/scale)^shape) | increasing (shape > 1), constant (= 1), decreasing (< 1) | soft threshold |
@@ -23,7 +23,7 @@ them can be a time or cost marginal in the gate `f(t, c) = S_T(t) S_M(c)`.
 | `piecewise_quadratic` | `knots` `[[z, f], ...]` | shape-preserving C1 quadratic spline through the knots; 0 beyond the last | continuous, piecewise linear | the smooth counterpart: same knots, continuous hazard, always monotone |
 | `triangular` | `low`, `mode`, `high` | survival of a triangular density on [low, high] with its peak at `mode` (F = (z-low)^2 / ((high-low)(mode-low)) up to the mode, 1 - (high-z)^2 / ((high-low)(high-mode)) after) | continuous | mean (low+mode+high)/3; mode = low is a right-angled density falling to `high`, mode = high one rising to it |
 | `quadratic_ramp` | `low`, `high` | 1 up to low, then a smooth two-piece quadratic ramp (f = 1 - 2u^2, then 2(1-u)^2, u = (z-low)/(high-low)) to 0 at high | continuous | the classic quadratic kernel cut-off; mean = (low+high)/2 |
-| `logistic` | `alpha`, `omega` | legacy IKOB sigmoid | - | not derived from a threshold distribution |
+| `logistic` | `alpha`, `omega` | IKOB sigmoid | - | not derived from a threshold distribution |
 
 **Knot curves.** `piecewise_linear` and `piecewise_quadratic` are given
 by a survival function at knots, for example the stated-tolerance
@@ -53,15 +53,17 @@ at the midpoint): f = 1 - 2u^2 up to the midpoint and 2(1-u)^2 after it.
 **Two things that differ from the usual friction-function names.** The
 plain power law `z^-beta` and the raw gamma friction factor `z^-rho
 e^-chi z` diverge at zero impedance, so they are not survival functions;
-`pareto` and `tanner` are their normalised forms. The old `power` curve
-(`c^-beta`) stays for the legacy path only; it exceeds 1 below 1 and
-`compose_filters` rejects it as a marginal. The `gamma` curve is the
-survival function of a gamma-DISTRIBUTED threshold, a different object
-from the gamma friction factor (`tanner`).
+`pareto` and `tanner` are their normalised forms. The `power` curve
+(`c^-beta`) of `core.decay_curves` exceeds 1 below 1, so `compose_filters`
+rejects it as a marginal; it can only be a plain decay (`apply_decay`, the
+Shen measure on a `ModelState`). The `gamma` curve is the survival function of a
+gamma-distributed threshold, a different object from the gamma friction
+factor (`tanner`).
 
-## Diagnostics from "The Fixed-VOT Trap in Generalised Cost Models"
+## Hazard diagnostics
 
-`core.families` also provides the hazard tools used there:
+`core.families` provides the tools behind the diagnostics of a margin
+(paper: "The Fixed-VOT Trap in Generalised Cost Models"):
 
 * `survival`, `cumulative_hazard` (Lambda = -log f), `hazard`,
   `elasticity` (eta = -z h(z)) for every family;
@@ -89,18 +91,16 @@ Example:
 
 ## Time margins from the survey fits (`segments.time_margins`)
 
-The Weibull time margins of the non-exponential specifications are in
-`data/margins/S_T_work.csv` (from the R fit of the professionals'
-stated maximum acceptable commuting times): scale `eta` (minutes) and
-shape `k` per mode (bike, public transport, car) and per job type
-(no home working / home working possible). All shapes are between 2.7
-and 3.2 (increasing hazard, class IFR); home-working jobs accept longer
-trips in every mode (for cars a median of 48.6 against 39.9 minutes).
-`load_time_margins(path)` returns `{(mode, wfh): CurveSpec("weibull",
-(k, eta))}` and checks the stored median and class against the
-parameters. Modes use the skim names `bike`, `pt`, `car`.
+The Weibull time margins are in `inputs/survey/S_T_work.csv`, fitted by
+interval-censored maximum likelihood to stated maximum acceptable commuting
+times: scale `eta` (minutes) and shape `k` per mode (`bike`, `pt`, `car`)
+and job type (no home working / home working possible). All shapes lie
+between 2.7 and 3.2 (increasing hazard, class IFR); home-working jobs accept
+longer trips in every mode (car medians 48.6 against 39.9 minutes).
+`load_time_margins(path)` returns `{(mode, wfh): CurveSpec("weibull", (k,
+eta))}` and checks the stored median and class against the parameters.
 
-The home-working split belongs to the JOB, not the traveller, so which
-curve applies depends on the destination. Until jobs are divided into
-"admits home working" and "does not", a run uses one of the two curves for
-all jobs.
+The job type belongs to the job, so the curve that applies depends on the
+destination's jobs: a run evaluates each job type with its own margin and
+adds the results (`model_theory.md`, section 1). `--time-shape exponential`
+or `step` replaces the margins by one common curve for shape experiments.

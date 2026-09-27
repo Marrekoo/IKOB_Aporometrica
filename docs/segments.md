@@ -1,149 +1,140 @@
 # Household-type x income segments (`ikob2.segments`)
 
-Python port of `gspree_segments.R`. Produces, per CBS buurt, persons in
-44 segments: 4 household types (`single`, `couple`, `single_parent`,
-`couple_children`) x 11 income classes (`D1`..`D10`, `onbekend`).
+Per CBS buurt, persons in 44 segments: 4 household types (`single`,
+`couple`, `single_parent`, `couple_children`) x 11 income classes (`D1` ..
+`D10`, the standardised disposable household income deciles, and
+`onbekend`). The method is GSPREE: a structure model supplies the
+association between household type and income, and IPF fits it to each
+buurt's own margins.
 
 ## Method
 
-1. **Seed** (CBS 86161NED, municipality level): household counts per
-   type x standardised-income decile. Decile columns are percentages of
-   the household total, which is published x 1000; `onbekend` is the
-   non-negative remainder.
-2. **Structure model**: a Poisson-family GLM
-   `mu = exp(alpha_cell + b_sted_cell * z_sted + b_woz_cell * z_woz)`
-   per (type, class) cell, fitted on municipalities (`statsmodels`).
-   Without enough covariate data it degrades to the saturated cell model
-   (cell means). This captures the type x income *association*.
-3. **Marginals per buurt** from KWB: household types (KWB percentages;
-   single-parent split from 71487ned; fallback national mix if missing)
-   and income classes (municipal income shape, with D1-D4 calibrated to
-   the buurt's own KWB low-income share).
-4. **IPF** rakes each buurt's predicted table to its two marginals.
-5. Households are converted to persons with fixed household sizes
-   (1 / 2 / 2.4 / 3.6); a second layer rescales each row to KWB
-   `aantal_inwoners`.
+1. **Seed** (CBS 86161NED, municipality level): households per type x
+   income decile. Decile columns are percentages of the household total,
+   which is published x 1000; `onbekend` is the non-negative remainder of the
+   rounded percentages (`marginals.build_gemeente_seed`).
+2. **Structure model** (`structure`): per (type, class) cell a Poisson-family
+   GLM (`statsmodels`),
+   `mu = exp(alpha_cell + b_sted_cell * z_sted + b_woz_cell * z_woz)`,
+   fitted on municipalities with standardised urbanisation and mean house
+   value. With fewer than `segments.structure_min_rows` rows or
+   `structure_min_gemeenten` municipalities it falls back to the saturated
+   cell model (cell means). Non-finite predictions are floored at 1e-8.
+3. **Buurt margins** (`marginals`, `kwb`): household types from KWB
+   percentages, with the single-parent share from 71487ned (fallback
+   `segments.single_parent_fallback_share`, and the national mix
+   `segments.fallback_hh_composition` where KWB has no data); income classes
+   from the municipal income shape with D1-D4 calibrated to the buurt's own
+   KWB low-income share (`segments.local_income_calibration`).
+4. **IPF** (`ipf.ipf_batch`) rakes every buurt's predicted table to its two
+   margins in one batched computation; each table stops at its own
+   convergence (`segments.ipf_tol`, `ipf_max_iter`).
+5. **Persons**: households are converted to persons with household sizes
+   1 / 2 / 2.4 / 3.6 (`segments.hh_size`), and each row is rescaled to the KWB
+   `aantal_inwoners` (`population_scaled`; `household_based` keeps the
+   unscaled layer, `--population-basis`).
+
+Every negative KWB value is a CBS suppression code and is read as missing.
+Buurten with zero or suppressed household counts get zeros.
 
 ## Usage
 
-    python -m ikob2.cli.segments fetch --out data/statline   # once, network
-    python -m ikob2.cli.segments run --kwb "<wijkenbuurten_2022_v3.gpkg>" \
-        --statline data/statline --out output/nl_segments.gpkg
+    python -m ikob2.cli.segments --data-root <root> run
 
-`fetch` stores CSV snapshots of the two StatLine tables, so runs are
-offline and reproducible. CBS suppression codes (`-99999999`) in the
-KWB inputs are treated as missing.
+reads the KWB file of `accessibility.kwb_year` and the StatLine snapshots,
+and writes `intermediate/segments/nl_segments.gpkg` (layer `buurt_segments`)
+and a per-buurt diagnostics CSV (IPF status, iterations, largest margin
+error); `--kwb`, `--statline` and `--out` override the paths.
+`--gemeenten GMxxxx ...` (before the subcommand) restricts the output;
+`segments.income_period` and `segments.children_period` (or
+`--income-period`, `--children-period`) choose the StatLine periods.
+`cli.accessibility` runs the same pipeline in memory.
 
-## Using the segments in the engine (`ikob2.segments.bridge`)
+## Reference budgets (`segments.bridge`)
 
-The 44 segments enter the accessibility engine as ordinary
-`SegmentedRunner` segments:
+`inputs/envelope/reference_budgets.csv` (seeded from the repository's
+`data/envelope/`) gives per household type and decile
+the bounds `[low, high]` of the per-journey cost threshold (EUR), plus the
+car-kilometre equivalents. `load_reference_budgets(path, censored=...)`
+loads it:
 
-    from ikob2.segments.bridge import (build_segments,
-        populations_for_zones, load_envelope)
+* Decile 1 has no bounds. `censored="atom"` makes it a segment with atom 1
+  (no priced journey acceptable); `"drop"` leaves it out.
+* `onbekend` has no row; `envelope_segment_names(env)` lists the 40 segments
+  with a budget, and only those are run.
+* **Basis.** The bounds are per ODiN tour ("verplaatsing"): one movement in
+  one direction for one purpose, made of one or more legs ("ritten",
+  walking legs included), not a round trip. The model's door-to-door times
+  and journey costs (the whole fare plus shared-bicycle rentals) are those of
+  one tour, so the table applies as it is (`legs_per_tour = 1`). In ODiN 94.6%
+  of regular tours have one leg; public-transport tours average 2.6 legs, of
+  which 1.3 are public-transport legs.
+* **Non-monotone in income.** Each bound is the residual envelope divided by
+  that class's priced ODiN trips, so a decile that travels more has a lower
+  per-trip bound (single households: D6 low 25.26 against D5 34.58). This is
+  a property of the data.
+* **Sensitivity.** `legs_per_tour` (a number, or a mapping per household
+  type) divides the bounds: `load_reference_budgets(path, legs_per_tour=2)`
+  or `rescale_budgets(env, ...)`. The atom does not change.
 
-    env = load_envelope("data/envelope.csv")     # cost margin per segment
-    segs = build_segments(CurveSpec("weibull", (k, eta)),
-                          envelope=env, money_cost_id=fare.matrix_id,
+A general **envelope table** (`load_envelope`) has columns
+`household_type, income_class, low, high[, atom]`; every requested segment
+needs a row.
+
+## Segments in the engine
+
+`build_segments` turns an envelope into engine `Segment`s: a time margin
+shared by all segments of a mode and, for priced modes, each segment's cost
+margin, composed with a copula and pooled by income class:
+
+    from ikob2.domain.filter_config import CurveSpec, CopulaSpec
+    from ikob2.engine.runner import SegmentedRunner
+    from ikob2.segments.bridge import build_segments, load_reference_budgets
+    from ikob2.utils.paths import DataLayout
+
+    env = load_reference_budgets(DataLayout(root).budgets(),
+                                 censored="atom")
+    segs = build_segments(CurveSpec("weibull", (k, eta)), envelope=env,
+                          money_cost_id="pt_fare",
                           copula=CopulaSpec("gumbel", 1.5),
                           pool_by="income_class")
-    pops = populations_for_zones(result.population_scaled, zone_codes, segs)
-
     runner = SegmentedRunner(decay_epsilon=1e-9)
-    a = runner.run_hansen(state, segs, cost_matrices={...},
-                          opportunities={...})            # paper's measure
-    shen = runner.run(state, segs, pops, cost_matrices={...})  # competition
+    a = runner.run_hansen(None, segs,
+                          cost_matrices={"time": t, "pt_fare": c},
+                          opportunities=pools)      # income class -> jobs vector
 
-* **Reference budgets** (`data/envelope/reference_budgets.csv`, the
-  paper's Table 6: EUR per tour, low and high, plus the distance
-  equivalents) load with `load_reference_budgets(path, censored=...)`.
-  Deciles Q1..Q10 are the standardised-income deciles D1..D10. The first
-  decile is censored (no bounds): `censored="atom"` makes it a segment
-  for whom no priced trip is acceptable, `"drop"` leaves it out. There
-  is no row for `onbekend`; pass `only=envelope_segment_names(env)` to
-  run the 40 ranked segments.
-  **Basis.** The budgets are per ODiN tour. In the ODiN codebook a tour
-  ("verplaatsing") is one movement in one direction for a single purpose,
-  made of one or more legs ("ritten", walking legs included: the number is
-  `AantRit`); it is not a round trip (the ODiN variable `Toer` only flags a
-  trip whose start point is its end point). The door-to-door times and the
-  journey costs of the model (the whole fare plus the shared-bicycle rentals)
-  are those of one tour, so the table applies as it is (`legs_per_tour=1.0`,
-  no conversion). In the ODiN data 94.6% of the regular tours have one leg;
-  public transport tours (4.8% of tours) have 2.6 legs on average, of which
-  about half are walking or cycling and 1.3 are public-transport legs: dividing
-  by legs would price legs separately, which the gate does not do. The bounds already reflect the
-  ODiN trips of each class (the per-trip budget is the residual envelope
-  divided by that class's priced trips), so they are not monotone in
-  income: a decile that travels more has a lower per-trip bound (single
-  households: decile 6 low 25.26 against 34.58 in decile 5). That is a
-  property of the data, not an error. Pass a number of legs, as a number
-  or per household type, to divide the bounds down (a sensitivity): `load_reference_budgets(path, legs_per_tour={"single": 1.6, ...})`
-  (or `rescale_budgets` on a loaded envelope). The atom does not change.
-* **Envelope table** (CSV): `household_type, income_class, low, high[, atom]`
-  - the per-trip cost threshold is uniform on [low, high] EUR; `atom` is
-  the share for whom no priced trip is acceptable (a censored cell is
-  `atom = 1`). Every requested segment needs a row (`only=` restricts).
-  Free modes pass no envelope and get a time-only filter, so all their
+* **Rectangular runs.** With `state=None`, `run_hansen` takes origins x
+  destinations matrices and pool vectors over the destinations: origins need
+  only skim rows, destinations only jobs (111 x 14,318 float32 is 6 MB per
+  matrix). Zone weights need a `ModelState`.
+* **Hansen and Shen.** `run_hansen` is `a_i = sum_j D_j f(t_ij, c_ij)` per
+  segment, without competition. `run` is the Shen measure; it needs every
+  origin's population and is square.
+* **Pools.** `pool_by="income_class"` needs one opportunity vector per income
+  class: the job pools of `jobs.sector_pools` (`data_lineage.md`).
+* **Free modes** pass no envelope and get a time-only filter, so all their
   segments share one composed matrix.
-* **Rectangular runs.** For a study area, pass `state=None` to
-  `run_hansen` with `cost_matrices` of shape (origins x destinations)
-  and pool vectors over the destinations: `a = runner.run_hansen(None,
-  segs, cost_matrices={"time": t, fare_id: c}, opportunities=pools)`.
-  Origins only need skim rows; destinations only need jobs. Utrecht
-  city (111 buurten) against all 14,412 buurten is 6 MB per matrix
-  instead of 831 MB square. Variants and zone weights need a state and
-  are not available there. The competition-adjusted `run` needs every
-  origin's population and stays square.
-* **Hansen vs Shen.** `run_hansen` is `a_i = sum_j D_j f(t_ij, c_ij)` per
-  segment with no competition and no populations: the expected number of
-  acceptable opportunities. `run` is the competition-adjusted measure.
-* **Pools** carry income-matched opportunities: `pool_by="income_class"`
-  needs one opportunity vector per income class.
-* **Job pools from LISA:** `jobs_impute` spreads municipal LISA sector
-  jobs over buurten, `jobs.sector_income_weights` + `sector_pools` turn
-  them into one pool per income class (`docs/data_lineage.md`).
-* `populations_for_zones` aligns segment persons to the engine's zone
-  order; zones without a row are empty. `aggregate_by` reports
-  population-weighted means by income class or household type.
+* `populations_for_zones` aligns segment persons to the engine's zone order
+  (missing zones are empty); `aggregate_by` gives population-weighted means
+  by income class or household type.
 
-## Provenance and baseline
+`run.accessibility.run_accessibility` wraps all of this for the study-area
+runs, including job types, specifications, option sets and availability.
 
-The method is a port of the earlier R script (`gspree_segments.R`). Before
-its sentinel handling was removed, the port reproduced that script's
-output for the 2022 KWB file (14,412 buurten) to 8e-7 persons in any
-segment cell, so the algorithm itself is unchanged. The R script left the
-CBS suppression code `-99999999` in `stedelijkheid` and `gem_woz`
-(181 and 1,890 buurten in the 2022 file), which entered the municipal
-means and z-scores and pushed them as far as -15 sd, so the fitted slopes
-were extrapolated far outside the data. This is removed: those values are
-missing. Relative to the R output the within-buurt segment distribution
-shifted by a mean total variation distance of 0.031 (95th percentile
-0.155), national segment totals by up to 16%.
+## Baseline
 
-**The output of this pipeline is the baseline.** The R output is not kept
-and there is no parity test against it. Regression tests pin the
-pipeline's own numbers: a synthetic case that always runs, and the full
-2022 KWB run (set `IKOB_KWB_2022_GPKG` to the CBS file to enable it).
+`tests/test_segments.py` pins the pipeline's own output: a synthetic case
+that always runs and the full 2022 KWB run (set `IKOB_KWB_2022_GPKG` to the
+CBS file to enable it).
 
-## Implementation notes
+## Known limitations
 
-* **Vectorised.** All buurten are raked in one batched IPF (each table
-  stops at its own convergence iteration) instead of a per-buurt loop.
-* **StatLine keys** are fetched from the OData `TypedDataSet` endpoint
-  (keys, not titles) and stored as snapshots.
-* Non-finite structure-model predictions are floored like NA (1e-8).
-
-## Known limitations (inherited from the R design, not changed)
-
-* The model is fitted on municipality-level covariates standardised
-  across municipalities, but predicted with covariates standardised
-  across buurten (different mean/sd). Coefficients are therefore
-  applied on a different scale than they were estimated on.
-* D1-D4 calibration only rescales the municipal shape; it cannot create
-  mass where the municipal shape has none. In 18 buurten of 5 small
-  municipalities (2022 file) the D1-D4 share misses its target.
-* `onbekend` is the rounding remainder of published integer
-  percentages, not a real income group.
-* 606 buurten with zero households (and 95 with suppressed counts) are
-  skipped and get zeros.
+* The structure model is fitted on covariates standardised across
+  municipalities but predicted with covariates standardised across buurten
+  (a different mean and sd), so the coefficients are applied on another scale
+  than they were estimated on.
+* D1-D4 calibration only rescales the municipal shape; it cannot create mass
+  where that shape has none. In 18 buurten of 5 small municipalities (2022)
+  the D1-D4 share misses its target.
+* `onbekend` is a rounding remainder, not an income group.
+* 606 buurten with zero households and 95 with suppressed counts get zeros.

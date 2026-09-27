@@ -1,6 +1,5 @@
 """Piecewise-linear and piecewise-quadratic decay, and the quadratic ramp."""
 
-import json
 
 import numpy as np
 import pytest
@@ -12,7 +11,6 @@ from ikob2.core.numerics import DTYPE, ensure_dense
 from ikob2.domain.filter_config import (
     CurveSpec,
     FilterConfigError,
-    load_filter_config,
 )
 from ikob2.engine.runner import evaluate_marginal
 
@@ -203,45 +201,36 @@ def test_decay_curves_are_float32_probability_marginals(name, params):
     np.testing.assert_allclose(out.ravel(), got)
 
 
-def _config(tmp_path, block):
-    cls = {"time": block}
-    p = tmp_path / "f.json"
-    p.write_text(json.dumps({"modes": {"fiets": {"classes": {
-        c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}))
-    return p
+def _curve(block):
+    """Parse a curve block as a run configuration would."""
+    return CurveSpec.from_dict(block, "time")
 
 
-def test_config_knots_and_ramp(tmp_path):
+def test_curve_blocks_knots_and_ramp():
     knots = [[0, 1], [15, 0.92], [30, 0.5], [60, 0.02], [90, 0]]
     for curve in ("piecewise_linear", "piecewise_quadratic"):
-        cf = load_filter_config(_config(
-            tmp_path, {"curve": curve, "knots": knots, "atom": 0.1})
-        ).filters["fiets"]["laag"]
-        assert cf.time.curve == curve and cf.time.atom == 0.1
-        assert cf.time.params == (0, 1, 15, 0.92, 30, 0.5, 60, 0.02, 90, 0)
-    cf = load_filter_config(_config(
-        tmp_path, {"curve": "quadratic_ramp", "low": 10, "high": 50})
-    ).filters["fiets"]["laag"]
-    assert cf.time.params == (10.0, 50.0)
+        cf = _curve({"curve": curve, "knots": knots, "atom": 0.1}
+        )
+        assert cf.curve == curve and cf.atom == 0.1
+        assert cf.params == (0, 1, 15, 0.92, 30, 0.5, 60, 0.02, 90, 0)
+    cf = _curve({"curve": "quadratic_ramp", "low": 10, "high": 50}
+    )
+    assert cf.params == (10.0, 50.0)
 
 
-def test_config_knot_errors(tmp_path):
+def test_curve_block_knot_errors():
     with pytest.raises(FilterConfigError, match="needs 'knots'"):
-        load_filter_config(_config(tmp_path, {"curve": "piecewise_linear"}))
+        _curve({"curve": "piecewise_linear"})
     with pytest.raises(FilterConfigError, match="pairs"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "piecewise_linear", "knots": [1, 2, 3]}))
+        _curve({"curve": "piecewise_linear", "knots": [1, 2, 3]})
     with pytest.raises(FilterConfigError, match="non-increasing"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "piecewise_quadratic",
-                       "knots": [[0, 1], [10, 0.2], [20, 0.5]]}))
+        _curve({"curve": "piecewise_quadratic",
+                       "knots": [[0, 1], [10, 0.2], [20, 0.5]]})
     with pytest.raises(FilterConfigError, match="Unknown key"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "piecewise_linear", "low": 1,
-                       "knots": [[0, 1], [10, 0]]}))
+        _curve({"curve": "piecewise_linear", "low": 1,
+                       "knots": [[0, 1], [10, 0]]})
     with pytest.raises(FilterConfigError, match="low < high"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "quadratic_ramp", "low": 20, "high": 10}))
+        _curve({"curve": "quadratic_ramp", "low": 20, "high": 10})
 
 
 def test_evaluate_marginal_with_knots_and_atom():
@@ -324,21 +313,18 @@ def test_triangular_validation(bad):
         fam.validate_params("triangular", bad)
 
 
-def test_triangular_through_curves_and_config(tmp_path):
+def test_triangular_through_curves_and_blocks():
     z = np.linspace(0, 70, 300).astype(DTYPE)
     got = get_decay_function("triangular")(z, 10.0, 20.0, 50.0)
     assert got.dtype == DTYPE
     np.testing.assert_allclose(got, fam.survival("triangular",
                                                  (10, 20, 50), z),
                                rtol=1e-5, atol=1e-7)
-    cf = load_filter_config(_config(
-        tmp_path, {"curve": "triangular", "low": 10, "mode": 20, "high": 50,
-                   "atom": 0.1})).filters["fiets"]["laag"]
-    assert cf.time.params == (10.0, 20.0, 50.0) and cf.time.atom == 0.1
+    cf = _curve({"curve": "triangular", "low": 10, "mode": 20, "high": 50,
+                   "atom": 0.1})
+    assert cf.params == (10.0, 20.0, 50.0) and cf.atom == 0.1
     with pytest.raises(FilterConfigError, match="low <= mode <= high"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "triangular", "low": 10, "mode": 60,
-                       "high": 50}))
+        _curve({"curve": "triangular", "low": 10, "mode": 60,
+                       "high": 50})
     with pytest.raises(FilterConfigError, match="missing parameter"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "triangular", "low": 10, "high": 50}))
+        _curve({"curve": "triangular", "low": 10, "high": 50})

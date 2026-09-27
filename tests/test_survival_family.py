@@ -1,6 +1,5 @@
 """Weibull margin and Gumbel-Hougaard copula (threshold-gate model)."""
 
-import json
 
 import numpy as np
 import pytest
@@ -16,7 +15,7 @@ from ikob2.core.numerics import DTYPE, ensure_dense
 from ikob2.domain.filter_config import (
     CopulaSpec,
     FilterConfigError,
-    load_filter_config,
+    CurveSpec,
 )
 
 
@@ -154,40 +153,21 @@ def test_compose_filters_gumbel_and_theta_rules():
 
 # ── Config integration ───────────────────────────────────────────────
 
-def _config(tmp_path, curve_time, copula):
-    cls = {"time": curve_time,
-           "cost": {"curve": "exponential", "beta": 0.5}}
-    body = {"copula": copula,
-            "modes": {"fiets": {"classes": {
-                c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}
-    path = tmp_path / "filters.json"
-    path.write_text(json.dumps(body))
-    return path
+def test_blocks_parse_weibull_and_gumbel():
+    time = CurveSpec.from_dict(
+        {"curve": "weibull", "shape": 2.5, "scale": 40.0}, "time")
+    assert time.curve == "weibull" and time.params == (2.5, 40.0)
+    assert CopulaSpec.from_dict({"family": "gumbel", "theta": 1.5},
+                                "copula") == CopulaSpec("gumbel", 1.5)
 
 
-def test_filter_config_loads_weibull_and_gumbel(tmp_path):
-    path = _config(tmp_path,
-                   {"curve": "weibull", "shape": 2.5, "scale": 40.0},
-                   {"family": "gumbel", "theta": 1.5})
-    fc = load_filter_config(path)
-    cf = fc.filters["fiets"]["laag"]
-    assert cf.time.curve == "weibull" and cf.time.params == (2.5, 40.0)
-    assert cf.copula == CopulaSpec("gumbel", 1.5)
-
-
-def test_filter_config_rejects_bad_weibull_and_gumbel(tmp_path):
+def test_blocks_reject_bad_weibull_and_gumbel():
     with pytest.raises(FilterConfigError, match="missing parameter"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "weibull", "shape": 2.0},
-            {"family": "independence"}))
+        CurveSpec.from_dict({"curve": "weibull", "shape": 2.0}, "time")
     with pytest.raises(FilterConfigError, match="theta >= 1"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "weibull", "shape": 2.0, "scale": 30.0},
-            {"family": "gumbel", "theta": 0.5}))
+        CopulaSpec.from_dict({"family": "gumbel", "theta": 0.5}, "copula")
     with pytest.raises(FilterConfigError, match="requires theta"):
-        load_filter_config(_config(
-            tmp_path, {"curve": "weibull", "shape": 2.0, "scale": 30.0},
-            {"family": "gumbel"}))
+        CopulaSpec.from_dict({"family": "gumbel"}, "copula")
 
 
 # ── Uniform (piecewise-linear) cost margin ───────────────────────────
@@ -247,14 +227,10 @@ def test_uniform_rejects_invalid_bounds(low, high):
         uniform(np.ones(2, dtype=DTYPE), low, high)
 
 
-def test_uniform_cost_margin_in_config_and_composition(tmp_path):
-    cls = {"time": {"curve": "weibull", "shape": 2.0, "scale": 45.0},
-           "cost": {"curve": "uniform", "low": 5.0, "high": 15.0}}
-    path = tmp_path / "f.json"
-    path.write_text(json.dumps({"modes": {"ov": {"classes": {
-        c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}))
-    cf = load_filter_config(path).filters["ov"]["laag"]
-    assert cf.cost.curve == "uniform" and cf.cost.params == (5.0, 15.0)
+def test_uniform_cost_margin_block_and_composition():
+    cost = CurveSpec.from_dict(
+        {"curve": "uniform", "low": 5.0, "high": 15.0}, "cost")
+    assert cost.curve == "uniform" and cost.params == (5.0, 15.0)
 
     # gate: time survival x cost survival under independence
     t = np.full((2, 2), 30.0, dtype=DTYPE)
@@ -268,7 +244,7 @@ def test_uniform_cost_margin_in_config_and_composition(tmp_path):
 
 from ikob2.core.decay_curves import with_atom  # noqa: E402
 from ikob2.domain.filter_config import CurveSpec, INDEPENDENCE, ClassFilter  # noqa: E402
-from ikob2.domain.segments import CarAccess, Income, Preference, Segment  # noqa: E402
+from ikob2.domain.segments import Segment  # noqa: E402
 from ikob2.engine.runner import SegmentedRunner, evaluate_marginal  # noqa: E402
 
 
@@ -310,20 +286,11 @@ def test_curvespec_atom_is_part_of_identity():
     assert a != b and hash(a) != hash(b)
 
 
-def test_atom_in_config(tmp_path):
-    cls = {"time": {"curve": "weibull", "shape": 2.0, "scale": 45.0},
-           "cost": {"curve": "uniform", "low": 5.0, "high": 15.0,
-                    "atom": 0.15}}
-    path = tmp_path / "f.json"
-    path.write_text(json.dumps({"modes": {"ov": {"classes": {
-        c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}))
-    assert load_filter_config(path).filters["ov"]["laag"].cost.atom == 0.15
-
-    cls["cost"]["atom"] = 2.0
-    path.write_text(json.dumps({"modes": {"ov": {"classes": {
-        c: cls for c in ("laag", "middellaag", "middelhoog", "hoog")}}}}))
+def test_atom_in_curve_block():
+    block = {"curve": "uniform", "low": 5.0, "high": 15.0, "atom": 0.15}
+    assert CurveSpec.from_dict(block, "cost").atom == 0.15
     with pytest.raises(FilterConfigError, match="atom"):
-        load_filter_config(path)
+        CurveSpec.from_dict({**block, "atom": 2.0}, "cost")
 
 
 def test_runner_applies_atom_to_priced_pairs_only():
@@ -348,7 +315,7 @@ def test_runner_applies_atom_to_priced_pairs_only():
             CurveSpec("weibull", (2.0, 60.0)),
             CurveSpec("uniform", (10.0, 20.0), atom=atom),
             INDEPENDENCE)
-        seg = Segment("s", Income.LOW, CarAccess.NO_CAR, Preference.PT, cf,
+        seg = Segment("s", "laag", cf,
                       time_cost_id="time", money_cost_id="money")
         return SegmentedRunner(decay_epsilon=None).run(
             state, [seg], {"s": pop},

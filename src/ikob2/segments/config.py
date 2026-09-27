@@ -44,8 +44,8 @@ class SegmentConfig:
     kwb_vars: dict = field(default_factory=_default_kwb_vars)
 
     # ── StatLine ─────────────────────────────────────────────────────
-    income_period: str = "2022JJ00"
-    children_period: str = "2022JJ00"
+    income_period: str = _SEG.income_period
+    children_period: str = _SEG.children_period
     children_age_total: str = "1017000"
     income_population_key: str = "1050010"
     income_total_col: str = "ParticuliereHuishoudens_1"   # x 1000

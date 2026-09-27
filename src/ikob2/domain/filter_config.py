@@ -1,51 +1,27 @@
 """
-domain/filter_config.py — declarative (class, mode) tolerance filters.
+Filter specifications: survival curves, copulas and their composition.
 
-Schema (JSON):
+  CurveSpec    a marginal survival filter: curve name, ordered parameters,
+               optional atom at zero; `from_dict` reads a JSON-style block
+               such as {"curve": "weibull", "shape": 2.5, "scale": 40};
+  CopulaSpec   a survival copula family and its theta;
+  ClassFilter  time marginal, optional cost marginal, copula and scaling:
+               the full recipe of one segment's weight matrix.
 
-{
-  "copula": {"family": "frank", "theta": 2.0},        // optional, global
-  "modes": {
-    "Auto": {
-      "copula": {"family": "independence"},           // optional, shadows global
-      "classes": {
-        "laag": {
-          "time": {"curve": "logistic", "alpha": 0.125, "omega": 50},
-          "cost": {"curve": "logistic", "alpha": 0.9, "omega": 6.0},
-          "scaling": 1.0,                              // optional, default 1.0
-          "copula": {"family": "frank", "theta": 0.5}  // optional, shadows mode/global
-        },
-        "middellaag": { "time": {...} },               // no cost => pure time filter
-        ...
-      }
-    }
-  }
-}
-
-Resolution: class copula > mode copula > global copula > independence.
-
-Fail-loud policy:
-  * every mode must define EXACTLY the canonical income classes;
-  * every class must define "time"; "cost" is optional;
+Fail-loud policy for curve and copula blocks:
+  * unknown keys are errors;
   * "scaling" is forbidden inside curve blocks (it is not part of a
-    probability marginal — it lives at the class-filter level and is
-    applied after composition, see core/compose.py);
-  * unknown keys anywhere are errors, not warnings;
+    probability marginal; it lives on ClassFilter and is applied after
+    composition, see core/compose.py);
   * "frank" and "gumbel" require theta, all other families forbid it;
-    "gumbel" (Gumbel-Hougaard) additionally requires theta >= 1
-    (theta = 1 is independence; use "comonotone" for the theta -> inf
-    limit, JSON has no infinity).
+    "gumbel" (Gumbel-Hougaard) requires theta >= 1 (theta = 1 is
+    independence; "comonotone" is the theta -> inf limit).
 
-epsilon is deliberately ABSENT from this schema: sparsification
-strength keeps its single owner (the CLI) and is applied once, to the
-composed matrix.
+epsilon is not part of a filter: sparsification has a single owner (the
+runner) and is applied once, to the composed matrix.
 """
 
-import json
-import pathlib
 from dataclasses import dataclass
-
-INCOME_CLASSES = ("laag", "middellaag", "middelhoog", "hoog")
 
 _PARAMETRIC_FAMILIES = {"frank", "gumbel"}
 _PARAMETERLESS_FAMILIES = {"independence", "comonotone", "countermonotone"}
@@ -197,7 +173,7 @@ class CurveSpec:
 
 @dataclass(frozen=True)
 class ClassFilter:
-    """Fully resolved filter recipe for one (mode, income class)."""
+    """Fully resolved filter recipe of one segment and mode."""
     time: CurveSpec
     cost: CurveSpec | None
     copula: CopulaSpec
@@ -208,99 +184,3 @@ class ClassFilter:
             raise FilterConfigError(
                 f"scaling must be in [0,1], got {self.scaling}."
             )
-
-
-@dataclass(frozen=True)
-class FilterConfig:
-    """filters[mode][income_class] -> ClassFilter, everything resolved."""
-    filters: dict  # mode -> {class -> ClassFilter}
-
-    def additivity_armed(self, mode: str) -> bool:
-        """Hansen additivity is exact iff all classes of a mode share
-        one composed matrix, i.e. identical ClassFilters."""
-        per_class = self.filters[mode]
-        return len(set(per_class.values())) == 1
-
-    def unique_marginals(self) -> set[tuple[str, CurveSpec]]:
-        """Deduplicated marginal workload: {(matrix_id, CurveSpec)}.
-        matrix_id is 'time:<mode>' or 'cost:<mode>'."""
-        out = set()
-        for mode, per_class in self.filters.items():
-            for cf in per_class.values():
-                out.add((f"time:{mode}", cf.time))
-                if cf.cost is not None:
-                    out.add((f"cost:{mode}", cf.cost))
-        return out
-
-
-def load_filter_config(path) -> FilterConfig:
-    path = pathlib.Path(path)
-    with open(path) as fh:
-        raw = json.load(fh)
-
-    _reject_unknown_keys(raw, {"copula", "modes"}, f"top level of {path.name}")
-
-    global_copula = INDEPENDENCE
-    if "copula" in raw:
-        global_copula = CopulaSpec.from_dict(raw["copula"], "top-level copula")
-
-    if "modes" not in raw or not raw["modes"]:
-        raise FilterConfigError(f"{path.name} defines no modes.")
-
-    filters = {}
-    for mode, mode_block in raw["modes"].items():
-        where_mode = f"mode '{mode}'"
-        _reject_unknown_keys(mode_block, {"copula", "classes"}, where_mode)
-
-        mode_copula = global_copula
-        if "copula" in mode_block:
-            mode_copula = CopulaSpec.from_dict(
-                mode_block["copula"], f"{where_mode} copula"
-            )
-
-        classes = mode_block.get("classes")
-        if not classes:
-            raise FilterConfigError(f"{where_mode} defines no classes.")
-        got, want = set(classes), set(INCOME_CLASSES)
-        if got != want:
-            raise FilterConfigError(
-                f"{where_mode}: classes must be exactly "
-                f"{list(INCOME_CLASSES)}; missing {sorted(want - got)}, "
-                f"unexpected {sorted(got - want)}."
-            )
-
-        per_class = {}
-        for cls_name in INCOME_CLASSES:  # canonical order, always
-            block = classes[cls_name]
-            where = f"{where_mode}, class '{cls_name}'"
-            _reject_unknown_keys(
-                block, {"time", "cost", "scaling", "copula"}, where
-            )
-            if "time" not in block:
-                raise FilterConfigError(f"{where} lacks required 'time'.")
-
-            copula = mode_copula
-            if "copula" in block:
-                copula = CopulaSpec.from_dict(block["copula"], f"{where} copula")
-
-            cost = None
-            if "cost" in block:
-                cost = CurveSpec.from_dict(block["cost"], f"{where} cost")
-            elif copula is not INDEPENDENCE and "copula" in block:
-                # A class-level copula without a cost block is dead
-                # config: C(u, 1) = u for every family. Loud, not silent.
-                raise FilterConfigError(
-                    f"{where} sets a copula but has no 'cost' filter; "
-                    f"the copula would have no effect."
-                )
-
-            per_class[cls_name] = ClassFilter(
-                time=CurveSpec.from_dict(block["time"], f"{where} time"),
-                cost=cost,
-                copula=copula,
-                scaling=float(block.get("scaling", 1.0)),
-            )
-
-        filters[mode] = per_class
-
-    return FilterConfig(filters)

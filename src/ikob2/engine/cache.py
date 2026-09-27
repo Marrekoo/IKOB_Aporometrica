@@ -1,6 +1,5 @@
 """
-Lazy matrix registry — generalisation of the legacy
-LazyCombinedDataSource.
+Lazy matrix registry.
 
 Stores *recipes* (key -> callable) instead of materialised N×N
 matrices. get() evaluates a recipe on demand and by default does NOT
@@ -9,14 +8,15 @@ a time). pin() trades memory for speed on hot keys.
 
 Recipes receive the registry itself, so they can compose:
 
-    registry.register(("decay", key), lambda r: apply_decay(...))
-    registry.register_max(("combined", key), [("decay", a), ("decay", b)])
+    registry.register(("marginal", key), lambda r: evaluate(...))
+    registry.register(("decay", key),
+                      lambda r: compose(r.get(("marginal", a)), r.get(("marginal", b))))
 """
 
 import logging
-from typing import Callable, Hashable, Iterable
+from typing import Callable, Hashable
 
-from ikob2.core.numerics import nbytes_of, sparse_maximum
+from ikob2.core.numerics import nbytes_of
 
 logger = logging.getLogger(__name__)
 
@@ -35,19 +35,6 @@ class MatrixRegistry:
     def register_value(self, key: Hashable, value) -> None:
         """Pin a precomputed matrix directly."""
         self._pinned[key] = value
-
-    def register_max(self, key: Hashable, component_keys: Iterable[Hashable]) -> None:
-        """Combined-modality recipe: element-wise maximum of components
-        (the legacy D3 'combined weights' semantics, deferred)."""
-        component_keys = list(component_keys)
-
-        def _recipe(registry: "MatrixRegistry"):
-            result = registry.get(component_keys[0])
-            for other in component_keys[1:]:
-                result = sparse_maximum(result, registry.get(other))
-            return result
-
-        self._recipes[key] = _recipe
 
     # ── Access ───────────────────────────────────────────────────────
 

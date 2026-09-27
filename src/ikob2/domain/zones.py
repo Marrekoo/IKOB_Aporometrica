@@ -2,9 +2,8 @@
 Zone geometry and CBS attribute container.
 
 ZoneSet is the index every other loader (jobs, skims, segment shares)
-must join onto once the model runs on CBS buurten instead of legacy
-LMS zones: `codes[i]` is the identity of zone i everywhere downstream,
-and `code_to_index` is the join key.
+joins onto: `codes[i]` is the identity of CBS buurt i everywhere
+downstream, and `code_to_index` is the join key.
 
 Centroids are stored rather than full geometries: the accessibility
 engine works on zone-to-zone matrices (skims), not polygons, and a

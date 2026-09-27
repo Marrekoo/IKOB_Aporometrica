@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 
 from ikob2.skims.gtfs_pt import LegSpec, PtRouter, load_peak_timetable
-from ikob2.skims.hubs import hub_xy, load_hubs, resolve_path
+from ikob2.skims.hubs import (hub_xy, load_hubs, parse_hub_file_arg,
+                               resolve_path, search_dirs)
 from tests.test_gtfs_pt import gtfs_zip, xy
 
 
@@ -36,6 +37,36 @@ def test_relative_paths_fall_back_to_the_inputs_folder(tmp_path):
     assert resolve_path("hubs/h.csv", tmp_path) == tmp_path / "hubs" / "h.csv"
     with pytest.raises(FileNotFoundError):
         resolve_path("nope.csv", tmp_path)
+
+
+def test_relative_paths_search_inputs_then_intermediate(tmp_path):
+    dirs = search_dirs(tmp_path)
+    assert dirs == [tmp_path / "inputs", tmp_path / "intermediate"]
+    for d in dirs:
+        (d / "hubs").mkdir(parents=True)
+    (tmp_path / "inputs/hubs/a.csv").write_text("lat,lon\n52,5\n")
+    (tmp_path / "intermediate/hubs/s2.csv").write_text("lat,lon\n52,5\n")
+    assert resolve_path("hubs/a.csv", dirs) == tmp_path / "inputs/hubs/a.csv"
+    assert resolve_path("hubs/s2.csv", dirs) == \
+        tmp_path / "intermediate/hubs/s2.csv"
+    # a copy in both folders is ambiguous: refuse rather than pick one
+    (tmp_path / "inputs/hubs/s2.csv").write_text("lat,lon\n53,6\n")
+    with pytest.raises(ValueError, match="several folders"):
+        resolve_path("hubs/s2.csv", dirs)
+    assert search_dirs(None) == []
+
+
+def test_hub_file_argument_needs_a_known_kind():
+    assert parse_hub_file_arg("hubs/utrecht_hubs.csv:lime",
+                              ["ovfiets", "lime"]) == \
+        ("hubs/utrecht_hubs.csv", "lime")
+    assert parse_hub_file_arg("/abs/x:y.json:ovfiets") == ("/abs/x:y.json",
+                                                           "ovfiets")
+    for bad in ("hubs/utrecht_hubs.csv", "hubs/a.csv:", ":lime"):
+        with pytest.raises(ValueError, match="FILE:KIND"):
+            parse_hub_file_arg(bad)
+    with pytest.raises(ValueError, match="unknown kind"):
+        parse_hub_file_arg("a.csv:taxi", ["ovfiets", "lime"])
 
 
 def egress(tmp_path, hubs, dest, **kw):

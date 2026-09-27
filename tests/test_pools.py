@@ -5,7 +5,7 @@ from ikob2.core.decay_curves import apply_decay, logistic
 from ikob2.core.numerics import DTYPE, ensure_dense
 from ikob2.data.validation import validate_pools
 from ikob2.domain.filter_config import INDEPENDENCE, ClassFilter, CurveSpec
-from ikob2.domain.segments import CarAccess, DecayParams, Income, Preference, Segment
+from ikob2.domain.segments import Segment
 from ikob2.domain.state import ModelState
 from ikob2.engine.runner import SegmentedRunner
 
@@ -24,8 +24,7 @@ IDENTITY = _filter("logistic", 100.0, 5.0)
 
 def _segment(name, pool="default", class_filter=None):
     return Segment(
-        name=name, income=Income.LOW, car_access=CarAccess.WITH_CAR,
-        preference=Preference.CAR,
+        name=name, income="laag",
         class_filter=class_filter or ALL_ONES,
         time_cost_id="time",
         pool=pool,
@@ -71,10 +70,6 @@ def test_different_scaling_gives_different_weight_key():
     a = _segment("x", class_filter=_filter("logistic", 0.125, 45.0, scaling=0.9))
     b = _segment("y", class_filter=_filter("logistic", 0.125, 45.0, scaling=1.0))
     assert a.weight_key != b.weight_key
-
-
-def test_legacy_decayparams_scalar_params_still_accepted():
-    assert DecayParams("exponential", 0.05, None).params == (0.05,)
 
 
 # ── Fix 2: zero-competition zones contribute zero, not O/floor ───────
@@ -193,8 +188,7 @@ def test_segment_default_time_cost_id_matches_runner_default():
     # A Segment built without time_cost_id must resolve against the
     # runner's default cost_matrices = {"time": state.generalized_cost}.
     seg = Segment(
-        name="s", income=Income.LOW, car_access=CarAccess.WITH_CAR,
-        preference=Preference.CAR, class_filter=ALL_ONES,
+        name="s", income="laag", class_filter=ALL_ONES,
     )
     result = SegmentedRunner(decay_epsilon=None).run(
         _state(), [seg], {"s": np.ones(2)},

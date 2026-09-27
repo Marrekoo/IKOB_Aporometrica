@@ -1,11 +1,14 @@
 """
 Create (or check) the data folder layout.
 
-    python -m ikob2.cli.layout create --root "/home/marco/IKOB data"
-    python -m ikob2.cli.layout link <target> <inputs-subfolder> [--name NAME]
+    python -m ikob2.cli.layout --root <root> create [--seed-from DIR | --no-seed]
+    python -m ikob2.cli.layout --root <root> link <target> <inputs-subfolder> [--name NAME]
 
-`create` makes the folders and a README and never moves or deletes
-anything. `link` adds a symlink in inputs/<subfolder> to a file that lives
+`create` makes the folders and a README, and copies the reference files
+shipped in the repository's data/ folder (budgets, time margins, tariff
+tables, StatLine snapshots, detour calibration) where they are missing. It
+never overwrites, moves or deletes anything, so it can be rerun on an
+existing folder. `link` adds a symlink in inputs/<subfolder> to a file that lives
 elsewhere, so sources stay where they are.
 """
 
@@ -15,7 +18,7 @@ import argparse
 from pathlib import Path
 
 from ikob2 import params as params_mod
-from ikob2.utils.paths import INPUT_DIRS, DataLayout
+from ikob2.utils.paths import INPUT_DIRS, REPO_DATA, DataLayout
 
 
 def link_input(layout: DataLayout, target: Path, subfolder: str,
@@ -41,7 +44,12 @@ def main(argv=None) -> None:
     params_mod.add_arguments(p)
     p.add_argument("--root", default=None)
     sub = p.add_subparsers(dest="command", required=True)
-    sub.add_parser("create")
+    cr = sub.add_parser("create")
+    cr.add_argument("--seed-from", default=None, metavar="DIR",
+                    help="reference data folder to copy from (default: the "
+                         "repository's data/)")
+    cr.add_argument("--no-seed", action="store_true",
+                    help="only make the folders")
     lk = sub.add_parser("link")
     lk.add_argument("target")
     lk.add_argument("subfolder", choices=INPUT_DIRS)
@@ -54,6 +62,15 @@ def main(argv=None) -> None:
         print(f"{len(created)} folder(s) created under {layout.root}")
         for d in created:
             print("  ", d.relative_to(layout.root))
+        if not args.no_seed:
+            source = Path(args.seed_from) if args.seed_from else REPO_DATA
+            if not source.is_dir():
+                raise SystemExit(f"No reference data folder {source}: give "
+                                 "--seed-from DIR or --no-seed.")
+            copied = layout.seed(source)
+            print(f"{len(copied)} reference file(s) copied from {source}")
+            for f in copied:
+                print("  ", f.relative_to(layout.root))
     else:
         print(link_input(layout, Path(args.target), args.subfolder,
                          args.name))

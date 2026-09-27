@@ -3,18 +3,20 @@ Public transport fares from distances.
 
 Two parts, after the paper (Section 3.4):
 
-  * rail: the NS single fare by distance (second class), a table read
-    linearly between its points: up to 8 km 2.70 EUR (the minimum fare),
-    15 km 4.40, 30 km 7.60, 50 km 11.80, 80 km 17.90, 100 km 21.30,
-    150 km 26.90, and 200 km and beyond 29.40 (the cap). Any other table
-    can be given (`rail_table`, km -> EUR); with `rail_table=None` a
-    tapering power law through the paper's anchors (about 2.60 EUR per
-    kilometre over one kilometre, 0.20 over one hundred) is used instead;
+  * rail: the NS single fare, second class, full tariff, from 1 January
+    2026 (`ns_2026_2e_klas.csv`, tariff units -> EUR), read linearly
+    between whole units, one tariff unit per rail kilometre: 3.00 EUR up to
+    8 units, 4.60 at 15, 8.00 at 30, 12.40 at 50, 19.10 at 80, 22.70 at 100,
+    28.80 at 150 and 33.30 at 200, held beyond (`rail_beyond_table`). Any
+    other table can be given (`rail_table`, km -> EUR); with
+    `rail_table=None` a tapering power law through two anchors (about 2.60
+    EUR per kilometre over one kilometre, 0.20 over one hundred) is used
+    instead;
   * bus, tram, metro, ferry ("regional"): a boarding charge of about
-    1.08 EUR plus 0.18 EUR per kilometre. Following the earlier R draft
-    the charge is paid ONCE per journey by default (a 35-minute transfer
-    window makes a single boarding the practical case);
-    `boardings="count"` charges every boarding.
+    1.08 EUR plus 0.18 EUR per kilometre. The charge is paid ONCE per
+    journey by default (a 35-minute transfer window makes a single
+    boarding the practical case); `boardings="count"` charges every
+    boarding.
 
 Inputs are in-vehicle kilometres per class and the number of boardings
 onto regional lines from `PtRouter.journeys`. The fare is applied when a

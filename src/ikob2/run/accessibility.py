@@ -250,10 +250,10 @@ def run_accessibility(
         run.
     time_margins : {(mode, wfh): CurveSpec} (segments.time_margins).
     matrices : mode -> ModeMatrices over (origins, destinations).
-    spec : 'm1', 'm1p', 'm2' (default) or 'm3' (segments.specs). M3 uses a
-        Gumbel-Hougaard copula with `theta` (inf: comonotone); `copula`
-        applies to M2 only. M1 needs `vot`: mode -> value of time in
-        EUR/hour.
+    spec : 'm0', 'm1', 'm1c', 'm1p', 'm2' (default) or 'm3'
+        (segments.specs). M3 uses a Gumbel-Hougaard copula with `theta`
+        (inf: comonotone); `copula` applies to M2 only. M0 and M1 need
+        `vot`: mode -> value of time in EUR/hour.
     availability : mode -> origins x segments frame in [0, 1]: the share of
         the segment at that origin that can use the mode (car in the
         household, private bicycle). `accessibility` stays conditional on

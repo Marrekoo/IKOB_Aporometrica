@@ -1,8 +1,6 @@
 """
 Runners.
 
-SimulationRunner — single-population baseline (variants + Shen model).
-
 SegmentedRunner — multi-segment run with explicit competition POOLS
 and composed tolerance FILTERS.
 
@@ -31,15 +29,14 @@ Performance patterns:
   2. Composed dedup: composed matrices are keyed on weight_key ONLY.
      Segments in different pools with equal ClassFilters share one
      matrix; pools multiply matvecs (cheap), never matrices
-     (expensive). Because ClassFilter is frozen and value-based, this
-     is the same identity notion FilterConfig.additivity_armed() uses
-     — engine and invariants cannot disagree about matrix sharing.
+     (expensive). ClassFilter is frozen and value-based, so equal
+     filters are equal keys.
   3. Matmul batching: populations are summed per (pool, weight_key)
      before the matvec.
   4. pin_marginals (default True): marginals stay materialised for
      the whole run, so re-deriving an unpinned composed matrix costs
      one elementwise copula pass instead of curve evaluation. This is
-     the memory/speed knob that matters at NRM zone counts; the
+     the memory/speed knob that matters at large zone counts; the
      pinned footprint is logged.
 
 epsilon policy: sparsification strength has a SINGLE OWNER (the CLI).
@@ -71,7 +68,6 @@ from typing import Mapping, Sequence
 
 import numpy as np
 
-from ikob2.core.accessibility import compute_accessibility
 from ikob2.core.compose import compose_filters
 from ikob2.core.decay_curves import get_decay_function, with_atom
 from ikob2.core.numerics import (
@@ -87,18 +83,8 @@ from ikob2.data.validation import validate_pools
 from ikob2.domain.segments import Segment
 from ikob2.domain.state import ModelState
 from ikob2.engine.cache import MatrixRegistry
-from ikob2.variants.base import Variant
 
 logger = logging.getLogger(__name__)
-
-
-# ── Simple single-population runner ──────────────────────────────────
-
-class SimulationRunner:
-    def run(self, state: ModelState, variants: Sequence[Variant] = ()) -> np.ndarray:
-        for variant in variants:
-            state = variant(state)
-        return compute_accessibility(state)
 
 
 # ── Marginal evaluation (module-level: shared by recipes) ────────────
@@ -161,7 +147,7 @@ class SegmentedRunner:
         """Two-level recipes: marginals compose into filter matrices.
 
         ALWAYS overwrite existing recipes: the same cost id can map to
-        a different matrix on the next run() call (variants!). A stale
+        a different matrix on the next run() call. A stale
         recipe would silently serve weights from the wrong matrix.
         """
         self._marginal_keys = set()
@@ -233,7 +219,6 @@ class SegmentedRunner:
         state: ModelState,
         segments: Sequence[Segment],
         populations: Mapping[str, np.ndarray],
-        variants: Sequence[Variant] = (),
         cost_matrices: Mapping[str, object] | None = None,
         opportunities: Mapping[str, np.ndarray] | None = None,
     ) -> SegmentedResult:
@@ -244,15 +229,12 @@ class SegmentedRunner:
         segments : population segments (each names its pool and its
             filter identity; see module docstring)
         populations : segment name -> (n_zones,) population vector
-        variants : applied to *state* before anything else
         cost_matrices : cost id -> matrix; defaults to
             {"time": state.generalized_cost}. Segments with cost
             filters additionally require their money_cost_id here.
         opportunities : pool name -> (n_zones,) opportunity vector;
             defaults to {"default": state.opportunities} (single pool).
         """
-        for variant in variants:
-            state = variant(state)
         state.validate()
 
         n = state.n_zones
@@ -321,7 +303,7 @@ class SegmentedRunner:
         try:
             # Pin marginals for the whole run: recomposition then
             # costs one elementwise pass. This is the knob to watch at
-            # NRM scale, hence the footprint log line.
+            # large zone counts, hence the footprint log line.
             if self.pin_marginals:
                 for mkey in self._marginal_keys:
                     self.registry.pin(mkey)
@@ -406,7 +388,6 @@ class SegmentedRunner:
         self,
         state: ModelState | None,
         segments: Sequence[Segment],
-        variants: Sequence[Variant] = (),
         cost_matrices: Mapping[str, object] | None = None,
         opportunities: Mapping[str, np.ndarray] | None = None,
     ) -> dict[str, np.ndarray]:
@@ -423,13 +404,12 @@ class SegmentedRunner:
         Two modes:
 
         * With a `state` (square): origins and destinations are the same
-          n zones; variants, the state's zone_weights and its default
+          n zones; the state's zone_weights and its default
           cost matrix / opportunities apply, as in run().
         * With `state=None` (rectangular): origins i and destinations j
           are different zone sets. `cost_matrices` (n_origins x
           n_destinations, dense or scipy sparse) and `opportunities`
-          (pool -> (n_destinations,)) are then required, variants are
-          not supported (they transform a ModelState), and the result
+          (pool -> (n_destinations,)) are then required, and the result
           has n_origins entries. This is the study-area case: a few
           hundred origin zones against every destination that matters,
           a matrix of megabytes instead of a national n x n one. Only
@@ -441,8 +421,6 @@ class SegmentedRunner:
         Returns segment name -> (n_origins,) accessibility.
         """
         if state is not None:
-            for variant in variants:
-                state = variant(state)
             state.validate()
             n_origins = n_dest = state.n_zones
             if cost_matrices is None:
@@ -451,10 +429,6 @@ class SegmentedRunner:
                 opportunities = {"default": state.opportunities}
             total_opportunities = state.opportunities
         else:
-            if variants:
-                raise ValueError(
-                    "variants transform a ModelState; pass a state, or "
-                    "apply the variant to the cost matrices yourself.")
             if cost_matrices is None or opportunities is None:
                 raise ValueError(
                     "Rectangular run_hansen (state=None) needs both "

@@ -1,276 +1,207 @@
 # Skims (`ikob2.skims`)
 
-Origin x destination travel times for the accessibility runs, computed
-with **r5py** (the R5 engine, the same as r5r) from OpenStreetMap and,
-for public transport, GTFS. Origins are the buurten of a study area
-(first: Utrecht city, 111 buurten); destinations are all buurten
-nationally. The matrices are therefore rectangular and small (111 x
-14,318 float32 = 6 MB per matrix).
+Origin x destination travel times, distances and PT journey attributes.
+Origins are the buurten of a study area (Utrecht: 111 buurten); destinations
+are all Dutch buurten, so matrices are rectangular (111 x 14,318 float32 is
+6 MB per matrix). Money costs are computed from these at run time.
 
-## Store (`skims.store.SkimStore`)
+## Skim store (`skims.store.SkimStore`)
 
-One directory: `manifest.json` (origins, layers, metadata, progress)
-and one `<layer>/<mode>/<variable>.npy` per matrix. Matrices are opened
-as memory maps, so reading a few origin rows or destination columns
-touches only those; NaN means not reachable within the routing limit
-(or not computed yet).
+One directory: `manifest.json` (origins, layers, metadata, progress) and one
+`<layer>/<mode>/<variable>.npy` per matrix, opened as a memory map so reading
+a few rows or columns touches only those. NaN means unreachable within the
+routing limit or not yet computed.
 
-**Near and far layers.** Destinations within `--near-km` of any origin
-are routed individually (layer `near`); every destination is also
-mapped to its municipality's point (layer `far`, one job-weighted
-centroid per municipality). `SkimStore.combined(mode, variable,
-destinations, near=..., far=...)` assembles a full-resolution matrix on
-demand: the near value where the destination has one, otherwise the
-value of its municipality point. Routing and storage cost scale with
-the near destinations plus the cells, not with all buurten. The far
-value is a municipality-level approximation; whether that is good enough
-for the far tail of a 45-minute threshold is a modelling choice (set
-`--far-cells none` to route everything individually).
+**Near and far layers.** Destinations within `skims.near_km` (50 km) of any
+origin are routed individually (layer `near`); every destination is also
+represented by its municipality's point (layer `far`, one job-weighted point
+per municipality). `SkimStore.combined(mode, variable, destinations,
+near=..., far=..., fill=...)` assembles a full-resolution matrix: the near
+value where it exists, otherwise the municipality value. `--far-cells none`
+routes everything individually. Public transport is stored at full
+resolution in layer `all`.
 
-**Resumable.** Builds write origin blocks and record them; rerunning
-continues where an interrupted run stopped.
+**Resumable.** Builds write blocks of origins and record them in the
+manifest; a rerun continues where an interrupted one stopped. Finished blocks
+are never recomputed, so a mode built with other settings needs a new name.
 
-## Building
+    python -m ikob2.cli.skims inspect <store>
+
+## Car, bicycle and walking (`cli.skims build`)
 
     python -m ikob2.cli.skims build --kwb <wijkenbuurten_2022_v3.gpkg> \
-        --study GM0344 --osm netherlands.osm.pbf --gtfs gtfs-nl.zip \
-        --modes car bike walk pt --out data/skims/utrecht --max-memory 11G
-    python -m ikob2.cli.skims inspect data/skims/utrecht
+        --study GM0344 --osm netherlands-260822.osm.pbf \
+        --modes car bike walk --out <store> --max-memory 11G
 
-Needs Java 21 and the `routing` extra (`pip install -e .[routing]`).
+Needs Java 21 and the `routing` extra.
 
-* **car, bike:** R5 on the OSM network; free-flow car speeds (no
-  congestion), 16 km/h cycling (confirmed as the project's cycling speed). Times are between buurt centroids
-  snapped to the street network.
-* **walk:** by default from zone geometry (`--walk-model zone`):
-  crow-fly centroid distance x 1.3 at 4.8 km/h, and within a zone the
-  mean distance between two random points from its land area
-  (0.52 sqrt(A)). Rough; ignores barriers.
-* **pt:** R5 with GTFS, median over a departure window (default 08:00
-  plus 60 minutes), walking access and egress, at most 4 rides.
-  Not yet exercised on the national feed.
+* **car, bike**: R5 (r5py) on the OSM network between buurt centroids snapped
+  to the street network; car at OSM free-flow speeds, bicycle at 16 km/h
+  (`skims.cycle_kmh`). Limits `skims.max_minutes` (car 120, bike 90).
+* **walk**: from zone geometry by default (`--walk-model zone`): crow-fly
+  distance x 1.3 at 4.8 km/h between zones, and within a zone the mean
+  distance between two random points, `0.52 sqrt(area)`. It ignores barriers.
+  `--walk-model router` routes with R5 instead.
+* **pt** (R5, optional): R5 with GTFS, median over a departure window
+  (`skims.departure`, `window_minutes`), at most `max_rides` rides. The
+  accessibility runs use the frequency model below instead.
 
-## Using a store with the engine
+The national OSM extract (1.4 GB) builds in R5 in about 8 minutes with an
+11 GB heap.
 
-    t = store.combined("car", "time", dest_codes, near="near", far="far",
-                       fill=9999.0)                    # (origins, dests)
-    a = runner.run_hansen(None, segments,
-                          cost_matrices={"time": t, fare.matrix_id: c},
-                          opportunities=pools_over_dest_codes)
+## Car distances
 
-`dest_codes` and the job pools must use the same destination order.
-`fill` replaces unreachable pairs by a large travel time (weight 0).
+R5 matrices carry no distance. The store's car `distance` comes from:
 
-## Trial results (development extract)
+* **Valhalla** within `distance.radius_km` (30 km, crow-fly) of an origin
+  (`skims.distance`, `servers.md`);
+* the **detour model** beyond it, for the far layer, and where Valhalla finds
+  no route: crow-fly distance x a detour factor per distance band
+  (`skims.car.DetourModel`).
 
-Utrecht province OSM extract, 111 origins x 2,579 near + 346 far
-destinations, three modes: network build 32 s, 3.5 minutes in total,
-store 4 MB. Median car time 27 minutes; median bike/car time ratio 2.6.
-(Reachability is low only because the extract stops at the province
-edge.)
+The detour model is calibrated on routed pairs (`cli.skims calibrate-detour`,
+OSRM table service, `skims.osrm`): the median route/crow-fly ratio per band.
+The seeded calibration (`intermediate/calibration/car_detour.json`, 10,840 Utrecht
+pairs) gives 2.05 below 1.5 km, 1.6 at 2-6 km, 1.5 at 11 km, 1.33 at 37 km
+and 1.23 from 90 km. Without a model the constant `car.detour_constant`
+(1.3) is used.
 
-## Idea: congestion from measured traffic data (NDW)
+    python -m ikob2.cli.skims calibrate-detour --kwb <gpkg> --study GM0344 --out <json>
+    python -m ikob2.cli.skims build-distance <store> --kwb <gpkg> --detour <json>
 
-R5 routes with static speeds, so car times are free-flow. NDW data could
-correct them by time of day. What NDW offers (read from opendata.ndw.nu,
-the Dexter web application and docs.ndw.nu, September 2026):
+## Car cost and parking (`skims.car`)
 
-* **Real-time files** (opendata.ndw.nu, no login): `trafficspeed`,
-  `traveltime`, speeds and intensities per measurement site, DATEX II
-  (v2.3 stops 9 February 2027, v3 profiles replace it). Snapshots only,
-  no history.
-* **Dexter, historical data** (dexter.ndw.nu; docs: "Historische data"):
-  explorer (hourly values, public), export (finest available
-  aggregate, Excel/CSV) and reports. Export types include intensity and
-  speed, travel time, traffic jams (files), incidents and **Floating Car
-  Data (FCD)**, listed as available to "everyone". The export API answers
-  401 without login, so exports need an NDW account; scripted access is
-  not documented.
-* **Dexter open data** (no login): a limited set from the export part
-  (loop-based intensity and speed, bicycle counts). It is a web form
-  with a captcha and caps on the number of days and locations, so it is
-  not a bulk or scriptable source.
-* **FCD specifics** (docs): the network is cut into segments of at most
-  50 m; hourly means per segment; results are per ROUTE that the user
-  draws in the tool. NDW states that the FCD explorer is indicative only
-  and that only the FCD export is a reference source.
-
-Consequences: there is no bulk national FCD download. A usable design is
-to export hourly speeds for a limited set of representative routes (the
-motorway and main-road corridors around Utrecht) and derive a
-congestion index per hour and day type (mean travel time / free-flow
-travel time), then apply it to the R5 times. Applying it needs a rule for
-which OD pairs use those corridors: either factors by distance band and
-region, or the road-class share of each route (needs detailed
-itineraries). Time-of-day speeds per OSM way would need a match between
-NDW locations or segments and OSM ways. An alternative without an
-account is to archive the real-time `trafficspeed` feed ourselves for a
-few weeks and build the profile from that (loop sites only, and only from
-the start of collection). Open questions for NDW: bulk or API access to
-FCD exports, licence terms for publication, and whether historical
-minute data can be requested for many routes.
+`car_time_and_cost` returns time and money separately. Time adds a parking
+search: arrival search at the destination by KWB urbanisation class
+(`car.parking_arrival_min`: 12 / 8 / 4 / 0 / 0 minutes for classes 1-5) and a
+departure search at the origin of `car.departure_factor` (0.25) of the
+origin's arrival value. Money is the variable cost per km x distance, plus an
+optional per-km road charge and per-zone parking cost. Models
+(`car.models`, `--car-model`): `fossil` 0.16 EUR/km (default), `electric`
+0.05, `shared` 0.33 EUR/km + 0.05 EUR/min, `taxi` 2.40 EUR/km + 0.40 EUR/min.
 
 ## Peak load by road class (`skims.peak`)
 
-Free-flow times understate peak travel. As a first correction the OSM
-extract is rewritten so that the routers see peak speeds: `maxspeed` is
-divided by a congestion factor by road class, so travel times on those
-classes are multiplied by it and route choice reacts as well.
+A peak-load OSM extract divides `maxspeed` by a congestion factor by road
+class, so travel times on that class are multiplied by it and route choice
+reacts as well:
 
 | Road class | Factor | Basis |
 |---|---|---|
 | motorway, trunk (and links) | 1.40 | TomTom Traffic Index |
 | primary, secondary (and links) | 1.20 | Monitor Nationale Omgevingsvisie, Indicatoren Bereikbaarheid |
-| tertiary, residential, unclassified, living street | 1.05 | minor extra interactions in the streets |
+| tertiary, residential, unclassified, living street | 1.05 | minor interactions |
 
-Enough to mimic a peak load, not a congestion model: uniform in space and
-time, no bottlenecks. Speeds are rounded to whole km/h, so realised
-factors are 1.39 to 1.41, 1.19 to 1.20 and 1.03 to 1.05. Only ways with a
-numeric `maxspeed` are changed; in the Dutch data nearly all are (motorway
-100%, residential 99%, checked on the Utrecht extract). Tested on the
-Utrecht extract, car times from the Dom Tower rise 7% to 19% (Amersfoort 28
-to 32 minutes).
+It is uniform in space and time, without bottlenecks. Speeds are rounded to
+whole km/h (realised factors 1.39-1.41, 1.19-1.20, 1.03-1.05) and floored at
+`peak.minimum_kmh`. Only ways with a numeric `maxspeed` change; in the Dutch
+data nearly all have one (`peak.coverage`).
 
     python -m ikob2.cli.skims make-peak --osm <free-flow.pbf> --out <peak.pbf>
     python -m ikob2.cli.skims build ... --osm <peak.pbf> --modes car --out <peak store>
-    python -m ikob2.cli.accessibility ... --study utrecht_nl_peak \
-        --distance-study utrecht_nl
+    python -m ikob2.cli.accessibility ... --study <peak store> --distance-study <free-flow store>
 
-`--distance-study` reuses the routed distances of the free-flow store
-(distances barely change with speeds). The national peak extract is built
-in the data folder under `intermediate/osm_peak`.
+`--distance-study` takes the routed distances from the free-flow store.
 
-## Public transport from GTFS: a frequency model (`skims.gtfs_pt`)
+## Public transport: a frequency model (`skims.gtfs_pt`)
 
-Not R5, and no averaging over departure times. One weekday of the GTFS
-feed (default Tuesday 2026-09-15) is reduced to a peak window (default
-07:00-09:00): per line (route x direction) a headway per stop (window /
-departures) and a median in-vehicle time between consecutive stops.
-Rules:
+One weekday of the GTFS feed (`pt.date`, 2026-09-15) is reduced to a peak
+window (`pt.window_h`, 07:00-09:00): per line (route x direction) a headway
+per stop (window / departures) and a median in-vehicle time between
+consecutive stops. Rules:
 
-* **Waiting** at every boarding: `min(headway / 2, 7.5)` minutes, i.e.
-  half the headway below 15 minutes and the same 7.5-minute average
-  above it (infrequent services are used by timing the arrival).
-* **Transfers** are not penalised: no extra transfer penalty, only the
-  boarding wait and the walk between stops (`--boarding-penalty-min`
-  exists, default 0).
-* **Walking** (access, egress, transfers): crow-fly distance x detour 1.3
-  at an adjustable speed, default **4 km/h**; access and egress up to 20
-  minutes; transfers between stops within 300 m.
-* A trip always contains at least one boarding (the graph has separate
-  before-boarding, after-alighting, boarded and riding nodes).
+* **Waiting** at every boarding: `min(headway / 2, pt.wait_cap_min)`, i.e.
+  half the headway up to a 7.5-minute cap (travellers time their arrival to
+  infrequent services).
+* **Transfers**: no penalty (`pt.boarding_penalty_min` = 0), only the
+  boarding wait and the walk between stops within `pt.transfer_radius_m`
+  (300 m).
+* **Walking** (access, egress, transfers): crow-fly x `pt.walk_detour` (1.3)
+  at `pt.walk_kmh` (4 km/h); access and egress up to `pt.max_access_min`
+  (20 minutes).
+* Every journey has at least one boarding (separate before-boarding,
+  after-alighting, boarded and riding nodes).
 
-Shortest paths over the graph (scipy Dijkstra) give door-to-door minutes
-for the 111 origins to all 14,318 destination buurten; the result is the
-store layer `all` (`pt/time`).
+Dijkstra shortest paths (scipy) give door-to-door minutes up to
+`pt.max_minutes` (180) from each origin to every buurt, in resumable blocks
+of `pt.block_size` origins. Along the time-optimal journey the router also
+accumulates in-vehicle kilometres by rail and by other lines and the number
+of boardings onto other lines (`rail_km`, `other_km`, `other_boardings`):
+crow-fly distance between consecutive stops x `pt.rail_detour` (1.15) or
+`pt.other_detour` (1.25).
 
-    python -m ikob2.cli.skims build-pt <store> --kwb ... --gtfs ... \
+    python -m ikob2.cli.skims build-pt <store> --kwb <gpkg> --gtfs <zip> \
         [--date 2026-09-15 --window 7 9 --walk-kmh 4]
 
-Limits: headways are per line and stop (parallel lines are not combined
-into a higher frequency) and all route types have the same wait rule.
+Limits: headways are per line and stop (parallel lines are not combined into
+a higher frequency), and all route types share one waiting rule. The model
+is compared with OpenTripPlanner in `servers.md`.
 
-### PT fares (`skims.pt_fare`)
+## PT fares (`skims.pt_fare`)
 
-`build-pt` also stores, for the time-optimal journey of every pair, the
-in-vehicle kilometres by rail and by other lines and the number of
-boardings onto other lines (`rail_km`, `other_km`, `other_boardings`). The
-kilometres are the crow-fly distance between consecutive stops times a
-detour (rail 1.15, other 1.25; `--rail-detour`, `--other-detour`),
-accumulated along the shortest-path tree. The fare is computed when a run
-is set up, so fare assumptions change without new routing:
+Applied when a run is set up, so fare assumptions change without rerouting:
 
-* **Rail**: the official NS single fare, second class, full tariff incl.
-  VAT, valid from 1 January 2026 (`src/ikob2/skims/ns_2026_2e_klas.csv`,
-  from the price list "NS Tarieven Consumenten"): 3.00 EUR up to 8 tariff
-  units, 4.60 at 15, 8.00 at 30, 12.40 at 50, 19.10 at 80, 22.70 at 100,
-  28.80 at 150 and 33.30 at 200, held there beyond; one tariff unit is one
-  tariff kilometre, read linearly between whole units. `--pt-rail-discount
-  0.2` / `0.4` applies NS's discounts, `--pt-rail-table km,eur.csv` a
-  different table, `--pt-rail-anchors` the tapering power law through the
-  paper's anchors. (Fares you had noted earlier, 2.70 up to 8 km, 4.40 at
-  15, 21.30 at 100 and 29.40 at 200, correspond to an earlier year: the
-  2026 list is about 5 to 13% higher.) Other rail operators are priced
-  with the same table.
-* **Bus, tram, metro, ferry**: 1.08 EUR boarding + 0.18 EUR per km, the
-  boarding charged once per journey (`--pt-boardings count` charges every
-  boarding).
+* **Rail**: the NS single fare, second class, full tariff incl. VAT, valid
+  from 1 January 2026 (`src/ikob2/skims/ns_2026_2e_klas.csv`): EUR 3.00 up to
+  8 tariff units, 4.60 at 15, 8.00 at 30, 12.40 at 50, 19.10 at 80, 22.70 at
+  100, 28.80 at 150 and 33.30 at 200, held beyond (`pt_fare.rail_beyond_table
+  = "cap"`). One tariff unit is taken as one rail kilometre, read linearly
+  between whole units. All rail operators use this table.
+  `--pt-rail-discount` applies a share off (off-peak discounts do not apply
+  to the 7-9 h peak); `--pt-rail-table km,eur.csv` uses another table;
+  `--pt-rail-anchors` a tapering power law through two anchors
+  (`pt_fare.rail_eur_per_km_at_1km`, `_at_100km`).
+* **Bus, tram, metro, ferry**: EUR 1.08 boarding + 0.18 per km, the boarding
+  charged once per journey (`--pt-boardings count` charges every boarding).
 
-Example fares from Leidsche Rijn: Amsterdam (36 km rail + 8 km bus) 11.8
-EUR, Amersfoort 9.5, Rotterdam 15.7, Arnhem 17.5, Groningen 33.2 (rail
-only, 199 km); median over reachable pairs 19.8 EUR. The fare goes to the
-run as the PT cost matrix, gated by the segments' cost margins like the
-car cost.
+The fare is the PT cost matrix of the run, gated by the segments' cost
+margins; a fare-scale table can scale it per segment (`scenarios.md`).
 
-## Bicycle access and egress for public transport
+## Bicycle access and egress legs
 
-`cli.skims build-pt --mode-name pt_bw --access bike` (and `pt_wb --egress
-bike`, `pt_bb` both) store further PT modes in the same store; the plain mode
-is `pt`. A bicycle leg (`gtfs_pt.LegSpec`) rides at `--bike-kmh` (16) with
-crow-fly detour `--bike-detour` (1.3), at most `--bike-max-min` (20) minutes,
-plus `--bike-fixed-min` (1) for unlocking or parking. A bicycle egress starts
-only at hub stops (`--egress-hubs rail`: rail stops, standing in for OV-fiets
-stations; `all` for every stop); an access can use any stop. With a bicycle
-access the riding minutes of the chosen access are stored as `access_min` for
-metered tariffs. The router still applies the frequency model unchanged.
+`build-pt` stores further PT modes with bicycle legs (`gtfs_pt.LegSpec`):
 
-## National network
+    python -m ikob2.cli.skims build-pt <store> ... --access bike --mode-name pt_bw
+    python -m ikob2.cli.skims build-pt <store> ... --egress bike --egress-hubs file \
+        --hub-kind lime --mode-name pt_wb_lime
 
-The national OSM extract (`netherlands-260822.osm.pbf`, 1.4 GB) builds
-in 453 s with an 11 GB heap and peaks at 10.6 GB resident on the 15 GB
-development machine, so a national OSM-only network works for R5 and
-Valhalla. Free-flow car times from Utrecht: Amsterdam 41, Rotterdam 48,
-Groningen 126, Maastricht 128 minutes. National public transport is
-computed by the GTFS frequency model (no street graph needed beyond
-walking access); OpenTripPlanner is used as an independent check on it and
-runs on a walking-network extract, see `servers.md`.
+A bicycle leg rides at `bike_leg.kmh` (16 km/h, `--bike-kmh`) on crow-fly x
+`bike_leg.detour` (1.3), at most `bike_leg.max_minutes` (20), plus
+`bike_leg.fixed_minutes` (1) to unlock or park. An access leg can reach any
+stop. An egress leg starts at a hub (`--egress-hubs`):
 
-## Not yet built
+* `file` (default): hubs from `pt.hub_files`, each with its tariff kind from
+  the parallel list `pt.hub_kinds` (`hubs/utrecht_hubs.csv` = `lime`,
+  `ovfiets/locaties.json` = `ovfiets`); on the command line
+  `--hub-file FILE:KIND` (repeatable) replaces both lists. The traveller alights at a stop within
+  `pt.hub_walk_radius_m` (300 m) of a hub, walks to it and rides to the
+  destination; the fastest hub per stop counts. `--hub-kind` keeps the hubs of
+  one kind, so each kind is its own mode;
+* `rail`: every rail stop; `all`: every stop.
 
-* **List-type skim** for cheap/slow versus expensive/fast options per
-  OD pair (the shared-bicycle case).
-* **Shared-bicycle legs** (hubs, dockless supply) and the scenario
-  variants S1-S4, which need their own networks.
-* The choice of departure windows and percentile for PT (the frequency
-  model uses none; OTP validation is in `servers.md`).
+The chosen journey's riding minutes are stored as `access_min` and
+`egress_min` (ride only) for duration-priced tariffs. Within a kind the
+fastest hub is taken; a slower but cheaper hub of the same kind (a Lime ride
+just below a tier bound) is not an option.
 
-## Bicycle egress hubs from files
+## Hub files (`skims.hubs`)
 
-`cli.skims build-pt --egress bike --egress-hubs file` lets a rider take a
-shared bicycle only at the hubs listed in files (`pt.hub_files`, or
-`--hub-file` once per file, relative to `<data root>/inputs`; `pt.hub_kinds`
-gives the tariff kind of each file):
+* CSV with `lat`, `lon` and optionally `hub` (name): the municipal hubs
+  (`inputs/hubs/utrecht_hubs.csv`: station hubs from the OV-fiets
+  coordinates, street hubs from PDOK road geometries) and the extra hubs of
+  scenario S2 (`intermediate/hubs/utrecht_hubs_s2.csv`, `cli.hubs propose`);
+* the OV-fiets feed (`http://fiets.openov.nl/locaties.json`, a JSON object
+  `{"locaties": {code: {"lat", "lng", "name", ...}}}`).
 
-* `hubs/utrecht_hubs.csv` (kind `lime`): the 27 municipal hubs (hub, lat, lon,
-  precision, source); stations from the OV-fiets coordinates, streets from
-  PDOK road geometries, corrected with descriptions;
-* `ovfiets/locaties.json` (kind `ovfiets`): the OV-fiets feed,
-  http://fiets.openov.nl/locaties.json (301 locations).
+A relative path is looked up in the current folder, then under
+`<root>/inputs` and `<root>/intermediate`; a path found in both is an error,
+so a stale copy cannot shadow the file meant.
 
-The journey is: alight at a stop within `pt.hub_walk_radius_m` (300 m) of a
-hub, walk to it, ride to the destination (`bike_leg` speed, detour, limit,
-fixed minutes). The fastest hub per stop counts; the reported egress minutes
-are the ride only.
+## Limits
 
-**One skim mode per hub kind.** The tariffs differ (OV-fiets a flat charge,
-Lime EUR 3 / 4 / 5 for up to 20 / 30 / 40 minutes, `shared_bike.lime_tiers`),
-so a slower hub can be the affordable one. The fastest journey per kind is its
-own alternative and a person accepts a pair if any option clears both gates,
-so the kinds are separate modes, built with `--hub-kind`:
-
-    for kind in lime ovfiets; do
-      python -m ikob2.cli.skims build-pt <store> --kwb <gpkg> --gtfs <zip> \
-          --data-root <root> --egress bike --egress-hubs file \
-          --hub-kind $kind --mode-name pt_wb_$kind
-      python -m ikob2.cli.skims build-pt <store> ... --access bike \
-          --egress bike --egress-hubs file --hub-kind $kind --mode-name pt_bb_$kind
-    done
-
-`cli.accessibility --shared-bike` reads `pt_wb_<kind>` and `pt_bb_<kind>` for
-the kinds in `shared_bike.egress_hub_kinds` (empty: the plain `pt_wb`, `pt_bb`
-at the OV-fiets charge). A store mode built with other hubs is refused: give a
-new `--mode-name`, because finished blocks are not recomputed.
-
-Limit: within a kind the fastest hub is taken; a slower hub of the same kind
-that is cheaper (a Lime ride just below a duration tier) is not an option.
-Off-peak public transport discounts do not apply (peak window, commuting).
+* Car times are free flow or road-class peak load; no measured congestion.
+  Measured speeds (NDW, including floating-car data) are available per route
+  through an NDW account, not as a bulk national download.
+* Travel times are between buurt centroids; the far layer approximates
+  distant destinations by municipality points.
+* PT waiting follows the headway rule, not the timetable.

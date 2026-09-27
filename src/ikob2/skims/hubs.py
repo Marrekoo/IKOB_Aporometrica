@@ -9,8 +9,11 @@ come from input files, not from the code:
   * the OV-fiets feed (http://fiets.openov.nl/locaties.json): a JSON object
     `{"locaties": {code: {"lat", "lng", "name", ...}}}`.
 
-Relative paths are looked up in the current folder first, then under
-`<data root>/inputs`.
+Every file has a tariff kind (`pt.hub_kinds`, parallel to `pt.hub_files`;
+on the command line `--hub-file FILE:KIND`). Relative paths are looked up
+in the current folder first, then under `<data root>/inputs` and
+`<data root>/intermediate` (hubs made by the model, e.g.
+`intermediate/hubs/utrecht_hubs_s2.csv`).
 """
 
 from __future__ import annotations
@@ -26,14 +29,53 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def resolve_path(path: str | Path, inputs: Path | None = None) -> Path:
+def search_dirs(root: str | Path | None) -> list[Path]:
+    """Folders of the data root in which relative hub paths are looked up:
+    `inputs/` (source hub files) and `intermediate/` (hubs made by the
+    model, such as the extra hubs of scenario S2)."""
+    if not root:
+        return []
+    return [Path(root) / "inputs", Path(root) / "intermediate"]
+
+
+def resolve_path(path: str | Path,
+                 dirs: str | Path | Iterable[str | Path] | None = None) -> Path:
+    """An absolute path, a path relative to the current folder, or a path
+    relative to exactly one of `dirs` (a path found in several is an error,
+    so a stale copy cannot shadow the file meant)."""
     p = Path(path).expanduser()
     if p.is_absolute() or p.exists():
         return p
-    if inputs is not None and (Path(inputs) / p).exists():
-        return Path(inputs) / p
-    raise FileNotFoundError(f"Hub file {path!r} not found"
-                            f"{'' if inputs is None else f' (also tried under {inputs})'}.")
+    if dirs is None:
+        dirs = []
+    elif isinstance(dirs, (str, Path)):
+        dirs = [dirs]
+    dirs = [Path(d) for d in dirs]
+    found = [d / p for d in dirs if (d / p).exists()]
+    if len(found) > 1:
+        raise ValueError(f"Hub file {path!r} exists in several folders "
+                         f"({', '.join(map(str, found))}); remove the stale "
+                         f"copy or give an absolute path.")
+    if found:
+        return found[0]
+    tried = f" (also tried under {', '.join(map(str, dirs))})" if dirs else ""
+    raise FileNotFoundError(f"Hub file {path!r} not found{tried}.")
+
+
+def parse_hub_file_arg(value: str,
+                       tariffs: Iterable[str] | None = None) -> tuple[str, str]:
+    """`FILE:KIND` (a command-line hub file with its tariff kind) ->
+    (file, kind). The kind is required: files and kinds are parallel
+    lists, and a file without its kind would take another file's."""
+    file, sep, kind = str(value).rpartition(":")
+    if not sep or not file or not kind:
+        raise ValueError(f"Hub file {value!r}: give FILE:KIND, e.g. "
+                         f"hubs/utrecht_hubs.csv:lime.")
+    known = list(tariffs) if tariffs is not None else []
+    if known and kind not in known:
+        raise ValueError(f"Hub file {value!r}: unknown kind {kind!r}; "
+                         f"tariffs: {known}.")
+    return file, kind
 
 
 def read_hub_file(path: str | Path) -> pd.DataFrame:
@@ -63,16 +105,18 @@ def read_hub_file(path: str | Path) -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-def load_hubs(paths: Iterable[str | Path], inputs: Path | None = None,
+def load_hubs(paths: Iterable[str | Path],
+              dirs: str | Path | Iterable[str | Path] | None = None,
               kinds: Iterable[str] | None = None,
               tariffs: Iterable[str] | None = None) -> pd.DataFrame:
     """All hubs of the listed files, and their RD New coordinates (x, y).
+    Relative paths are resolved against `dirs` (`search_dirs(root)`).
     `kinds` (one per file) names the tariff of a file's hubs and `tariffs`
     the known tariff names (a kind outside them is an error)."""
     from pyproj import Transformer
 
     paths = list(paths)
-    frames = [read_hub_file(resolve_path(p, inputs)) for p in paths]
+    frames = [read_hub_file(resolve_path(p, dirs)) for p in paths]
     if not frames:
         raise ValueError("No hub files given.")
     kind_list = list(kinds) if kinds is not None else None

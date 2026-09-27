@@ -19,7 +19,6 @@ from ikob2.segments.bridge import (
 )
 from ikob2.segments.config import HOUSEHOLD_TYPES, INCOME_CLASSES, SegmentConfig
 from ikob2.segments.pipeline import compute_segments
-from ikob2.variants.base import MultiplyGeneralizedCost
 
 from test_segments import make_children_raw, make_income_raw, make_kwb
 
@@ -78,7 +77,6 @@ def test_time_only_segments_share_one_filter():
     assert all(s.money_cost_id is None and s.pool == "default" for s in segs)
     s = segs[5]
     assert (s.household_type, s.income) == ("couple", "D2")
-    assert s.car_access is None and s.preference is None
 
 
 def test_segments_with_envelope_carry_their_own_cost_margin():
@@ -229,16 +227,17 @@ def test_hansen_pools_use_their_own_opportunities():
             opportunities={"D1": jobs})
 
 
-def test_hansen_applies_variants_and_leaks_no_pins():
+def test_hansen_rerun_sees_new_cost_and_leaks_no_pins():
     state, time, money, _ = small_state()
     segs = build_segments(TIME, only=["single_D1"])
     runner = SegmentedRunner(decay_epsilon=None)
     base = runner.run_hansen(state, segs)["single_D1"]
-    varied = runner.run_hansen(
-        state, segs, variants=[MultiplyGeneralizedCost(2.0)])["single_D1"]
+    scaled = state.with_updates(
+        generalized_cost=(state.generalized_cost * 2.0).astype(np.float32))
+    varied = runner.run_hansen(scaled, segs)["single_D1"]
     assert not np.allclose(base, varied)
     fresh = SegmentedRunner(decay_epsilon=None).run_hansen(
-        state, segs, variants=[MultiplyGeneralizedCost(2.0)])["single_D1"]
+        scaled, segs)["single_D1"]
     np.testing.assert_array_equal(varied, fresh)
     assert runner.registry.pinned_size_mb() == 0.0
 
@@ -403,10 +402,6 @@ def test_rectangular_misconfiguration():
         runner.run_hansen(None, segs, cost_matrices={"time": time})
     with pytest.raises(ValueError, match="needs both"):
         runner.run_hansen(None, segs, opportunities={"default": jobs})
-    with pytest.raises(ValueError, match="variants transform"):
-        runner.run_hansen(None, segs, variants=[MultiplyGeneralizedCost(2.0)],
-                          cost_matrices={"time": time},
-                          opportunities={"default": jobs})
     with pytest.raises(ValueError, match="has shape \\(3, 7\\).*\\(3, 6\\)"):
         runner.run_hansen(None, segs, cost_matrices={"time": time},
                           opportunities={"default": jobs[:-1]})

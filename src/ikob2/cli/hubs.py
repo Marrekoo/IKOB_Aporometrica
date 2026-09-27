@@ -6,9 +6,9 @@
 Ranks the origin buurten by low baseline accessibility and low bicycle
 ownership and places `siting.hub_density_factor - 1` times the existing number
 of hubs of kind `siting.kind` there (spacing `siting.min_spacing_m`). Writes
-`inputs/hubs/utrecht_hubs_s2.csv`: hub, lat, lon, precision, source and the
-buurt, its accessibility, bicycle share and score. Build the S2 skims with the
-existing and the new hubs together (docs/skims.md).
+`intermediate/hubs/utrecht_hubs_s2.csv`: hub, lat, lon, precision, source and
+the buurt, its accessibility, bicycle share and score. Build the S2 skims with
+the existing and the new hubs together (docs/scenarios.md).
 """
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ def cmd_propose(args) -> None:
         "bike_share": bike.reindex(store.origins).to_numpy()})
 
     files, kinds = list(prm.pt.hub_files), list(prm.pt.hub_kinds)
-    hubs = hubs_mod.load_hubs(files, lay.inputs, kinds=kinds,
+    hubs = hubs_mod.load_hubs(files, hubs_mod.search_dirs(root), kinds=kinds,
                               tariffs=prm.shared_bike.hub_tariffs)
     existing = hubs[hubs["kind"] == prm.siting.kind]
     n_new = int(round(len(existing) * (prm.siting.hub_density_factor - 1.0)))
@@ -86,15 +86,11 @@ def cmd_propose(args) -> None:
         "buurtcode": chosen["code"], "access": chosen["access"].round(1),
         "bike_share": chosen["bike_share"].round(3),
         "score": chosen["score"].round(4)})
-    target = Path(args.out) if args.out else lay.inputs / "hubs" / "utrecht_hubs_s2.csv"
+    target = Path(args.out) if args.out else lay.s2_hubs()
     target.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(target, index=False)
-    print(f"{len(out)} new hubs (existing {kind_count(existing)}) written to {target}")
+    print(f"{len(out)} new hubs (existing {len(existing)}) written to {target}")
     print(out[["hub", "access", "bike_share", "score"]].to_string(index=False))
-
-
-def kind_count(df) -> int:
-    return len(df)
 
 
 def main(argv=None) -> None:

@@ -6,8 +6,8 @@ Destination-level competition term (Shen 1998 pass 1).
 Returns the RAW competition vector, zeros included. Zero-competition
 zones (opportunities nobody can reach) must contribute ZERO
 accessibility, not O / floor; the division is handled downstream with
-safe_divide. The old floor-at-1e-6 behaviour let a single empty-but-
-employed zone inject O * 1e6 into every origin's accessibility.
+safe_divide; a floor would let an empty but employed zone inject
+O / floor into every origin's accessibility.
 """
 
 import numpy as np

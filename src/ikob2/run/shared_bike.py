@@ -3,10 +3,13 @@ Shared-bicycle chains as alternative journeys.
 
 Skim modes in the store (built by `cli.skims build-pt --mode-name ...`):
 
-    pt     walk access, walk egress            (plain public transport)
-    pt_wb  walk access, bicycle egress at rail hubs (OV-fiets)
-    pt_bw  bicycle access, walk egress
-    pt_bb  bicycle access, bicycle egress
+    pt            walk access, walk egress (plain public transport)
+    pt_bw         bicycle access, walk egress
+    pt_wb_<kind>  walk access, bicycle egress from a hub of tariff <kind>
+    pt_bb_<kind>  bicycle access, bicycle egress from a hub of <kind>
+
+(`pt_wb`, `pt_bb` without a kind are egress at rail stops, priced as
+OV-fiets.)
 
 Prices added to the public transport fare of the same journey:
 
@@ -20,8 +23,9 @@ Variants (`shared_bike_modes`):
 
     v0  own bicycle only: residents with a private bicycle may ride to the
         stop; walk egress. No shared bicycle. The baseline for v1 and v2.
-    v1  egress only: everyone may take an OV-fiets at the destination rail
-        station instead of walking. Options: plain, walk + OV-fiets.
+    v1  egress only: everyone may take a shared bicycle from a hub near the
+        alighting stop instead of walking. Options: plain, walk + shared
+        bicycle (one per hub kind).
     v2  access and egress by ownership. Residents with a private bicycle:
         own bicycle for access (free), OV-fiets for egress. Residents
         without: dockless for access, OV-fiets for egress. Options: plain,
@@ -34,7 +38,7 @@ Variants (`shared_bike_modes`):
         cost margin is on the journey total. Independent thresholds only.
     v4  (`dockless_mode`) shared bicycle as a stand-alone mode: residents
         with a private bicycle ride it free, the others take a dockless
-        bicycle door to door, with unlock fee and a rate per minute.
+        bicycle door to door at the dockless price (`dockless_model`).
 
 Every variant is a person's set of alternatives: a pair is acceptable if any
 option passes both gates (`run.accessibility.OptionSet`).
@@ -51,7 +55,7 @@ from ikob2.params import DEFAULTS
 from ikob2.run.accessibility import (LegOption, LegOptionSet, MixedMode,
                                      ModeMatrices, OptionSet)
 
-VARIANTS = ("v0", "v1", "v2", "v3")
+VARIANTS = ("v0", "v1", "v2", "v3")   # PT chains; v4 is `dockless_mode`
 DOCKLESS_MODELS = ("lime_tiers", "unlock_per_minute", "flat")
 
 
@@ -300,8 +304,8 @@ def dockless_mode(bike_time: np.ndarray, bike_share: np.ndarray,
                   fixed_min: float = DEFAULTS.bike_leg.fixed_minutes
                   ) -> MixedMode:
     """v4: bicycle accessibility of the whole population when residents
-    without a private bicycle can rent a dockless one door to door (unlock
-    fee plus rate per minute of riding, `fixed_min` to unlock)."""
+    without a private bicycle can rent a dockless one door to door (priced by
+    `tariffs.dockless_eur`, `fixed_min` to unlock)."""
     p = np.asarray(bike_share, dtype=float)
     if p.ndim != 1 or (p < 0).any() or (p > 1).any():
         raise ValueError("bike_share: one share in [0, 1] per origin.")

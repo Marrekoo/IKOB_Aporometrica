@@ -2,7 +2,7 @@ import numpy as np
 
 from ikob2.core.numerics import DTYPE, safe_divide
 from ikob2.domain.filter_config import INDEPENDENCE, ClassFilter, CurveSpec
-from ikob2.domain.segments import CarAccess, Income, Preference, Segment
+from ikob2.domain.segments import Segment
 from ikob2.domain.state import ModelState
 from ikob2.engine.runner import SegmentedRunner
 
@@ -28,11 +28,11 @@ def make_problem(n=40, seed=0):
     fast = _filter("exponential", 0.05)
     slow = _filter("exponential", 0.15)
     segments = [
-        Segment("car_high", Income.HIGH, CarAccess.WITH_CAR, Preference.CAR, fast,
+        Segment("car_high", "hoog", fast,
                 time_cost_id="time"),
-        Segment("car_low", Income.LOW, CarAccess.WITH_CAR, Preference.CAR, fast,
+        Segment("car_low", "laag", fast,
                 time_cost_id="time"),
-        Segment("pt_low", Income.LOW, CarAccess.NO_CAR, Preference.PT, slow,
+        Segment("pt_low", "laag", slow,
                 time_cost_id="time"),
     ]
     populations = {

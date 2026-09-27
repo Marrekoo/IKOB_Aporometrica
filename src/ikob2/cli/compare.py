@@ -1,7 +1,7 @@
 """
 Compare two accessibility runs.
 
-    python -m ikob2.cli.compare --data-root "/home/marco/IKOB data" \
+    python -m ikob2.cli.compare --data-root <root> \
         elgeneidy_step45 elgeneidy_exp45
 """
 

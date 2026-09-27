@@ -14,8 +14,8 @@ from ikob2.segments.bridge import build_segments
 from ikob2.segments.config import INCOME_CLASSES
 from ikob2.segments.jobs import (
     JOB_GROUPS,
-    load_legacy_jobs,
-    parse_legacy_jobs,
+    load_ikob_jobs,
+    parse_ikob_jobs,
     sector_income_weights,
     sector_pools,
 )
@@ -35,22 +35,22 @@ def _raw(year="2018"):
 
 
 def test_parse_selects_year_and_drops_totals():
-    jobs = parse_legacy_jobs(_raw())
+    jobs = parse_ikob_jobs(_raw())
     assert list(jobs.index) == ["BU00010001", "BU00010002"]
     assert jobs.loc["BU00010001"].tolist() == [10, 20, 30, 40]
-    assert parse_legacy_jobs(_raw(), "2030H").loc["BU00010002"].tolist() == [2] * 4
+    assert parse_ikob_jobs(_raw(), "2030H").loc["BU00010002"].tolist() == [2] * 4
 
 
 def test_parse_errors():
     with pytest.raises(KeyError, match="arb_2040L_laag"):
-        parse_legacy_jobs(_raw(), "2040L")
+        parse_ikob_jobs(_raw(), "2040L")
     dup = pd.concat([_raw(), _raw().iloc[:1]])
     with pytest.raises(ValueError, match="duplicate"):
-        parse_legacy_jobs(dup)
+        parse_ikob_jobs(dup)
     neg = _raw()
     neg.iloc[0, 1] = -1
     with pytest.raises(ValueError, match="negative"):
-        parse_legacy_jobs(neg)
+        parse_ikob_jobs(neg)
 
 
 # ── Legacy table drives the sector-pool engine path ──────────────────
@@ -92,7 +92,7 @@ LEGACY = os.environ.get("IKOB_LEGACY_ALLZONES", "")
 
 @pytest.mark.skipif(not os.path.exists(LEGACY),
                     reason="set IKOB_LEGACY_ALLZONES to Alle_Zones_2030_2040.xlsx")
-def test_real_legacy_jobs_shape_and_totals():
-    jobs = load_legacy_jobs(LEGACY, "2018")
+def test_real_ikob_jobs_shape_and_totals():
+    jobs = load_ikob_jobs(LEGACY, "2018")
     assert len(jobs) == 14327 and jobs.notna().all().all()
     assert jobs.sum().sum() == pytest.approx(8_657_025, rel=1e-3)

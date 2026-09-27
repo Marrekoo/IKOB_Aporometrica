@@ -1,16 +1,18 @@
 """
 Run the accessibility model for a study area.
 
-    python -m ikob2.cli.accessibility \
-        --kwb <wijkenbuurten_2022_v3.gpkg> --skims data/skims/utrecht_nl \
-        --sector-jobs output/sector_jobs_2022.csv --out output/run_s0 \
-        --modes car bike
+    python -m ikob2.cli.accessibility --data-root <root> \
+        --study utrecht_nl --run s0 --modes car bike pt --ownership
 
-Inputs it combines (see docs/pipeline.md): the skim store (origins are
-the study buurten, destinations all buurten), the 44 household-type x
-income segments (computed on the fly from KWB and the StatLine
-snapshots), imputed sector jobs (`cli.segments jobs`), the reference
-budgets, the Weibull time margins, and the car cost model.
+With --data-root every input and the output folder come from the data
+folder layout; each can also be given explicitly (--kwb, --skims,
+--sector-jobs, --out, ...).
+
+Inputs it combines (see docs/pipeline.md): the skim store (origins are the
+study buurten, destinations all buurten), the 44 household-type x income
+segments (computed on the fly from KWB and the StatLine snapshots), imputed
+sector jobs (`cli.segments jobs`), the reference budgets, the Weibull time
+margins, the car cost model, PT fares and shared-bicycle tariffs.
 """
 
 from __future__ import annotations
@@ -48,7 +50,7 @@ from ikob2.skims.car import (
 )
 from ikob2.skims.pt_fare import PtFareModel
 from ikob2.skims.store import SkimStore
-from ikob2.utils.paths import DataLayout
+from ikob2.utils.paths import DataLayout, resolve_input
 
 logger = logging.getLogger("ikob2.cli.accessibility")
 
@@ -309,7 +311,7 @@ def _hubs_for_export(prm, args):
         or prm.paths.data_root
     try:
         return hubs_mod.load_hubs(
-            prm.pt.hub_files, Path(root) / "inputs" if root else None,
+            prm.pt.hub_files, hubs_mod.search_dirs(root),
             kinds=prm.pt.hub_kinds, tariffs=prm.shared_bike.hub_tariffs)
     except (FileNotFoundError, ValueError) as exc:
         logger.warning("Hubs not exported: %s", exc)
@@ -339,11 +341,14 @@ def resolve(args) -> params_mod.Params:
 
 def resolve_paths(args, prm) -> None:
     """Fill unset paths from the data folder layout (--data-root, else
-    $IKOB_DATA_ROOT, else paths.data_root); explicit paths need no root."""
+    $IKOB_DATA_ROOT, else paths.data_root). Reference files named in the
+    parameters (budgets, margins, tariff tables) are used as given when that
+    path exists, else looked up in their folder of the layout. Without a
+    data root every path must be given explicitly."""
     root = (args.data_root or os.environ.get(params_mod.ENV_ROOT)
             or prm.paths.data_root)
-    if root:
-        lay = DataLayout(Path(root))
+    lay = DataLayout(Path(root)) if root else None
+    if lay is not None:
         args.kwb = args.kwb or str(lay.kwb(args.kwb_year,
                                            prm.paths.kwb_version))
         args.skims = args.skims or str(lay.skim_dir(args.study))
@@ -356,16 +361,53 @@ def resolve_paths(args, prm) -> None:
             lay.car_availability())
         if not args.detour and lay.detour_model().exists():
             args.detour = str(lay.detour_model())
-        survey = lay.inputs / "survey" / prm.paths.survey_margins
-        if not args.margins and survey.exists():
-            args.margins = str(survey)
-    args.statline = args.statline or prm.paths.statline_fallback
-    args.margins = args.margins or prm.paths.margins_fallback
-    missing = [n for n in ("kwb", "skims", "sector_jobs", "out")
-               if not getattr(args, n)]
+        args.margins = args.margins or str(lay.survey_margins())
+    folder = (lambda sub: lay.inputs / sub) if lay is not None else (
+        lambda sub: None)
+    args.budgets = str(resolve_input(args.budgets, folder("envelope")))
+    if args.margins:
+        args.margins = str(resolve_input(args.margins, folder("survey")))
+    for name in ("price_scales", "pt_fare_scales"):
+        if getattr(args, name):
+            setattr(args, name, str(resolve_input(getattr(args, name),
+                                                  folder("tariffs"))))
+    missing = [n for n in ("kwb", "skims", "sector_jobs", "out", "statline",
+                           "margins") if not getattr(args, n)]
     if missing:
         raise SystemExit(f"Give --{', --'.join(m.replace('_', '-') for m in missing)}"
                          f" or --data-root (with --study and --run).")
+    absent = [f"{flag} {getattr(args, n)}" for n, flag in (
+        ("budgets", "--budgets"), ("margins", "--margins"),
+        ("price_scales", "--price-scales"),
+        ("pt_fare_scales", "--pt-fare-scales"))
+        if getattr(args, n) and not Path(getattr(args, n)).exists()]
+    if absent:
+        raise SystemExit("Reference file(s) not found: " + "; ".join(absent)
+                         + ". Seed the data folder (python -m "
+                           "ikob2.cli.layout create) or give the path.")
+
+
+def input_fingerprints(args) -> dict:
+    """Path and SHA-256 of every input file of the run, so an archived data
+    folder can be matched to run.json."""
+    import hashlib
+
+    files = {n: getattr(args, n, None) for n in (
+        "budgets", "margins", "price_scales", "pt_fare_scales", "sector_jobs",
+        "bike_ownership", "car_availability", "detour", "kwb")}
+    if args.statline:
+        for f in sorted(Path(args.statline).glob("*.csv")):
+            files[f"statline/{f.name}"] = f
+    out = {}
+    for name, path in files.items():
+        if not path or not Path(path).is_file():
+            continue
+        h = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for block in iter(lambda: fh.read(1 << 20), b""):
+                h.update(block)
+        out[name] = {"path": str(Path(path).resolve()), "sha256": h.hexdigest()}
+    return out
 
 
 def cmd_run(args) -> None:
@@ -406,10 +448,10 @@ def cmd_run(args) -> None:
     sector_jobs = pd.read_csv(args.sector_jobs, index_col=0)
     wage, wfh = _sector_tables(Path(args.statline), args.wage_period,
                                args.wfh_period)
-    envelope = load_reference_budgets(params_mod.repo_path(args.budgets),
+    envelope = load_reference_budgets(args.budgets,
                                       censored=args.censored,
                                       legs_per_tour=args.legs_per_tour)
-    margins = load_time_margins(params_mod.repo_path(args.margins))
+    margins = load_time_margins(args.margins)
     envelope_arg = envelope
     if args.time_shape != "weibull":
         margins = {(m, w): time_curve(args.time_shape, args.cutoff,
@@ -419,24 +461,24 @@ def cmd_run(args) -> None:
         envelope_arg = None
     copula = (INDEPENDENCE if args.copula == "independence"
               else CopulaSpec(args.copula, args.theta
-                              if args.copula == "gumbel" else None))
+                              if args.copula in ("gumbel", "frank") else None))
 
     seg_names = envelope_segment_names(envelope)
     price_scale = None
-    if prm.paths.lime_price_scales:
+    if args.price_scales:
         from ikob2.run.shared_bike import (load_price_scales,
                                            segment_price_scales)
         price_scale = segment_price_scales(seg_names, load_price_scales(
-            params_mod.repo_path(prm.paths.lime_price_scales)))
+            args.price_scales))
         if any(v != 1.0 for v in price_scale.values()):
             logger.info("Lime price scales differ from 1 for %d segments",
                         sum(v != 1.0 for v in price_scale.values()))
     fare_scale = None
-    if prm.paths.pt_fare_scales:
+    if args.pt_fare_scales:
         from ikob2.run.shared_bike import (load_price_scales,
                                            segment_price_scales)
         fare_scale = segment_price_scales(seg_names, load_price_scales(
-            params_mod.repo_path(prm.paths.pt_fare_scales)))
+            args.pt_fare_scales))
     scenario = {}
     if fare_scale and any(v != 1.0 for v in fare_scale.values()):
         scenario["pt_cost"] = _pt_cost(prm, args, store, pop, seg_names,
@@ -572,7 +614,8 @@ def cmd_run(args) -> None:
             "created": dt.datetime.now().isoformat(
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
                                       if k != "func"},
-            "detour": detour.meta, "skim_meta": store.meta}
+            "detour": detour.meta, "skim_meta": store.meta,
+            "input_files": input_fingerprints(args)}
     (out_dir / "run.json").write_text(json.dumps(meta, indent=1, default=str))
     if prm.accessibility.export:
         from ikob2.outputs.export import write_products
@@ -631,12 +674,16 @@ def main(argv=None) -> None:
     p.add_argument("--censored", choices=["atom", "drop"], default=None)
     p.add_argument("--population-basis", default=None,
                    choices=["population_scaled", "household_based"])
-    p.add_argument("--copula", choices=["independence", "gumbel", "comonotone",
-                            "countermonotone"],
-                   default=None)
+    p.add_argument("--copula", choices=["independence", "gumbel", "frank",
+                                        "comonotone", "countermonotone"],
+                   default=None,
+                   help="dependence between the time and money thresholds "
+                        "under --spec m2 (gumbel and frank take --theta)")
     p.add_argument("--theta", type=float, default=None,
-                   help="Gumbel-Hougaard theta (--copula gumbel, or --spec "
-                        "m3); inf is the comonotone limit")
+                   help="copula parameter: Gumbel-Hougaard (--copula gumbel "
+                        "or --spec m3; >= 1, inf is the comonotone limit) or "
+                        "Frank (--copula frank; nonzero, negative is "
+                        "negative dependence)")
     p.add_argument("--spec", choices=["m0", "m1", "m1c", "m1p", "m2", "m3"],
                    default=None,
                    help="impedance specification (docs/model_theory.md): "

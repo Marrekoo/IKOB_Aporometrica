@@ -1,11 +1,10 @@
 """
-Immutable snapshot of all numeric inputs required by the core model.
-
-Rewritten version:
-- Supports multi-parameter decay curves (e.g. logistic).
-- Removes legacy decay_cutoff.
-- decay_params may be float or tuple.
-- No artificial truncation behaviour baked into state.
+Immutable snapshot of the numeric inputs of a square (origins =
+destinations) run: generalised cost, population, opportunities, a
+decay specification (a curve name and one or more parameters) and
+optional time/money components and zone weights. Used by the Shen
+measure (core.accessibility, SegmentedRunner.run) and square
+SegmentedRunner.run_hansen.
 """
 
 from dataclasses import dataclass, replace, field

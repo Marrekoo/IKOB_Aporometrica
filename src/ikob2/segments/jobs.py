@@ -5,7 +5,7 @@ The paper measures opportunities D_{j,s}: jobs matched to a segment's
 income. Jobs come per buurt and LISA sector (see jobs_impute); each
 sector is placed on the income-rank axis by its mean wage, and the
 income-decile pools PARTITION the jobs (`sector_income_weights`,
-`sector_pools`). This module also reads the legacy IKOB job table
+`sector_pools`). This module also reads the IKOB job table
 (four income groups per buurt), whose buurt totals are the row marginal
 of the sector imputation. See docs/data_lineage.md.
 """
@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 JOB_GROUPS = ("laag", "middellaag", "middelhoog", "hoog")   # low -> high
 
 
-# ── Legacy table ─────────────────────────────────────────────────────
+# ── IKOB job table ───────────────────────────────────────────────────
 
-def parse_legacy_jobs(raw: pd.DataFrame, year: str = "2018") -> pd.DataFrame:
-    """Jobs per buurt and income group from the legacy pivot sheet.
+def parse_ikob_jobs(raw: pd.DataFrame, year: str = "2018") -> pd.DataFrame:
+    """Jobs per buurt and income group from the IKOB job table (pivot sheet).
 
     `raw` is the 'buurten-arbeidsplaatsen' sheet of Alle_Zones_2030_2040
     read with header=2: first column the buurt code, then columns named
@@ -54,18 +54,18 @@ def parse_legacy_jobs(raw: pd.DataFrame, year: str = "2018") -> pd.DataFrame:
     for g in JOB_GROUPS:
         out[g] = pd.to_numeric(out[g], errors="coerce")
     if out["buurtcode"].duplicated().any():
-        raise ValueError("Legacy job table has duplicate buurt codes.")
+        raise ValueError("IKOB job table has duplicate buurt codes.")
     bad = out[list(JOB_GROUPS)].lt(0).any(axis=1)
     if bad.any():
         raise ValueError(f"{int(bad.sum())} buurt(en) with negative jobs.")
     return out.set_index("buurtcode")
 
 
-def load_legacy_jobs(path: str | Path, year: str = "2018",
+def load_ikob_jobs(path: str | Path, year: str = "2018",
                      sheet: str = "buurten-arbeidsplaatsen") -> pd.DataFrame:
-    """Read the legacy Excel file (needs `openpyxl`)."""
+    """Read the IKOB job table from Excel (needs `openpyxl`)."""
     raw = pd.read_excel(path, sheet_name=sheet, header=2)
-    return parse_legacy_jobs(raw, year)
+    return parse_ikob_jobs(raw, year)
 
 
 # ── Sector jobs -> income pools (wage-ranked partition) ──────────────

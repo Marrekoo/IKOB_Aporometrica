@@ -33,7 +33,7 @@ def exponential(cost: np.ndarray, beta: float) -> np.ndarray:
 
 
 def power(cost: np.ndarray, beta: float) -> np.ndarray:
-    """LEGACY power decay c^-beta. Not a survival function: it exceeds 1
+    """Power decay c^-beta. Not a survival function: it exceeds 1
     below c = 1 (and is capped only by the 1e-6 floor), so it cannot be a
     probability marginal for compose_filters. Use 'pareto' (power law
     beyond a threshold) or 'lomax' (shifted power law) instead."""

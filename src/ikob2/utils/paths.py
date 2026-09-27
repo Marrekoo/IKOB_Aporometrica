@@ -7,29 +7,41 @@ $IKOB_DATA_ROOT or `paths.data_root` (ikob2.params.data_root).
       inputs/                    source data, read only
         kwb/                     CBS wijken en buurten GeoPackages (per year)
         lisa/                    LISA jobs per municipality and sector
+        legacy_ikob/             IKOB job table per buurt; LISA 2016 jobs by education
         osm/                     OpenStreetMap extracts (.pbf)
         gtfs/                    GTFS feeds
-        legacy_ikob/             legacy IKOB SEGS files (jobs by income, education)
         survey/                  fitted time margins (S_T_*.csv)
+        envelope/                reference budgets per segment
+        tariffs/                 price and fare multipliers per segment
         odin/                    ODiN tables and codebook
         veh_owners/              vehicle ownership per buurt (bicycle share)
+        hubs/                    shared-bicycle hubs (municipal hubs)
+        ovfiets/                 OV-fiets locations
       cache/
         statline/                CBS StatLine snapshots
       intermediate/              derived, reproducible from inputs
         segments/                44 household-type x income segments per buurt
         jobs/                    imputed sector jobs per buurt
-        ownership/               car availability per segment (from ODiN)
+        ownership/               car availability and PT fare spending (ODiN)
+        hubs/                    hubs made by the model (scenario S2)
         skims/<study>/           skim stores
         calibration/             detour model and other calibrations
         valhalla/                local routing server: config, tiles, logs
         otp/                     OpenTripPlanner: jar, graph inputs, logs
         osm_peak/                OSM extracts with peak-load speeds
+        osm_walk/                OSM extracts reduced to the walking network
       outputs/
         runs/<run>/              one folder per accessibility run
         comparisons/             run-versus-run comparison tables
 
-Nothing under `inputs/` is ever written by the code. `intermediate/` and
-`outputs/` can be deleted and rebuilt.
+Nothing under `inputs/` is ever written by the code, except that
+`seed` (`cli.layout create`) adds missing reference files from the
+repository's `data/` folder; it never overwrites a file. `intermediate/`
+and `outputs/` can be deleted and rebuilt.
+
+A reference file named in the parameters (`paths.budgets`, ...) is used as
+given when that path exists, and otherwise looked up in its folder of the
+layout (`resolve_input`).
 """
 
 from __future__ import annotations
@@ -39,35 +51,66 @@ from pathlib import Path
 
 from ikob2.params import DEFAULTS
 
-INPUT_DIRS = ("kwb", "lisa", "osm", "gtfs", "legacy_ikob", "survey", "odin")
+INPUT_DIRS = ("kwb", "lisa", "legacy_ikob", "osm", "gtfs", "survey",
+              "envelope", "tariffs", "odin", "veh_owners", "hubs", "ovfiets")
 CACHE_DIRS = ("statline",)
-INTERMEDIATE_DIRS = ("segments", "jobs", "skims", "calibration", "valhalla", "otp", "osm_peak")
+INTERMEDIATE_DIRS = ("segments", "jobs", "ownership", "hubs", "skims",
+                     "calibration", "valhalla", "otp", "osm_peak", "osm_walk")
 OUTPUT_DIRS = ("runs", "comparisons")
 
 README = """# IKOB data
 
 Data folder of the IKOB Aporometrica project (code: IKOB_Aporometrica).
 
-    inputs/          source data, read only (kwb, lisa, osm, gtfs,
-                     legacy_ikob, survey, odin)
+    inputs/          source data, read only (kwb, lisa, legacy_ikob, osm,
+                     gtfs, survey, envelope, tariffs, odin, veh_owners,
+                     hubs, ovfiets)
     cache/statline/  CBS StatLine snapshots (python -m ikob2.cli.segments fetch)
     intermediate/    derived, rebuildable
         segments/    44 household-type x income segments per buurt
-        jobs/        imputed LISA sector jobs per buurt
+        jobs/        imputed LISA sector jobs per buurt (cli.segments jobs)
+        ownership/   car availability, PT fare spending (cli.segments)
+        hubs/        extra hubs of scenario S2 (cli.hubs propose)
         skims/<study>/   skim stores (python -m ikob2.cli.skims build)
         calibration/     detour model for car distances
         valhalla/        local Valhalla routing server (config, tiles, logs)
         otp/             local OpenTripPlanner (jar, graph, logs)
         osm_peak/        OSM extracts with peak-load speeds (skims.peak)
+        osm_walk/        OSM extracts reduced to the walking network
     outputs/runs/<run>/  accessibility results of one run
                          (python -m ikob2.cli.accessibility)
-    outputs/comparisons/ run-versus-run comparisons (cli.compare)
+    outputs/comparisons/ run-versus-run comparisons (cli.compare,
+                         cli.interchange, cli.paper_tables)
 
-Files that were already in the root of this folder (the GeoPackages and
-S_T_work.csv) were left where they are; `inputs/` links to them.
-Rules: the code never writes under inputs/; intermediate/ and outputs/
-can be deleted and rebuilt from inputs/ and the repository.
+`cli.layout create` copies the reference files shipped with the
+repository (budgets, time margins, tariff tables, StatLine snapshots, detour
+calibration) into this folder when they are missing, and never overwrites
+one. From then on the files here are the ones the runs use.
+
+Rules: apart from that seeding the code never writes under inputs/;
+intermediate/ and outputs/ can be deleted and rebuilt from inputs/.
 """
+
+# repository data/ subfolder -> (layout area, subfolder, file pattern): the
+# reference files `DataLayout.seed` copies into a data folder
+SEED = (
+    ("envelope", "inputs", "envelope", "*.csv"),
+    ("margins", "inputs", "survey", "*.csv"),
+    ("tariffs", "inputs", "tariffs", "*.csv"),
+    ("statline", "cache", "statline", "*.csv"),
+    ("calibration", "intermediate", "calibration", "*.json"),
+)
+REPO_DATA = Path(__file__).resolve().parents[3] / "data"
+
+
+def resolve_input(value: str | Path, folder: Path | None) -> Path:
+    """A reference file of the parameters: `value` itself if that path
+    exists (absolute or relative to the current folder), else `folder /
+    value` (the file's folder in the data layout)."""
+    p = Path(value).expanduser()
+    if p.exists() or p.is_absolute() or folder is None:
+        return p
+    return Path(folder) / p
 
 
 @dataclass(frozen=True)
@@ -113,10 +156,57 @@ class DataLayout:
             readme.write_text(README)
         return created
 
+    def seed(self, source: str | Path = REPO_DATA) -> list[Path]:
+        """Copy the reference files of `source` (the repository's data/
+        folder) that are missing here; existing files are never touched.
+        Returns the files copied."""
+        import shutil
+
+        source = Path(source)
+        if not source.is_dir():
+            raise FileNotFoundError(f"No reference data folder {source}.")
+        copied = []
+        for sub, area, dest, pattern in SEED:
+            for f in sorted((source / sub).glob(pattern)):
+                target = self.root / area / dest / f.name
+                if target.exists() or target.is_symlink():
+                    continue
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, target)
+                copied.append(target)
+        return copied
+
     # ── conventional paths ───────────────────────────────────────────
     def kwb(self, year: int = DEFAULTS.accessibility.kwb_year,
             version: str = DEFAULTS.paths.kwb_version) -> Path:
         return self.inputs / "kwb" / f"wijkenbuurten_{year}_{version}.gpkg"
+
+    def budgets(self, name: str = DEFAULTS.paths.budgets) -> Path:
+        return resolve_input(name, self.inputs / "envelope")
+
+    def survey_margins(self, name: str = DEFAULTS.paths.survey_margins) -> Path:
+        return resolve_input(name, self.inputs / "survey")
+
+    def tariff(self, name: str) -> Path:
+        return resolve_input(name, self.inputs / "tariffs")
+
+    def lisa(self) -> Path:
+        return self.inputs / "lisa" / DEFAULTS.paths.lisa
+
+    def ikob_jobs(self) -> Path:
+        return self.inputs / "legacy_ikob" / DEFAULTS.paths.ikob_jobs
+
+    def education_jobs(self) -> Path:
+        return self.inputs / "legacy_ikob" / DEFAULTS.paths.education_jobs
+
+    def odin(self) -> Path:
+        return self.inputs / "odin" / DEFAULTS.paths.odin
+
+    def segments_gpkg(self) -> Path:
+        return self.intermediate / "segments" / "nl_segments.gpkg"
+
+    def s2_hubs(self) -> Path:
+        return self.intermediate / "hubs" / "utrecht_hubs_s2.csv"
 
     def skim_dir(self, study: str) -> Path:
         return self.intermediate / "skims" / study
@@ -139,6 +229,9 @@ class DataLayout:
 
     def osm_peak_dir(self) -> Path:
         return self.intermediate / "osm_peak"
+
+    def osm_walk_dir(self) -> Path:
+        return self.intermediate / "osm_walk"
 
     def otp_dir(self) -> Path:
         return self.intermediate / "otp"

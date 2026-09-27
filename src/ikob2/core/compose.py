@@ -7,18 +7,17 @@ the trip cost:
 
     w = P(tau > T, mu > C) = C_hat( F_t(T), F_c(C) )
 
-where F_t, F_c are marginal survival filters (e.g. the logistic in
-decay_curves, with scaling == 1) and C_hat is a survival copula.
+where F_t, F_c are marginal survival filters (core.decay_curves) and
+C_hat is a survival copula.
 
 Conventions, matching decay_curves.py:
   * epsilon is a REQUIRED keyword argument with a single owner (the
-    CLI). It is applied ONCE, to the composed matrix. This is exact:
+    runner). It is applied ONCE, to the composed matrix. This is exact:
     C(u,v) <= min(u,v), so any entry with a sub-epsilon marginal is
     sub-epsilon after composition too.
   * Marginals fed to the copula MUST be unscaled probabilities in
-    [0, 1]. The legacy `scaling` factor is a mode-availability
-    Bernoulli filter and is applied multiplicatively AFTER the
-    copula, via the `scaling` argument.
+    [0, 1]. The `scaling` factor (a share with access to the mode) is
+    applied multiplicatively AFTER the copula.
   * cost_weights=None means F_c == 1; by the copula boundary
     condition C(u, 1) = u this collapses exactly to the pure time
     filter, so time-only runs need no separate code path.

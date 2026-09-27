@@ -38,9 +38,12 @@ def test_range_duplicates_and_columns(tmp_path):
 
 
 def test_shipped_utrecht_table_is_complete():
-    from pathlib import Path
-    p = Path("/home/marco/IKOB data/inputs/veh_owners/bike_ownership_buurten.csv")
-    if not p.exists():
-        pytest.skip("data folder not available")
+    import os
+
+    from ikob2.utils.paths import DataLayout
+    root = os.environ.get("IKOB_DATA_ROOT")
+    p = DataLayout(root).bike_ownership() if root else None
+    if p is None or not p.exists():
+        pytest.skip("data folder not available (set IKOB_DATA_ROOT)")
     s = load_bike_ownership(p)
     assert len(s) == 111 and s.between(0.7, 1.0).all()

@@ -27,6 +27,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
 from ikob2.segments.config import HOUSEHOLD_TYPES
 
 _HHSAM = {1: "single", 2: "couple", 3: "couple_children",
@@ -47,8 +48,10 @@ def read_odin_persons(path: str | Path) -> pd.DataFrame:
     return p[(p["Leeftijd"] >= 18)]
 
 
-def car_availability(persons: pd.DataFrame, municipality: int | None = 344,
-                     *, basis: str = "household_car", prior: float = 30.0,
+def car_availability(persons: pd.DataFrame,
+                     municipality: int | None = DEFAULTS.ownership.municipality,
+                     *, basis: str = DEFAULTS.ownership.car_basis,
+                     prior: float = DEFAULTS.ownership.car_prior,
                      ) -> pd.DataFrame:
     """Availability per (household_type, income_class); see module doc."""
     if basis not in ("household_car", "car_and_licence"):

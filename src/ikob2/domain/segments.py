@@ -1,134 +1,29 @@
 """
-Structured population segments — filter-composition edition.
+Population segments for the engine.
 
-IDENTITY SHIFT. A segment's spatial weight matrix used to be
-determined by (cost_id, DecayParams). It is now determined by
-(time_cost_id, money_cost_id, ClassFilter): the weights are a COMPOSED
-tolerance filter — time marginal, optional money-cost marginal, copula,
-scaling — and the frozen, value-based ClassFilter is the unit of
-equality. Two segments with equal weight_key share one composed matrix;
-this is the SAME criterion FilterConfig.additivity_armed() tests, so
-the engine's dedup and the Hansen-additivity invariant agree on what
-"the same filter" means by construction, not by convention.
+A segment's spatial weight matrix is determined by
+(time_cost_id, money_cost_id, ClassFilter): a composed tolerance filter
+(time marginal, optional money-cost marginal, copula, scaling), with the
+frozen, value-based ClassFilter as the unit of equality. Segments with
+equal weight_key share one composed matrix.
 
-Registry key vocabulary lives HERE (weight_key, time_marginal_key,
-cost_marginal_key) so the runner and the cache can never drift on how
-a matrix is named.
+The registry key vocabulary (weight_key, time_marginal_key,
+cost_marginal_key) lives here so the runner and the cache name matrices
+the same way.
 
-EPSILON REVERSAL — read before "fixing" this back. epsilon used to be
-a REQUIRED DecayParams field with no default, because it determined
-the matrix and a module-level default once disagreed with another
-default and broke single-Shen/segmented nesting. Under composition,
-epsilon has a single owner (the CLI/runner) and is applied ONCE, to
-the composed matrix, inside compose_filters. It is therefore uniform
-across every matrix of a run and carries no identity information;
-re-adding it to weight_key would fragment dedup without discriminating
-anything. The old bug class is now prevented by there being exactly
-one epsilon in existence per run — a stronger guarantee than requiring
-it per segment ever was.
+epsilon is not part of weight_key: it has a single owner (the runner) and
+is applied once, to the composed matrix, inside compose_filters, so it is
+uniform across a run and carries no identity.
 
-SCALING moved with it: the legacy logistic carried (alpha, omega,
-scaling) positionally; CurveSpec is (alpha, omega) and scaling lives
-on ClassFilter, applied after composition. The loader rejects scaling
-inside curve blocks; segments inherit that rule by carrying ClassFilter
-verbatim.
-
-pool remains deliberately NOT part of weight_key: segments in
-different pools with equal filters share one composed matrix. Pools
-multiply matvecs, never matrices.
-
-DecayParams is RETAINED, legacy-only: the single-population path
-(ModelState.decay_params -> compute_accessibility) still speaks it,
-and its epsilon is still per-instance there. Unifying that path under
-single-owner epsilon is a separate change; do not half-do it here.
+pool is not part of weight_key either: segments in different pools with
+equal filters share one composed matrix; pools multiply matvecs, never
+matrices.
 """
 
 from dataclasses import dataclass
-from enum import StrEnum
 
-from ikob2.domain.filter_config import (
-    INCOME_CLASSES,
-    ClassFilter,
-    CurveSpec,
-    FilterConfig,
-)
+from ikob2.domain.filter_config import ClassFilter
 
-
-class Income(StrEnum):
-    LOW = "laag"
-    MID_LOW = "middellaag"
-    MID_HIGH = "middelhoog"
-    HIGH = "hoog"
-
-
-# The filter loader validates configs against INCOME_CLASSES; segments
-# resolve their ClassFilter via Income.value. If these two vocabularies
-# drift, resolution fails at runtime in confusing ways — so lock them
-# at import time instead.
-if tuple(m.value for m in Income) != tuple(INCOME_CLASSES):
-    raise ImportError(
-        f"Income enum {tuple(m.value for m in Income)} and "
-        f"filter_config.INCOME_CLASSES {tuple(INCOME_CLASSES)} have "
-        f"diverged. These must stay in lockstep."
-    )
-
-
-class CarAccess(StrEnum):
-    WITH_CAR = "with_car"
-    FREE_CAR = "free_car"
-    NO_CAR = "no_car"           # license, no car (car-share/taxi proxy)
-    NO_LICENSE = "no_license"
-
-
-class Preference(StrEnum):
-    CAR = "car"
-    NEUTRAL = "neutral"
-    BIKE = "bike"
-    PT = "pt"
-
-
-# ── Legacy decay identity (single-population path ONLY) ──────────────
-
-@dataclass(frozen=True)
-class DecayParams:
-    """LEGACY. Everything that determines a decay matrix, given a cost
-    matrix — for the un-segmented ModelState/compute_accessibility path.
-
-    Segments no longer use this class; they carry a ClassFilter.
-    Differences to be aware of when migrating:
-      * logistic params here are (alpha, omega, scaling); CurveSpec
-        logistic is (alpha, omega), scaling on ClassFilter;
-      * epsilon here is per-instance and part of identity; in the
-        filter world epsilon is run-global (see module docstring).
-    """
-    decay_type: str
-    params: tuple[float, ...]
-    epsilon: float | None
-
-    def __post_init__(self):
-        if isinstance(self.params, (int, float)):
-            object.__setattr__(self, "params", (float(self.params),))
-        else:
-            object.__setattr__(
-                self, "params", tuple(float(p) for p in self.params)
-            )
-
-    @classmethod
-    def exponential(cls, beta: float, **kw) -> "DecayParams":
-        return cls("exponential", (beta,), **kw)
-
-    @classmethod
-    def power(cls, beta: float, **kw) -> "DecayParams":
-        return cls("power", (beta,), **kw)
-
-    @classmethod
-    def logistic(cls, alpha: float, omega: float,
-                 scaling: float = 1.0, **kw) -> "DecayParams":
-        """The legacy IKOB sigmoid (Tables 9-11 constants go here)."""
-        return cls("logistic", (alpha, omega, scaling), **kw)
-
-
-# ── Segment ──────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)
 class Segment:
@@ -149,18 +44,11 @@ class Segment:
     opportunities vector for every pool referenced by any segment.
     """
     name: str
-    income: Income | str | None
-    car_access: CarAccess | None
-    preference: Preference | None
+    income: str | None            # income class, e.g. "D3"
     class_filter: ClassFilter
-    has_free_pt: bool = False
     time_cost_id: str = "time"
     money_cost_id: str | None = None
     pool: str = "default"
-    # Household-type x income-decile segments (ikob2.segments) carry
-    # their income class as a plain string ("D3") and have no car
-    # access / preference (the mode is a property of the run, not of
-    # the segment); the legacy fields may then be None.
     household_type: str | None = None
 
     def __post_init__(self):
@@ -205,21 +93,3 @@ class Segment:
 
     def __str__(self) -> str:
         return self.name
-
-
-# ── FilterConfig glue ────────────────────────────────────────────────
-
-def resolve_class_filter(fc: FilterConfig, mode: str,
-                         income: Income) -> ClassFilter:
-    """Look up the ClassFilter for (mode, income class).
-
-    The loader guarantees every mode defines exactly the canonical
-    classes, so once the mode exists this cannot miss on income."""
-    try:
-        per_class = fc.filters[mode]
-    except KeyError:
-        raise KeyError(
-            f"FilterConfig defines no mode '{mode}'; "
-            f"available: {sorted(fc.filters)}."
-        ) from None
-    return per_class[income.value]

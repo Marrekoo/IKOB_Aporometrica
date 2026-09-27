@@ -1,70 +1,88 @@
 # IKOB Aporometrica (`ikob2`)
 
-Reproducible code for a threshold-gate model of accessibility: how many jobs
-can a member of each household-type x income-decile segment reach when a trip
-is only acceptable if it passes both a **time gate** and a **money gate**,
-each a survival function of the traveller's maximum acceptable time and cost.
-The case study is Utrecht (111 origin buurten) against all 14,318 Dutch
-buurten, by car, bicycle and public transport.
+A threshold-gate model of job accessibility. A trip is acceptable to a
+person only if it passes two gates: its travel time is below the person's
+maximum acceptable time, and its out-of-pocket cost is below the person's
+maximum acceptable cost. Both thresholds vary across the population, so each
+gate is a survival function, and the accessibility of a population segment
+is the expected number of jobs that pass both:
 
-    a[i, s, m] = sum_w sum_j  D[j, class(s), w] * S_T(t_ijm; m, w) * S_M(c_ijm; s)
+    a[i, s, m] = sum_w sum_j  D[j, c(s), w] * f_s( t_ijm, c_ijm ; m, w )
 
-`S_T` is a Weibull time margin, `S_M` a uniform cost margin from reference
-budgets with an atom at zero, `D` imputed LISA jobs by income class and
-home-working type. Full statement: [docs/model_theory.md](docs/model_theory.md).
+    f_s(t, c) = C( S_T(t; m, w), S_M(c; s) )          (C = product by default)
 
-## Documentation (read in this order)
+* `i` origin buurt, `j` destination buurt, `m` mode, `s` segment
+  (household type x income decile), `w` job type (admits working from home
+  or not);
+* `D` jobs matched to the segment's income class, `t` door-to-door minutes,
+  `c` euro per one-way journey;
+* `S_T` a Weibull time margin per mode and job type, `S_M` a uniform cost
+  margin per segment with an atom at zero, `C` a survival copula.
 
-| Document | For |
+The case study is the city of Utrecht (111 origin buurten) against all
+Dutch buurten, by car, bicycle and public transport, with shared-bicycle
+chains as alternative public-transport journeys and a set of pricing and
+hub scenarios.
+
+## Documentation
+
+| Document | Contents |
 |---|---|
-| [docs/model_theory.md](docs/model_theory.md) | the model, symbol by symbol, assumptions and limits |
-| [docs/architecture.md](docs/architecture.md) | package layers, modules, design decisions, tests |
-| [docs/data_specification.md](docs/data_specification.md) | every input, intermediate and output file, format and source |
-| [docs/pipeline.md](docs/pipeline.md) | the commands, run by run, and the preliminary results |
-| [docs/segments.md](docs/segments.md) | household x income segments (GSPREE), budgets, engine bridge |
-| [docs/data_lineage.md](docs/data_lineage.md) | jobs: legacy files, LISA imputation, sector-to-income mapping |
-| [docs/families.md](docs/families.md) | survival families, diagnostics, time margins |
-| [docs/skims.md](docs/skims.md) | travel times, car cost, peak load, PT frequency model and fares |
-| [docs/servers.md](docs/servers.md) | Valhalla and OpenTripPlanner, national coverage, PT validation |
+| [docs/model_theory.md](docs/model_theory.md) | the model symbol by symbol, the specifications M0-M3, alternative journeys, assumptions |
+| [docs/architecture.md](docs/architecture.md) | package layers and modules, parameters, design rules, tests |
+| [docs/pipeline.md](docs/pipeline.md) | the commands from raw data to accessibility tables, in order |
+| [docs/scenarios.md](docs/scenarios.md) | shared-bicycle variants, scenarios S0-S4, costs, R, the reachability gap, paper tables |
+| [docs/data_specification.md](docs/data_specification.md) | every input, intermediate and output file |
+| [docs/segments.md](docs/segments.md) | household x income segments, reference budgets, the engine bridge |
+| [docs/data_lineage.md](docs/data_lineage.md) | jobs: sources, imputation onto buurten, income and home-working split |
+| [docs/families.md](docs/families.md) | survival families, hazard diagnostics, time margins |
+| [docs/skims.md](docs/skims.md) | skim store, car/bike/walk/PT times, car cost, peak load, PT fares, bicycle legs |
+| [docs/servers.md](docs/servers.md) | local Valhalla and OpenTripPlanner servers, validation of the PT router |
 
 ## Install and test
 
-    pip install -e ".[test,routing,legacy]"     # Java 21 for R5 and OpenTripPlanner
-    pytest                                      # about 490 tests, ~15 s
+    pip install -e ".[test,routing,legacy]"   # routing needs Java 21 (R5, OTP)
+    pytest                                    # ~550 tests, ~20 s
 
-## Reproduce a run (summary; details in docs/pipeline.md)
+## Run (outline; full commands in docs/pipeline.md)
 
-    python -m ikob2.cli.layout create --root "<data root>"
-    python -m ikob2.cli.segments fetch                 # StatLine snapshots (or use data/statline)
-    python -m ikob2.cli.segments jobs ...              # jobs per sector per buurt
-    python -m ikob2.cli.skims build ...                # car, bike, walk
-    python -m ikob2.cli.skims build-pt ...             # public transport
-    python -m ikob2.cli.accessibility --data-root "<data root>" \
-        --study utrecht_nl --run my_run --modes car bike pt
-    python -m ikob2.cli.compare --data-root "<data root>" run_a run_b
+    python -m ikob2.cli.layout --root "<root>" create   # folders + reference files
+    python -m ikob2.cli.segments --data-root "<root>" fetch
+    python -m ikob2.cli.segments --data-root "<root>" jobs   # jobs per sector per buurt
+    python -m ikob2.cli.segments --data-root "<root>" car-availability
+    python -m ikob2.cli.skims build ...              # car, bike, walk
+    python -m ikob2.cli.skims build-distance ...     # car route distances
+    python -m ikob2.cli.skims build-pt ...           # public transport (+ bicycle legs)
+    python -m ikob2.cli.accessibility --data-root "<root>" \
+        --study utrecht_nl --run s0 --modes car bike pt --ownership
+    python -m ikob2.cli.compare --data-root "<root>" s0 s1
 
-Inputs are open data (CBS, LISA, OpenStreetMap, GTFS, NS 2026 price list);
-`docs/data_specification.md` lists sources. Intermediate results and outputs
-are recomputed from `inputs/`; each run writes `run.json` with its parameters.
+Inputs are open data (CBS, LISA, OpenStreetMap, GTFS, the NS price list,
+ODiN); `docs/data_specification.md` lists them. Everything under
+`intermediate/` and `outputs/` is recomputed from `inputs/`; every run writes
+`run.json` with its resolved parameters.
 
 ## Parameters
 
-All model and run parameters live in `src/ikob2/defaults.toml`. Override them
-with `--params my.toml`, `--set pt.walk_kmh=4.5` or a dedicated flag; set the
+Every model and run parameter is in `src/ikob2/defaults.toml`. Override with
+`--params my.toml`, `--set section.key=value` or a dedicated flag; set the
 data folder with `--data-root` or `$IKOB_DATA_ROOT`. See
 [docs/architecture.md](docs/architecture.md#parameters).
 
-## Status
+## Scope
 
-Implemented: segments, jobs imputation, Weibull/uniform margins, atom,
-copulas, car/bike/PT skims with peak load and fares, the shape-comparison
-experiment, validation of the PT router against OpenTripPlanner, the
-specifications M1, M1', M2 and M3 (`segments/specs.py`), availability
-weighting by car and bicycle ownership, and shared-bicycle chains as
-alternative journeys (bicycle access/egress in the PT router; variants v0-v4
-in `run/shared_bike.py`, including leg-wise gates for v3).
-Not implemented: scenarios S1-S4, the interchangeability ratio and the
-reachability gap, NDW floating-car congestion. Results in `docs/pipeline.md`
-are preliminary.
+Modelled: 44 household x income segments per buurt; LISA jobs imputed onto
+buurten and matched to income deciles; Weibull time margins by mode and job
+type; uniform cost margins with an atom; copula dependence; car, bicycle,
+walking and GTFS public-transport skims with peak load, car cost and NS
+fares; car and bicycle availability; shared-bicycle chains (variants
+v0-v4); specifications M0, M1, M1c, M1', M2, M3; scenarios S0-S4 with their
+public cost; the interchangeability ratio R; the reachability gap; paper
+tables.
+
+Not modelled: a walking time margin (walking is skimmed but not gated),
+measured congestion (peak load is a road-class factor), timetable-based PT
+waiting and transfer penalties, competition for jobs in the paper runs
+(Shen is available for square runs only), supply limits of shared bicycles.
 
 Licence: see [LICENSE](LICENSE).

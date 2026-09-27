@@ -282,8 +282,7 @@ def build_segments(
         cf = ClassFilter(time=time_curve, cost=cost, copula=copula,
                          scaling=scaling)
         segments.append(Segment(
-            name=segment_name(t, c), income=c, car_access=None,
-            preference=None, class_filter=cf,
+            name=segment_name(t, c), income=c, class_filter=cf,
             time_cost_id=time_cost_id,
             money_cost_id=money_cost_id if cost is not None else None,
             pool=pool_of(t, c), household_type=t))
