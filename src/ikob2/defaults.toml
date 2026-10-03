@@ -38,8 +38,10 @@ pt = 15.10                 # rail
 pt_other = 10.80           # bus, tram, metro
 
 [accessibility]
-spec = "m2"                # m0, m1, m1c, m1p, m2, m3 (segments/specs.py)
+spec = "m2"                # m0, m0u, m0s, m1, m1c, m1p, m2, m3 (segments/specs.py)
 m1c_cost_mean_eur = 0.0    # M1c: mean acceptable cost (EUR per trip); 0 = median of the segment means
+cutoff_share = 0.5         # M0, M0u, M0s: the cut-offs are the thresholds this share of people reaches (0.5 = median)
+m0u_cost_cutoff_eur = 0.0  # M0u: one cost cut-off (EUR per trip); 0 = the cut-off of the population's cost thresholds
 copula = "independence"    # M2: independence, gumbel, frank, comonotone, countermonotone
 theta = 1.5                # Gumbel-Hougaard (M3, --copula gumbel) or Frank
 epsilon = 1e-9             # sparsification of composed filters

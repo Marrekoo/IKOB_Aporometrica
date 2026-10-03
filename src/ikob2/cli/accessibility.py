@@ -34,6 +34,7 @@ from ikob2.segments import statline
 from ikob2.segments.bridge import envelope_segment_names, load_reference_budgets
 from ikob2.segments.config import SegmentConfig
 from ikob2.segments.lisa import sector_wages
+from ikob2.segments.specs import SPECS
 from ikob2.segments.pipeline import run_pipeline
 from ikob2.segments.time_margins import load_time_margins
 from ikob2.segments.wfh import (
@@ -503,6 +504,28 @@ def cmd_run(args) -> None:
             for m in ("car", "bike", "pt") if (m, "no_wfh") in margins}}
         print(f"M1c: mean acceptable cost EUR {cost_mean:.2f} per trip; implied value "
               f"of time {scenario['m1c']['implied_vot_eur_per_hour']}")
+    cost_cutoff = None
+    share = prm.accessibility.cutoff_share
+    if args.spec in ("m0u", "m0s") and envelope_arg is not None:
+        # the cost cut-offs: one for the population (M0u, persons per segment
+        # in the study origins) or one per segment (M0s)
+        from ikob2.segments.specs import cutoff_cost
+        env_rows = list(envelope_arg.itertuples())
+        if args.spec == "m0u":
+            pop_o = (pop.set_index("buurtcode") if "buurtcode" in pop.columns
+                     else pop).reindex(store.origins)
+            weights = pop_o.sum()
+            cost_cutoff = (prm.accessibility.m0u_cost_cutoff_eur or cutoff_cost(
+                env_rows, share, [float(weights.get(
+                    f"{r.household_type}_{r.income_class}", 0.0))
+                    for r in env_rows]))
+            scenario["m0u"] = {"cost_cutoff_eur": cost_cutoff,
+                               "cutoff_share": share}
+            print(f"M0u: cost cut-off EUR {cost_cutoff:.2f} per trip")
+        else:
+            scenario["m0s"] = {"cutoff_share": share, "cost_cutoff_eur": {
+                f"{r.household_type}_{r.income_class}": cutoff_cost([r], share)
+                for r in env_rows}}
     hubs_used = None
     if args.shared_bike:
         from dataclasses import replace
@@ -604,7 +627,8 @@ def cmd_run(args) -> None:
         spec=args.spec, theta=args.theta, vot=prm.vot.to_dict(),
         availability=availability, price_scale=price_scale,
         common_jobs=prm.accessibility.common_jobs, cost_mean_eur=cost_mean,
-        fare_scale=fare_scale)
+        fare_scale=fare_scale, cost_cutoff_eur=cost_cutoff,
+        cutoff_share=prm.accessibility.cutoff_share)
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)
@@ -690,9 +714,11 @@ def main(argv=None) -> None:
                         "or --spec m3; >= 1, inf is the comonotone limit) or "
                         "Frank (--copula frank; nonzero, negative is "
                         "negative dependence)")
-    p.add_argument("--spec", choices=["m0", "m1", "m1c", "m1p", "m2", "m3"],
+    p.add_argument("--spec", choices=list(SPECS),
                    default=None,
                    help="impedance specification (docs/model_theory.md): "
+                        "m0 cut-off in generalised time, m0u/m0s dual "
+                        "cut-offs (one cost cut-off / one per segment), "
                         "m1/m1p exponential generalised cost, m2 gates, "
                         "m3 gates with dependence (--theta)")
     p.add_argument("--vot", nargs="*", default=[], metavar="MODE=EUR_PER_HOUR",

@@ -261,6 +261,7 @@ def test_mixed_mode_weights_the_option_sets_per_origin():
 
 
 @pytest.mark.parametrize("spec,extra", [
+    ("m0u", {"cost_cutoff_eur": 12.0}), ("m0s", {}),
     ("m1", {"vot": {"car": 12.0}}), ("m1p", {}), ("m2", {}),
     ("m3", {"theta": 2.0})])
 def test_one_option_equals_the_plain_mode_under_every_specification(spec, extra):
@@ -324,6 +325,7 @@ def test_legwise_union_inclusion_exclusion_and_identical_options():
 
 
 @pytest.mark.parametrize("spec,extra", [
+    ("m0u", {"cost_cutoff_eur": 12.0}), ("m0s", {}),
     ("m1", {"vot": {"car": 12.0}}), ("m1p", {}), ("m3", {"theta": 2.0}),
     ("m3", {"theta": float("inf")})])
 def test_legwise_single_leg_equals_the_plain_gate_under_every_specification(
@@ -400,3 +402,104 @@ def test_m1c_uses_one_calibrated_exponential_cost_margin():
     assert (tab["atom"] == 0).all()        # no atom under the exponential specs
     # decile 1 keeps its jobs (a shared margin, no censoring)
     assert tab[tab.income_class == "D1"]["accessibility"].sum() > 0
+
+
+# ── dual cut-offs: M0u (one cost cut-off) and M0s (one per segment) ──
+
+def _dual_cutoff_by_hand(time_cost_pairs, seg, c_star, jobs, wfh, wage):
+    """Income-matched jobs of segment `seg` (its class) for which some
+    (time, cost) option is within the median acceptable time and the cost
+    cut-off `c_star`."""
+    from ikob2.segments.specs import median_time
+    W = sector_income_weights(wage, jobs.sum())
+    no, yes = split_jobs_by_wfh(jobs, wfh)
+    expected = np.zeros(3)
+    for wtype, j in (("no_wfh", no), ("wfh_possible", yes)):
+        t_star = median_time(MARGINS[("car", wtype)])
+        ok = np.zeros((3, 4), dtype=bool)
+        for t, c in time_cost_pairs:
+            ok |= (t <= t_star) & (c <= c_star)
+        pool = sector_pools(j, DESTS, W)[seg.rsplit("_", 1)[1]].astype(float)
+        expected += ok.astype(float) @ pool
+    return expected
+
+
+def _segment(res, mode, seg):
+    t = res.table
+    return t[(t["mode"] == mode) & (t.segment == seg)].sort_values(
+        "buurtcode")
+
+
+def test_m0s_is_a_step_on_each_margin_at_the_segment_median():
+    from ikob2.segments.specs import cutoff_cost
+    pop, jobs, wfh, wage, time, cost = world()
+    res = run(pop, jobs, wfh, wage, {"car": ModeMatrices(time, cost, "fare")},
+              spec="m0s")
+    for seg in ("couple_D3", "single_D5", "couple_children_D10"):
+        r = next(ENV[(ENV.household_type + "_" + ENV.income_class) == seg]
+                 .itertuples())
+        c_star = cutoff_cost([r], 0.5)
+        assert c_star == pytest.approx(
+            0.5 * (r.low + r.high) if r.atom == 0 else 0.0)
+        expected = _dual_cutoff_by_hand([(time, cost)], seg, c_star,
+                                        jobs, wfh, wage)
+        got = _segment(res, "car", seg)
+        np.testing.assert_allclose(got["accessibility"], expected, rtol=1e-4)
+        assert (got["atom"] == 0.0).all()
+    # decile 1 (atom 1): cut-off zero, only the free pair (O0, D0) counts
+    d1 = _segment(res, "car", "single_D1")
+    np.testing.assert_allclose(
+        d1["accessibility"],
+        _dual_cutoff_by_hand([(time, cost)], "single_D1", 0.0, jobs, wfh, wage),
+        rtol=1e-4)
+    assert d1["accessibility"].iloc[0] > 0 and (d1["accessibility"].iloc[1:] == 0).all()
+    assert (d1["atom"] == 1.0).all() and d1["accessibility_normalised"].isna().all()
+
+
+def test_m0u_one_cost_cutoff_for_every_segment():
+    pop, jobs, wfh, wage, time, cost = world()
+    res = run(pop, jobs, wfh, wage, {"car": ModeMatrices(time, cost, "fare")},
+              spec="m0u", cost_cutoff_eur=12.0)
+    for seg in ("single_D1", "couple_D3", "couple_children_D10"):
+        got = _segment(res, "car", seg)
+        np.testing.assert_allclose(
+            got["accessibility"],
+            _dual_cutoff_by_hand([(time, cost)], seg, 12.0, jobs, wfh, wage),
+            rtol=1e-4)
+    assert (res.table["atom"] == 0).all()        # no atom: f(0, 0) = 1
+
+
+def test_dual_cutoff_union_and_generalised_time_differ_by_hand():
+    """A fast dear and a slow cheap option: under M0s a pair counts when one
+    of them passes both cut-offs; under M0 when the least generalised time
+    is within T*. The fast dear option compensates its fare under M0 only."""
+    from ikob2.segments.specs import cutoff_cost, median_time
+    pop, jobs, wfh, wage, time, cost = world()
+    seg = "couple_D3"
+    r = next(ENV[(ENV.household_type + "_" + ENV.income_class) == seg]
+             .itertuples())
+    c_star = cutoff_cost([r], 0.5)
+    t_star = median_time(MARGINS[("car", "no_wfh")])
+    fast_dear = (np.full((3, 4), 0.2 * t_star, np.float32),
+                 np.full((3, 4), 1.5 * c_star, np.float32))
+    slow_cheap = (np.full((3, 4), 2.0 * t_star, np.float32),
+                  np.full((3, 4), 0.5 * c_star, np.float32))
+    opts = OptionSet(tuple(ModeMatrices(t, c, "fare")
+                           for t, c in (fast_dear, slow_cheap)), "car")
+    dual = _segment(run(pop, jobs, wfh, wage, {"u": opts}, spec="m0s"),
+                    "u", seg)["accessibility"].to_numpy()
+    # neither option passes both cut-offs (no-wfh jobs; the wfh margin is
+    # longer, so the slow option may pass there)
+    np.testing.assert_allclose(
+        dual, _dual_cutoff_by_hand([fast_dear, slow_cheap], seg, c_star,
+                                   jobs, wfh, wage), rtol=1e-4)
+    # generalised time of the fast option at a VoT that makes its fare cost
+    # 0.3 T*: 0.2 T* + 0.3 T* < T*, so every pair counts under M0
+    vot = 1.5 * c_star * 60.0 / (0.3 * t_star)
+    gc = _segment(run(pop, jobs, wfh, wage, {"u": opts}, spec="m0",
+                      vot={"car": vot}), "u", seg)["accessibility"].to_numpy()
+    W = sector_income_weights(wage, jobs.sum())
+    all_jobs = sum(sector_pools(j, DESTS, W)["D3"].sum()
+                   for j in split_jobs_by_wfh(jobs, wfh))
+    np.testing.assert_allclose(gc, all_jobs, rtol=1e-4)
+    assert (dual < gc - 1.0).all()

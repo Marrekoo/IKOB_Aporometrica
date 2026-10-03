@@ -119,6 +119,8 @@ the lowest deciles are therefore reported over the dependence range
 | Spec | Joint acceptance `f(t, c)` | Notes |
 |---|---|---|
 | M0 | `1{t + c/VoT <= T*}` | cumulative opportunities in generalised time; `T*` the median acceptable time of the Weibull |
+| M0u | `1{t <= T*} 1{c <= C*}` | dual cut-off with one cost cut-off for everyone: `C*` the median of the population's cost thresholds (the persons-weighted mixture of the segments' margins over the study origins), or `accessibility.m0u_cost_cutoff_eur`; no atom |
+| M0s | `1{t <= T*} 1{c <= C*_s}` | dual cut-off per segment: `C*_s` the median of the segment's cost margin, zero (atom 1 reported) where fewer than half accept any positive cost; the degenerate corner of M2 |
 | M1 | `exp(-(t + c/VoT)/beta)` | generalised cost; `beta` the mean acceptable time of the Weibull (per mode and job type), one VoT per mode; no atom |
 | M1c | as M1 with one VoT | the VoT set so that the implied mean acceptable cost equals `accessibility.m1c_cost_mean_eur`, or by default the population-weighted median of the segments' mean envelopes |
 | M1' (`m1p`) | `exp(-t/beta) exp(-c/mu_s)` | a VoT per segment so that `mu_s = beta VoT_s` equals the segment's mean envelope `(1 - pi)(low + high)/2` |
@@ -128,6 +130,14 @@ the lowest deciles are therefore reported over the dependence range
 M1' and M2 share the first moment of both margins, so the M1' -> M2 contrast
 isolates the shape of the thresholds and M2 -> M3 the dependence. M1, M1c
 and M1' have no atom.
+
+The cut-offs of M0, M0u and M0s are quantiles of the margins at
+`accessibility.cutoff_share` (0.5, the median). `T*` is the same for every
+segment (per mode and job type); only the cost cut-off of M0s varies by
+segment. M0 lets a short journey make up for a high fare; M0u and M0s do
+not. M0u -> M0s isolates the segment budgets at the degenerate shape, as
+M1 -> M1' does at the exponential one. Under exponential margins the gate
+and generalised cost coincide (M1' is both); under steps they do not.
 
 **Values of time** (EUR per hour, Dutch national value-of-time study,
 `[vot]`): car 12.05, rail 15.10, bus/tram/metro 10.80. Public transport is
@@ -153,8 +163,9 @@ another add nothing. `run.accessibility.OptionSet` and `union_terms`
 implement this; `MixedMode` mixes option sets over a population split by
 origin (residents with and without a private bicycle). M1, M1c and M1' use
 the same formula with their exponential margins (the PT cost rescaled per
-option by its rail share); M0 takes the option with the least generalised
-time.
+option by its rail share), and M0u and M0s with their steps (a pair counts
+when some option passes both cut-offs); M0 takes the option with the least
+generalised time.
 
 **Leg-wise gates** (`LegOptionSet`, variant v3): each leg of a chain is
 judged on its own time margin (bicycle legs on the bicycle margin, the PT leg
@@ -193,7 +204,7 @@ rectangular and use the Hansen form (`run_hansen`).
   (`--time-shape step|exponential --cutoff 45 --exp-calibration mean|half
   --no-cost-gate`), compared with `cli.compare`: rank correlation, top-decile
   overlap and level ratios by group.
-* **Specifications**: the grid M0-M3 over the scenarios, with correlations
+* **Specifications**: the grid M0, M0u, M0s, M1-M3 over the scenarios, with correlations
   of levels and of gains between specifications (`cli.paper_tables`).
 * **Dependence bounds**: `--copula countermonotone` and `--spec m3 --theta inf`.
 * **Budget basis**: `--legs-per-tour` (1 reads the table as per journey).

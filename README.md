@@ -97,7 +97,7 @@ buurten and matched to income deciles; Weibull time margins by mode and job
 type; uniform cost margins with an atom; copula dependence; car, bicycle,
 walking and GTFS public-transport skims with peak load, car cost and NS
 fares; car and bicycle availability; shared-bicycle chains (variants
-v0-v4); specifications M0, M1, M1c, M1', M2, M3; scenarios S0-S4 with their
+v0-v4); specifications M0, M0u, M0s, M1, M1c, M1', M2, M3; scenarios S0-S4 with their
 public cost; the interchangeability ratio R; the reachability gap; paper
 tables.
 

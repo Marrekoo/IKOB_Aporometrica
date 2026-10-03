@@ -40,8 +40,8 @@ from ikob2.segments.bridge import (
 from ikob2.segments.jobs import sector_income_weights, sector_pools
 from ikob2.core.compose import apply_copula
 from ikob2.segments.specs import (
-    SPECS, atom_reported, cost_curve_factory, spec_copula, time_margin_for,
-    vot_factor, vot_weighted_cost)
+    SPECS, atom_reported, cost_curve_factory, reported_atoms, spec_copula,
+    time_margin_for, vot_factor, vot_weighted_cost)
 from ikob2.segments.wfh import split_jobs_by_wfh
 
 logger = logging.getLogger(__name__)
@@ -238,6 +238,8 @@ def run_accessibility(
     common_jobs: bool = False,
     cost_mean_eur: float | None = None,
     fare_scale: Mapping[str, float] | None = None,
+    cost_cutoff_eur: float | None = None,
+    cutoff_share: float = DEFAULTS.accessibility.cutoff_share,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -252,7 +254,7 @@ def run_accessibility(
         run.
     time_margins : {(mode, wfh): CurveSpec} (segments.time_margins).
     matrices : mode -> ModeMatrices over (origins, destinations).
-    spec : 'm0', 'm1', 'm1c', 'm1p', 'm2' (default) or 'm3'
+    spec : 'm0', 'm0u', 'm0s', 'm1', 'm1c', 'm1p', 'm2' (default) or 'm3'
         (segments.specs). M3 uses a Gumbel-Hougaard copula with `theta`
         (inf: comonotone); `copula` applies to M2 only. M0 and M1 need
         `vot`: mode -> value of time in EUR/hour.
@@ -268,6 +270,10 @@ def run_accessibility(
         (`fare`) of the journey cost, for a fare concession (default 1).
     cost_mean_eur : M1c: the calibrated mean acceptable cost (EUR per trip)
         of the shared exponential cost margin.
+    cost_cutoff_eur : M0u: the cost cut-off (EUR per trip) shared by all
+        segments.
+    cutoff_share : M0, M0u, M0s: the cut-offs are the quantiles of the
+        margins that this share of the thresholds reaches (0.5: medians).
     common_jobs : every segment reaches all jobs (no income matching): the
         controlled comparison of the paper, in which R does not vary by
         segment under M1.
@@ -316,13 +322,14 @@ def run_accessibility(
                 raise KeyError(f"No time margin for ({margin_mode}, {wfh}); "
                                f"have {sorted(time_margins)}.")
             segs = build_segments(
-                time_margin_for(spec, margin),
+                time_margin_for(spec, margin, cutoff_share),
                 envelope=envelope if gated else None,
                 money_cost_id=cost_id if gated else None,
                 copula=copula if gated else INDEPENDENCE,
                 pool_by="income_class", only=sn,
-                cost_curve=(cost_curve_factory(spec, margin, mode_vot,
-                                               cost_mean_eur)
+                cost_curve=(cost_curve_factory(
+                    spec, margin, mode_vot, cost_mean_eur,
+                    cost_cutoff=cost_cutoff_eur, cutoff_share=cutoff_share)
                             if gated else None))
             all_segs += [replace(s, name=f"{wfh}|{s.name}",
                                  pool=f"{wfh}|{s.pool}") for s in segs]
@@ -493,12 +500,13 @@ def run_accessibility(
             for wfh in WFH_TYPES:
                 m_pt = time_margins[(pt_leg, wfh)]
                 by_name[wfh] = {sg.name: sg for sg in build_segments(
-                    time_margin_for(spec, m_pt),
+                    time_margin_for(spec, m_pt, cutoff_share),
                     envelope=envelope if priced else None,
                     money_cost_id="c" if priced else None,
                     pool_by="income_class", only=names,
                     cost_curve=(cost_curve_factory(
-                        spec, m_pt, (vot or {}).get(pt_leg), cost_mean_eur)
+                        spec, m_pt, (vot or {}).get(pt_leg), cost_mean_eur,
+                        cost_cutoff=cost_cutoff_eur, cutoff_share=cutoff_share)
                         if priced and spec != "m0" else None))}
 
             def leg_weight(leg, wfh, key, t_leg):
@@ -507,7 +515,8 @@ def run_accessibility(
                 if cache_it and ck in leg_cache:
                     return leg_cache[ck]
                 f = evaluate_marginal(t_leg, time_margin_for(
-                    spec, time_margins[(oset.margin_modes[leg], wfh)]))
+                    spec, time_margins[(oset.margin_modes[leg], wfh)],
+                    cutoff_share))
                 if cache_it:
                     leg_cache[ck] = f
                 return f
@@ -578,6 +587,7 @@ def run_accessibility(
             return legwise_total(oset)
         return option_total(oset.margin_mode, oset.options)
 
+    reported = reported_atoms(spec, envelope, cutoff_share)
     rows = []
     for mode, mm in matrices.items():
         priced = False
@@ -611,7 +621,7 @@ def run_accessibility(
             if avail.isna().any().any() or ((avail < 0) | (avail > 1)).any().any():
                 raise ValueError(f"Availability of '{mode}' must cover all "
                                  f"origins and segments, within [0, 1].")
-        rows.append(_long(mode, origins, names, total, pop, envelope,
+        rows.append(_long(mode, origins, names, total, pop, reported,
                           priced=priced and atom_reported(spec), avail=avail))
     table = pd.concat(rows, ignore_index=True)
     meta = {"origins": n_o, "destinations": n_d, "segments": len(names),
