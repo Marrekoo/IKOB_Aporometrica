@@ -84,7 +84,7 @@ def test_correlations_between_specifications_agree_in_levels_but_not_in_gains():
     a0, b0 = tab(lv), tab([2 * v for v in lv])              # same ranking
     a1 = tab([v + g for v, g in zip(lv, [5, 0, 0, 5, 0, 0])])
     b1 = tab([2 * v + g for v, g in zip(lv, [0, 5, 0, 0, 5, 0])])   # other gains
-    c = correlations({"a": (a0, a1, a1), "b": (b0, b1, b1)}, "pt_v2")
+    c = correlations({"a": {"s0": a0, "s1": a1}, "b": {"s0": b0, "s1": b1}}, "pt_v2")
     get = lambda m, x, y: c[(c.measure == m) & (c.method == "pearson")  # noqa: E731
                             & (c.spec_a == x) & (c.spec_b == y)]["correlation"].iloc[0]
     assert get("levels", "a", "b") == pytest.approx(1.0)

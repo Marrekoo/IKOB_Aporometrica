@@ -210,20 +210,39 @@ the part of the gap no price cut can close.
 ## Paper tables (`cli.paper_tables`)
 
     python -m ikob2.cli.paper_tables --data-root <root> \
-        --tags m0 m1 m1c m1p m2 m3t1.25 m3t1.5 m3t2 m3t4 m3tinf --mode pt_v2
+        --tags m0 m0u m0s m1 m1p m2 m3t1.25 m3t1.5 m3t2 m3t4 m3tinf --mode pt_v2
 
-Reads the runs `sp_<tag>_<s0|s1|s2>` (income-matched jobs), `spc_<tag>_<s0|s1|s2>`
-(`--common-jobs`, the controlled comparison) and `spt_<tag>_<s0|s2>`
-(time only; M3 uses the M2 time-only run), and writes to
-`outputs/comparisons/specs/`:
+Reads the runs `sp_<tag>_<s0|scenario>` (income-matched jobs) and
+`spc_<tag>_<s0|scenario>` (`--common-jobs`, the controlled comparison) for the
+scenarios of `--scenarios` (default `s1 s2c s2t s3c s3t s4`), and
+`spt_<tag>_s0` (time only; M3 uses the M2 time-only run, M0u and M0s that of
+M0, M1c that of M1), and writes to `outputs/comparisons/specs/`:
 
 | File | Content |
 |---|---|
 | `baseline_by_spec.csv` | accessibility, raw and normalised, and atom, per specification and income class |
-| `incidence_by_spec.csv` | gains of S1 and S2 by income class and household type, per specification |
-| `interchange_by_spec.csv` | R: pooled dispersion, median, undefined pairs, full and controlled |
-| `gap_by_spec.csv` | the reachability gap before and after S1, and the atom |
-| `correlation_by_spec.csv` | Pearson and Spearman correlations between specifications of levels and of the S1 and S2 gains |
+| `incidence_by_spec.csv` | gains of each scenario by income class and household type, per specification |
+| `interchange_by_spec.csv` | R per pair of `--pairs` (default `s1:s2c`, the citywide price cut over the citywide hubs, and `s4:s2t`, both in the target buurten): pooled dispersion, median, undefined pairs, full and controlled |
+| `gap_by_spec.csv` | the reachability gap at S0 and after the price scenarios of `--gap-scenarios` (default `s1 s4`), and the atom |
+| `correlation_by_spec.csv` | Pearson and Spearman correlations between specifications of levels and of the gains of each scenario |
 
 The run names are a convention: produce them with `cli.accessibility --run
 sp_m2_s0 --spec m2 ...` and so on.
+
+### Person-based against location-based price cuts (`run.targeting`)
+
+    python -m ikob2.cli.paper_tables --data-root <root> --tags m2 \
+        --targeting S1=scen_s1 S1a=scen_s1a S4=scen_s4 S4a=scen_s4a \
+        --base-run scen_s0
+
+compares price cuts granted by income (S1a: deciles D2-D4, citywide), by
+address (S4: everyone in the 15 target buurten) and by both (S4a: D2-D4 in
+the target buurten) with the blanket cut (S1). The runs need
+`--report-usage` for their cost. The target group is `--target-classes`
+(default D2 D3 D4) and the zone `--zone` (default the S4 zone). It writes to
+`outputs/comparisons/targeting/`:
+
+| File | Content |
+|---|---|
+| `targeting_summary.csv` | per scenario: the share of the target group with a lower price (coverage, one minus the exclusion error), the share of the eligible residents outside it (the inclusion error), eligible persons, public cost per year and its shares on the target group and in the zone, the gain in acceptable job-persons, per euro, and its shares to the target group and the zone |
+| `targeting_cells.csv` | per scenario, income class and place (zone or rest): population, gain and gain per person |
