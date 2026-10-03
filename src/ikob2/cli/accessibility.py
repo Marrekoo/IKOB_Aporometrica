@@ -82,6 +82,7 @@ FLAGS = {
     "flat_method": "shared_bike.flat_method",
     "report_usage": "shared_bike.report_usage",
     "price_scales": "paths.lime_price_scales",
+    "price_zones": "paths.lime_price_zones",
     "pt_fare_scales": "paths.pt_fare_scales",
     "car_model": "car.default_model", "parking_search": "car.parking_search",
     "pt_rail_table": "pt_fare.rail_table",
@@ -372,8 +373,8 @@ def resolve_paths(args, prm) -> None:
     args.budgets = str(resolve_input(args.budgets, folder("envelope")))
     if args.margins:
         args.margins = str(resolve_input(args.margins, folder("survey")))
-    for name in ("price_scales", "pt_fare_scales"):
-        if getattr(args, name):
+    for name in ("price_scales", "pt_fare_scales", "price_zones"):
+        if getattr(args, name, None):
             setattr(args, name, str(resolve_input(getattr(args, name),
                                                   folder("tariffs"))))
     missing = [n for n in ("kwb", "skims", "sector_jobs", "out", "statline",
@@ -384,8 +385,9 @@ def resolve_paths(args, prm) -> None:
     absent = [f"{flag} {getattr(args, n)}" for n, flag in (
         ("budgets", "--budgets"), ("margins", "--margins"),
         ("price_scales", "--price-scales"),
-        ("pt_fare_scales", "--pt-fare-scales"))
-        if getattr(args, n) and not Path(getattr(args, n)).exists()]
+        ("pt_fare_scales", "--pt-fare-scales"),
+        ("price_zones", "--price-zones"))
+        if getattr(args, n, None) and not Path(getattr(args, n)).exists()]
     if absent:
         raise SystemExit("Reference file(s) not found: " + "; ".join(absent)
                          + ". Seed the data folder (python -m "
@@ -425,7 +427,8 @@ def input_fingerprints(args) -> dict:
     import hashlib
 
     files = {n: getattr(args, n, None) for n in (
-        "budgets", "margins", "price_scales", "pt_fare_scales", "sector_jobs",
+        "budgets", "margins", "price_scales", "pt_fare_scales", "price_zones",
+        "sector_jobs",
         "bike_ownership", "car_availability", "detour", "kwb")}
     for folder in ("statline", "occupations"):
         if getattr(args, folder, None):
@@ -509,6 +512,15 @@ def cmd_run(args) -> None:
         if any(v != 1.0 for v in price_scale.values()):
             logger.info("Lime price scales differ from 1 for %d segments",
                         sum(v != 1.0 for v in price_scale.values()))
+    price_zone = None
+    if args.price_zones:
+        if price_scale is None:
+            raise SystemExit("--price-zones restricts --price-scales: give "
+                             "a price-scale table too.")
+        from ikob2.run.shared_bike import load_price_zones
+        price_zone = load_price_zones(args.price_zones, store.origins)
+        logger.info("Lime price scales apply to residents of %d of %d "
+                    "origins", int(price_zone.sum()), len(price_zone))
     fare_scale = None
     if args.pt_fare_scales:
         from ikob2.run.shared_bike import (load_price_scales,
@@ -585,13 +597,14 @@ def cmd_run(args) -> None:
                     populations=pop, sector_jobs=sector_jobs,
                     job_weights=weights, envelope=envelope_arg,
                     time_margins=margins, mode=mode, price_scale=price_scale,
+                    price_zone=price_zone,
                     unreachable_minutes=prm.accessibility.unreachable_minutes)
 
             flat, scenario = calibrate_flat(usage_for,
                                             method=prm.shared_bike.flat_method)
             scenario["flat_eur"] = flat
             tariffs = replace(tariffs, flat_eur=flat)
-            print(f"S4 flat price per Lime rental ({prm.shared_bike.flat_method}): "
+            print(f"Flat price per Lime rental ({prm.shared_bike.flat_method}): "
                   f"EUR {flat:.3f} (tier weighted mean {scenario['weighted_mean_eur']:.3f})")
         if prm.shared_bike.report_usage:
             mode = shared_bike_modes(
@@ -601,13 +614,15 @@ def cmd_run(args) -> None:
                 origins=store.origins, destinations=dest_codes,
                 populations=pop, sector_jobs=sector_jobs,
                 job_weights=weights, envelope=envelope_arg, time_margins=margins,
-                mode=mode, price_scale=price_scale,
+                mode=mode, price_scale=price_scale, price_zone=price_zone,
                 unreachable_minutes=prm.accessibility.unreachable_minutes)
             scenario["lime_usage"] = {
                 "revenue": u.revenue, "rentals": u.rentals,
                 "rentals_scaled": u.rentals_scaled,
                 "by_segment": {n: {"revenue": r, "rentals": k}
-                               for n, (r, k) in u.by_segment.items()}}
+                               for n, (r, k) in u.by_segment.items()},
+                "by_origin": {o: {"revenue": r, "rentals": k}
+                              for o, (r, k) in u.by_origin.items()}}
             # public cost of the price change: the operator is compensated
             # for the revenue foregone at BASELINE volume (tiers, no scales)
             from ikob2.run.costs import s1_compensation
@@ -623,13 +638,17 @@ def cmd_run(args) -> None:
                 unreachable_minutes=prm.accessibility.unreachable_minutes)
             u0 = lime_usage(mode=base_mode, **usage_kw)
             u_at0 = lime_usage(mode=base_mode, price_from=mode,
-                               price_from_scale=price_scale, **usage_kw)
+                               price_from_scale=price_scale,
+                               price_zone=price_zone, **usage_kw)
             cost = s1_compensation(prm.costs, u0.revenue, u_at0.revenue,
                                    u0.rentals)
             factor = cost["annual_rentals"] / u0.rentals
             cost["by_segment_eur_year"] = {
                 n: (u0.by_segment[n][0] - u_at0.by_segment[n][0]) * factor
                 for n in u0.by_segment}
+            cost["by_origin_eur_year"] = {
+                o: (u0.by_origin[o][0] - u_at0.by_origin[o][0]) * factor
+                for o in u0.by_origin}
             scenario["cost"] = cost
             print(f"Lime price change: public compensation EUR "
                   f"{cost['compensation_eur_year']:,.0f} per year "
@@ -656,6 +675,7 @@ def cmd_run(args) -> None:
         segment_names=envelope_segment_names(envelope),
         spec=args.spec, theta=args.theta, vot=prm.vot.to_dict(),
         availability=availability, price_scale=price_scale,
+        price_zone=price_zone,
         common_jobs=prm.accessibility.common_jobs, cost_mean_eur=cost_mean,
         fare_scale=fare_scale, cost_cutoff_eur=cost_cutoff,
         cutoff_share=prm.accessibility.cutoff_share)
@@ -676,6 +696,9 @@ def cmd_run(args) -> None:
     meta = {**result.meta, "parameters": prm.to_dict(), "scenario": scenario,
             "job_matching": matching.meta,
             "lime_price_scales": price_scale, "pt_fare_scales": fare_scale,
+            "lime_price_zones": (None if price_zone is None else
+                                 [o for o, z in zip(store.origins, price_zone)
+                                  if z]),
             "created": dt.datetime.now().isoformat(
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
                                       if k != "func"},
@@ -796,6 +819,10 @@ def main(argv=None) -> None:
                    help="multipliers on the public transport fare by household "
                         "type and income class (fare concessions); default "
                         "paths.pt_fare_scales")
+    p.add_argument("--price-zones", default=None, metavar="CSV",
+                   help="buurten (column buurtcode) whose residents get the "
+                        "Lime price scales; elsewhere the price is unscaled "
+                        "(default paths.lime_price_zones: everywhere)")
     p.add_argument("--price-scales", default=None, metavar="CSV",
                    help="multipliers on the Lime price by household type and "
                         "income class (concessions); default "
@@ -812,7 +839,7 @@ def main(argv=None) -> None:
                         "calibrate for revenue neutrality)")
     p.add_argument("--flat-method", choices=["fixed_point", "weighted_mean"],
                    default=None,
-                   help="S4 calibration: fixed_point (default) or "
+                   help="flat-price calibration: fixed_point (default) or "
                         "weighted_mean of the baseline volumes")
     p.add_argument("--lime-scale", type=float, default=None,
                    help="multiplier on every Lime tier price (S1 halves: 0.5)")

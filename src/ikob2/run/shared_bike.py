@@ -92,7 +92,7 @@ class SharedBikeTariffs:
     def lime_eur(self, minutes) -> np.ndarray:
         """Lime price of a rental of `minutes`: the tier of its duration
         (the last tier's price beyond the last bound), or the flat price per
-        rental in the `flat` model (S4); times `lime_scale`. NaN stays NaN."""
+        rental in the `flat` model; times `lime_scale`. NaN stays NaN."""
         m = np.asarray(minutes, dtype=float)
         if self.dockless_model == "flat":
             price = np.full(m.shape, self.flat_eur * self.lime_scale)
@@ -155,6 +155,24 @@ def load_price_scales(path, household_types=None, income_classes=None
             raise ValueError(f"{path}: unknown {col} {bad}; use * or "
                              f"{list(known)}.")
     return df[need].assign(**{c: df[c].str.strip() for c in need[:2]})
+
+
+def load_price_zones(path, origins) -> np.ndarray:
+    """Price zone of the Lime price scales: 1.0 for the origins (buurten of
+    residence) listed in the `buurtcode` column of `path`, 0.0 elsewhere.
+    The price-scale table then applies to residents of these buurten only,
+    as when a concession is granted by home address. Every listed code must
+    be an origin of the run."""
+    df = pd.read_csv(path, dtype={"buurtcode": str})
+    if "buurtcode" not in df.columns:
+        raise ValueError(f"{path}: needs a column 'buurtcode'.")
+    codes = set(df["buurtcode"].str.strip())
+    origins = [str(o) for o in origins]
+    unknown = sorted(codes - set(origins))
+    if unknown:
+        raise ValueError(f"{path}: {len(unknown)} buurtcode(s) are not "
+                         f"origins of the run, e.g. {unknown[:5]}.")
+    return np.array([1.0 if o in codes else 0.0 for o in origins])
 
 
 def segment_price_scales(names, table: pd.DataFrame | None) -> dict:

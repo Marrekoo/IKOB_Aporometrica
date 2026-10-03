@@ -51,7 +51,7 @@ these; `cli` uses everything.
 | skims | `hubs`, `hub_siting` | shared-bicycle hub files, siting of extra hubs |
 | skims | `otp_server`, `gtfs_subset`, `osm_walk` | OpenTripPlanner server, feed subsetting, walking-network extract |
 | run | `accessibility` | `ModeMatrices`, `OptionSet`, `LegOptionSet`, `MixedMode`, `run_accessibility` |
-| run | `shared_bike`, `scenarios`, `costs` | chain variants and tariffs, operator usage and S4 calibration, public cost |
+| run | `shared_bike`, `scenarios`, `costs` | chain variants and tariffs, operator usage, flat-price calibration, public cost |
 | run | `compare`, `interchange`, `gap` | run comparison, ratio R, reachability gap |
 | outputs | `export`, `diagnostics` | analysis products of a run, aggregated money-gate curves |
 | data | `geopackage`, `validation` | CBS buurt GeoPackage reader, collected validation |

@@ -15,6 +15,7 @@ def _args(**over):
                 car_availability=None, detour=None, margins=None,
                 budgets="reference_budgets.csv",
                 price_scales="lime_price_scales.csv", pt_fare_scales="",
+                price_zones="",
                 study="utrecht_nl", run="r", kwb_year=2022, jobs_year=2022)
     base.update(over)
     return argparse.Namespace(**base)
@@ -35,6 +36,13 @@ def test_reference_files_come_from_the_seeded_data_folder(tmp_path):
     assert args.margins == str(lay.survey_margins())
     assert args.price_scales == str(lay.tariff("lime_price_scales.csv"))
     assert args.statline == str(lay.statline())
+    assert args.occupations == str(lay.occupations())
+    assert not args.price_zones                      # no zone: everywhere
+    zoned = _args(data_root=str(tmp_path),
+                  price_zones="lime_price_zones_overvecht_kanaleneiland.csv")
+    cli.resolve_paths(zoned, params_mod.DEFAULTS)
+    assert zoned.price_zones == str(
+        lay.tariff("lime_price_zones_overvecht_kanaleneiland.csv"))
     assert args.out == str(lay.run_dir("r"))
 
 

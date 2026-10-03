@@ -240,6 +240,7 @@ def run_accessibility(
     fare_scale: Mapping[str, float] | None = None,
     cost_cutoff_eur: float | None = None,
     cutoff_share: float = DEFAULTS.accessibility.cutoff_share,
+    price_zone: np.ndarray | None = None,
 ) -> AccessibilityResult:
     """Accessibility of every origin, segment and mode.
 
@@ -271,6 +272,9 @@ def run_accessibility(
         price (default 1). Segments with equal scales share cost matrices.
     fare_scale : segment name -> multiplier on the public transport fare part
         (`fare`) of the journey cost, for a fare concession (default 1).
+    price_zone : per origin 1 where `price_scale` applies and 0 where the
+        Lime price stays unscaled (a concession by home address,
+        `shared_bike.load_price_zones`); None: every origin.
     cost_mean_eur : M1c: the calibrated mean acceptable cost (EUR per trip)
         of the shared exponential cost margin.
     cost_cutoff_eur : M0u: the cost cut-off (EUR per trip) shared by all
@@ -290,6 +294,7 @@ def run_accessibility(
     origins = [str(o) for o in origins]
     destinations = [str(d) for d in destinations]
     n_o, n_d = len(origins), len(destinations)
+    zone = _price_zone(price_zone, n_o)
     names, pop, pools = prepare_inputs(
         origins, destinations, populations, sector_jobs, job_weights,
         envelope, segment_names, common_jobs)
@@ -415,6 +420,8 @@ def run_accessibility(
         ls = np.stack([_finite(o.lime if o.lime is not None
                                else np.zeros_like(o.time), 0.0)
                        for o in options])
+        if zone is not None:              # the price scale applies here only
+            ls = ls * zone
         fa = np.stack([_finite(o.fare if o.fare is not None
                                else np.zeros_like(o.time), 0.0)
                        for o in options])
@@ -474,6 +481,8 @@ def run_accessibility(
         lime = np.stack([_finite(o.lime if o.lime is not None
                                  else np.zeros((n_o, n_d)), 0.0)
                          for o in opts])
+        if zone is not None:              # the price scale applies here only
+            lime = lime * zone
         fare = np.stack([_finite(o.fare if o.fare is not None
                                  else np.zeros((n_o, n_d)), 0.0)
                          for o in opts])
@@ -639,6 +648,16 @@ def _finite(a: np.ndarray, fill: float) -> np.ndarray:
     out = np.asarray(a, dtype=np.float32).copy()
     out[~np.isfinite(out)] = fill
     return out
+
+
+def _price_zone(price_zone, n_o: int) -> np.ndarray | None:
+    """The price zone as a column (origins, 1) for the (o, d) matrices."""
+    if price_zone is None:
+        return None
+    z = np.asarray(price_zone, dtype=np.float32)
+    if z.shape != (n_o,) or not np.isin(z, (0.0, 1.0)).all():
+        raise ValueError("price_zone needs one 0 or 1 per origin.")
+    return z[:, None]
 
 
 def _long(mode, origins, names, total, pop, envelope, *, priced, avail=None):

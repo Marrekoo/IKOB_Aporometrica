@@ -33,7 +33,7 @@ Added to the PT fare of the same journey:
 | OV-fiets (egress) | EUR 4.80 per rental | `shared_bike.ovfiets_eur` |
 | Lime (dockless access, Lime hub egress) | EUR 3 / 4 / 5 for rentals up to 20 / 30 / 40 minutes (ride + fixed minutes); the last tier beyond | `shared_bike.lime_tiers`, `dockless_model = "lime_tiers"` |
 | Dockless, per minute | EUR 1.00 + 0.20 per riding minute | `dockless_model = "unlock_per_minute"` |
-| Dockless, flat (S4) | one price per rental | `dockless_model = "flat"`, `flat_eur` |
+| Dockless, flat | one price per rental | `dockless_model = "flat"`, `flat_eur` |
 | Own bicycle | free | |
 
 `shared_bike.lime_scale` multiplies every Lime price. A **price-scale table**
@@ -74,9 +74,26 @@ accessibility for bicycle owners. Every variant assumes unlimited supply
 | S1 | Lime prices halved | `--lime-scale 0.5` (blanket), or a price-scale table for targeted concessions |
 | S2 | extra Lime hubs | `cli.hubs propose`, S2 skim modes, and a parameter file with `[shared_bike] egress_suffix = {lime = "_s2"}` |
 | S3 | S1 and S2 together | both settings |
-| S4 | flat dockless price, revenue neutral | `--dockless-model flat` |
+| S4 | Lime prices halved for the residents of target buurten | `--price-scales lime_price_scales_all_50.csv --price-zones lime_price_zones_overvecht_kanaleneiland.csv` |
 
-Fare concessions on PT itself use `--pt-fare-scales`.
+Fare concessions on PT itself use `--pt-fare-scales`. A flat dockless price
+(`--dockless-model flat`, calibrated for revenue neutrality below) is a
+further tariff option.
+
+### S4: a price cut by home address (`--price-zones`)
+
+A **price zone** (`paths.lime_price_zones`, `--price-zones FILE`, a CSV with
+a column `buurtcode`) restricts the price-scale table to the residents of
+the listed buurten, as when a concession is granted through the address
+entered in the operator's app: their whole journey (dockless access, hub
+egress) is priced with the scales, everyone else pays the full price. Every
+listed code must be an origin of the run. Since origins are evaluated
+independently, S4 equals S1 at the zone's origins and S0 elsewhere (tested).
+`data/tariffs/lime_price_zones_overvecht_kanaleneiland.csv` holds the 15
+target buurten: the 10 of Overvecht and Kanaleneiland-Noord, -Zuid,
+Bedrijvengebied Kanaleneiland, Transwijk-Noord and -Zuid. Its public cost is
+the revenue foregone of the zone's residents at baseline volume
+(`scenario.cost.by_origin_eur_year` in `run.json`).
 
 ### S2: siting extra hubs (`skims.hub_siting`, `cli.hubs`)
 
@@ -103,7 +120,7 @@ Lime hubs, each hub file given with its tariff kind:
 replaces `pt.hub_files` and `pt.hub_kinds` together; relative paths are
 found under `<root>/inputs` or `<root>/intermediate` (`skims.md`).
 
-### S4: flat price calibration (`run.scenarios`)
+### Flat price calibration (`run.scenarios`)
 
 The model has acceptable opportunities, not trips. Volume stands in as the
 number of acceptable pairs (jobs of the income class x persons of the
@@ -121,7 +138,8 @@ price is written to `run.json` under `scenario`.
 
 ### Usage and effectiveness
 
-`--report-usage` records Lime revenue and rentals per segment in `run.json`.
+`--report-usage` records Lime revenue and rentals per segment and per origin
+in `run.json`.
 `cli.compare run_a run_b --mode pt_v2` then writes, by income class and
 household type, each group's share of the gain and of the cost and their
 ratio (`run.scenarios.effectiveness`).

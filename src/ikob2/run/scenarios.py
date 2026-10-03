@@ -1,7 +1,8 @@
-"""Revenue and rentals of the shared-bicycle operator, and the flat price of
-scenario S4.
+"""Revenue and rentals of the shared-bicycle operator (per segment and per
+origin), and the flat price per rental.
 
-S4 replaces the Lime tiers by one flat price per rental, revenue neutral. The
+The flat tariff replaces the Lime tiers by one price per rental, revenue
+neutral. The
 model has acceptable opportunities, not trips, so revenue needs a stand-in
 for volume and a rule for which option a person uses:
 
@@ -59,6 +60,7 @@ class Usage:
     rentals: float
     rentals_scaled: float
     by_segment: dict = field(default_factory=dict, compare=False)
+    by_origin: dict = field(default_factory=dict, compare=False)
 
 
 def choice_terms(times: np.ndarray, costs: np.ndarray):
@@ -78,7 +80,8 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, job_weights,
                price_scale: Mapping[str, float] | None = None,
                margin_mode: str = "pt", unreachable_minutes: float = 1e4,
                price_from: MixedMode | OptionSet | None = None,
-               price_from_scale: Mapping[str, float] | None = None
+               price_from_scale: Mapping[str, float] | None = None,
+               price_zone: np.ndarray | None = None
                ) -> Usage:
     """Lime revenue and rentals of a shared-bicycle mode (M2, independent
     thresholds, options judged on their total time).
@@ -87,13 +90,21 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, job_weights,
     prices of another mode whose options correspond one to one: the revenue
     that would be collected at these prices if nobody changed their choice
     (baseline volume), which is what compensating an operator for lower prices
-    costs."""
+    costs.
+
+    price_zone (per origin 1 or 0) restricts both price scales to the
+    origins marked 1 (a concession by home address). `by_origin` holds the
+    revenue and rentals per origin, summed over segments."""
     origins = [str(o) for o in origins]
     destinations = [str(d) for d in destinations]
     names, pop, pools = prepare_inputs(
         origins, destinations, populations, sector_jobs, job_weights,
         envelope, None)
     n_o = len(origins)
+    zone = (np.ones(n_o) if price_zone is None
+            else np.asarray(price_zone, dtype=float))
+    if zone.shape != (n_o,) or not np.isin(zone, (0.0, 1.0)).all():
+        raise ValueError("price_zone needs one 0 or 1 per origin.")
     segs = {s.name: s for s in build_segments(
         time_margins[(margin_mode, WFH_TYPES[0])], envelope=envelope,
         money_cost_id="c", pool_by="income_class", only=names)}
@@ -110,8 +121,10 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, job_weights,
     for n, s in scale.items():
         groups.setdefault(s, []).append(n)
 
-    rev = {n: 0.0 for n in names}
-    ren = {n: 0.0 for n in names}
+    rev = {n: np.zeros(n_o) for n in names}       # per origin
+    ren = {n: np.zeros(n_o) for n in names}
+    # the multiplier of the price paid, per origin
+    pay = {n: 1.0 + (pscale[n] - 1.0) * zone for n in names}
     for part_no, (weight, oset) in enumerate(parts):
         w = np.asarray(weight, dtype=float)
         opts = oset.options
@@ -138,7 +151,8 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, job_weights,
             (margin_mode, wfh)]) for k in range(len(opts))]
             for wfh in WFH_TYPES}
         for sc, group in sorted(groups.items()):
-            _, _, c_k, hi_k = choice_terms(ts, cs + (sc - 1.0) * ls)
+            _, _, c_k, hi_k = choice_terms(
+                ts, cs + (sc - 1.0) * ls * zone[:, None])
             hi_k = np.where(np.isinf(hi_k), unreachable_minutes, hi_k)
             for k in range(len(opts)):
                 if not (n_sorted[k] > 0).any():
@@ -154,12 +168,15 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, job_weights,
                         pool = np.asarray(pools[wfh][segs[name].pool],
                                           dtype=np.float32)
                         weight_i = w * pop[name].fillna(0.0).to_numpy()
-                        rev[name] += pscale[name] * float(
-                            weight_i @ ((m * price) @ pool))
-                        ren[name] += float(weight_i @ ((m * count) @ pool))
-    scaled = sum(pscale[n] * ren[n] for n in names)
-    return Usage(sum(rev.values()), sum(ren.values()), scaled,
-                 {n: (rev[n], ren[n]) for n in names})
+                        rev[name] += pay[name] * weight_i * (
+                            (m * price) @ pool)
+                        ren[name] += weight_i * ((m * count) @ pool)
+    scaled = float(sum((pay[n] * ren[n]).sum() for n in names))
+    rev_o = sum(rev.values()) if names else np.zeros(n_o)
+    ren_o = sum(ren.values()) if names else np.zeros(n_o)
+    return Usage(float(rev_o.sum()), float(ren_o.sum()), scaled,
+                 {n: (float(rev[n].sum()), float(ren[n].sum())) for n in names},
+                 {o: (float(r), float(k)) for o, r, k in zip(origins, rev_o, ren_o)})
 
 
 def calibrate_flat(usage_for: Callable[[float | None], Usage], *,

@@ -147,3 +147,51 @@ def test_fare_scale_reaches_legwise_options():
     base = acc(run(pop, jobs, wfh, wage, mk()), "m")
     cheap = acc(run(pop, jobs, wfh, wage, mk(), fare_scale={SEG: 0.0}), "m")
     assert cheap[SEG] > base[SEG] and cheap["couple_D5"] == pytest.approx(base["couple_D5"])
+
+
+# ── price zones: the scales apply to residents of some origins (S4) ──
+
+ZONE = np.array([1.0, 0.0, 1.0])            # origins O0 and O2
+
+
+def by_origin(res, mode):
+    t = res.table[res.table["mode"] == mode]
+    return t.pivot(index="buurtcode", columns="segment", values="accessibility")
+
+
+@pytest.mark.parametrize("legwise", [False, True])
+def test_a_zone_scale_is_the_scaled_run_in_the_zone_and_the_base_elsewhere(legwise):
+    pop, jobs, wfh, wage, *_ = world()
+    plain, fast = opts(12.0)
+    if legwise:
+        mode = LegOptionSet(tuple(LegOption((o.time,), o.cost, o.cost_id,
+                                            lime=o.lime, lime_rentals=o.lime_rentals)
+                                  for o in (plain, fast)), ("pt",))
+    else:
+        mode = OptionSet((plain, fast), "pt")
+    half = {n: 0.5 for n in NAMES}
+    base = by_origin(run(pop, jobs, wfh, wage, {"m": mode}), "m")
+    s1 = by_origin(run(pop, jobs, wfh, wage, {"m": mode}, price_scale=half), "m")
+    s4 = by_origin(run(pop, jobs, wfh, wage, {"m": mode}, price_scale=half,
+                       price_zone=ZONE), "m")
+    assert (s1.loc["O0"] > base.loc["O0"]).any()       # the cut opens pairs
+    for o, z in zip(["O0", "O1", "O2"], ZONE):
+        np.testing.assert_allclose(s4.loc[o], (s1 if z else base).loc[o],
+                                   rtol=1e-6, atol=1e-6)
+    with pytest.raises(ValueError, match="price_zone"):
+        run(pop, jobs, wfh, wage, {"m": mode}, price_scale=half,
+            price_zone=np.array([1.0, 0.5, 0.0]))
+
+
+def test_load_price_zones(tmp_path):
+    from ikob2.run.shared_bike import load_price_zones
+
+    f = tmp_path / "z.csv"
+    f.write_text("buurtcode,buurtnaam\nO2,b\nO0,a\n")
+    assert load_price_zones(f, ["O0", "O1", "O2"]).tolist() == [1.0, 0.0, 1.0]
+    f.write_text("buurtcode\nO9\n")
+    with pytest.raises(ValueError, match="not origins"):
+        load_price_zones(f, ["O0", "O1", "O2"])
+    f.write_text("code\nO0\n")
+    with pytest.raises(ValueError, match="buurtcode"):
+        load_price_zones(f, ["O0"])

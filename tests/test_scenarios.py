@@ -128,3 +128,27 @@ def test_price_from_prices_the_baseline_choices_at_new_prices():
     assert u_new.rentals >= u0.rentals                      # cheaper: more accept
     with pytest.raises(ValueError, match="options"):
         lime_usage(mode=base, price_from=OptionSet((plain2,), "pt"), **kw)
+
+
+def test_zone_usage_is_the_scaled_usage_in_the_zone_and_the_base_elsewhere():
+    pop, jobs, wfh, wage, *_ = world()
+    plain, fast = opts(6.0)
+    kw = dict(origins=ORIGINS, destinations=DESTS, populations=pop,
+              sector_jobs=jobs, job_weights=weights(jobs, wfh, wage),
+              envelope=ENV, time_margins=MARGINS, mode=OptionSet((plain, fast), "pt"))
+    half = {n: 0.5 for n in ENV.household_type + "_" + ENV.income_class}
+    zone = np.array([0.0, 1.0, 1.0])
+    u0, u1 = lime_usage(**kw), lime_usage(price_scale=half, **kw)
+    u4 = lime_usage(price_scale=half, price_zone=zone, **kw)
+    for o, z in zip(ORIGINS, zone):
+        assert u4.by_origin[o] == pytest.approx((u1 if z else u0).by_origin[o],
+                                                rel=1e-9)
+    assert u4.revenue == pytest.approx(sum(r for r, _ in u4.by_origin.values()))
+    assert u0.revenue == pytest.approx(sum(r for r, _ in u0.by_origin.values()))
+    # the public cost: baseline choices priced at the zone prices; only the
+    # zone's residents pay half, so the revenue foregone is theirs
+    u_at = lime_usage(price_from=kw["mode"], price_from_scale=half,
+                      price_zone=zone, **kw)
+    assert u_at.by_origin["O0"] == pytest.approx(u0.by_origin["O0"], rel=1e-9)
+    assert u_at.by_origin["O1"][0] == pytest.approx(u0.by_origin["O1"][0] / 2,
+                                                    rel=1e-9)
