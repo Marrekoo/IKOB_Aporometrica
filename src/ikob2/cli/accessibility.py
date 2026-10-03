@@ -511,7 +511,7 @@ def cmd_run(args) -> None:
 
     sector_jobs = pd.read_csv(args.sector_jobs, index_col=0)
     matching = job_matching(prm, args, sector_jobs)
-    weights = matching.by_type
+    job_weights = matching.by_type
     envelope = load_reference_budgets(args.budgets,
                                       censored=args.censored,
                                       legs_per_tour=args.legs_per_tour)
@@ -563,9 +563,9 @@ def cmd_run(args) -> None:
         from ikob2.segments.specs import implied_vot, median_segment_cost
         pop_o = (pop.set_index("buurtcode") if "buurtcode" in pop.columns
                  else pop).reindex(store.origins)
-        weights = pop_o[[n for n in seg_names if n in pop_o.columns]].sum()
+        persons = pop_o[[n for n in seg_names if n in pop_o.columns]].sum()
         cost_mean = (prm.accessibility.m1c_cost_mean_eur
-                     or median_segment_cost(envelope, weights.to_dict()))
+                     or median_segment_cost(envelope, persons.to_dict()))
         scenario["m1c"] = {"cost_mean_eur": cost_mean, "implied_vot_eur_per_hour": {
             m: implied_vot(cost_mean, margins[(m, "no_wfh")])
             for m in ("car", "bike", "pt") if (m, "no_wfh") in margins}}
@@ -581,9 +581,9 @@ def cmd_run(args) -> None:
         if args.spec == "m0u":
             pop_o = (pop.set_index("buurtcode") if "buurtcode" in pop.columns
                      else pop).reindex(store.origins)
-            weights = pop_o.sum()
+            persons = pop_o.sum()
             cost_cutoff = (prm.accessibility.m0u_cost_cutoff_eur or cutoff_cost(
-                env_rows, share, [float(weights.get(
+                env_rows, share, [float(persons.get(
                     f"{r.household_type}_{r.income_class}", 0.0))
                     for r in env_rows]))
             scenario["m0u"] = {"cost_cutoff_eur": cost_cutoff,
@@ -620,7 +620,7 @@ def cmd_run(args) -> None:
                 return lime_usage(
                     origins=store.origins, destinations=dest_codes,
                     populations=pop, sector_jobs=sector_jobs,
-                    job_weights=weights, envelope=envelope_arg,
+                    job_weights=job_weights, envelope=envelope_arg,
                     time_margins=margins, mode=mode, price_scale=price_scale,
                     price_zone=price_zone,
                     unreachable_minutes=prm.accessibility.unreachable_minutes)
@@ -638,7 +638,7 @@ def cmd_run(args) -> None:
             u = lime_usage(
                 origins=store.origins, destinations=dest_codes,
                 populations=pop, sector_jobs=sector_jobs,
-                job_weights=weights, envelope=envelope_arg, time_margins=margins,
+                job_weights=job_weights, envelope=envelope_arg, time_margins=margins,
                 mode=mode, price_scale=price_scale, price_zone=price_zone,
                 unreachable_minutes=prm.accessibility.unreachable_minutes)
             scenario["lime_usage"] = {
@@ -659,7 +659,7 @@ def cmd_run(args) -> None:
             usage_kw = dict(
                 origins=store.origins, destinations=dest_codes,
                 populations=pop, sector_jobs=sector_jobs,
-                job_weights=weights, envelope=envelope_arg, time_margins=margins,
+                job_weights=job_weights, envelope=envelope_arg, time_margins=margins,
                 unreachable_minutes=prm.accessibility.unreachable_minutes)
             u0 = lime_usage(mode=base_mode, **usage_kw)
             u_at0 = lime_usage(mode=base_mode, price_from=mode,
@@ -694,7 +694,7 @@ def cmd_run(args) -> None:
 
     result = run_accessibility(
         origins=store.origins, destinations=dest_codes, populations=pop,
-        sector_jobs=sector_jobs, job_weights=weights,
+        sector_jobs=sector_jobs, job_weights=job_weights,
         envelope=envelope_arg, time_margins=margins, matrices=matrices,
         copula=copula, epsilon=args.epsilon,
         segment_names=envelope_segment_names(envelope),
@@ -715,7 +715,7 @@ def cmd_run(args) -> None:
     result.summary("household_type").to_csv(out_dir / "summary_household.csv")
     pd.concat([w.rename_axis("income_class").reset_index().melt(
         id_vars="income_class", var_name="sector", value_name="weight")
-        .assign(job_type=k) for k, w in weights.items()])[
+        .assign(job_type=k) for k, w in job_weights.items()])[
         ["job_type", "income_class", "sector", "weight"]].to_csv(
         out_dir / "job_weights.csv", index=False)
     meta = {**result.meta, "parameters": prm.to_dict(), "scenario": scenario,

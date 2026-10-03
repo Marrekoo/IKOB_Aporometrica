@@ -49,3 +49,34 @@ def test_example_reproduces_the_stored_output(tmp_path, monkeypatch):
     by = got.groupby(["mode", "income_class"])["accessibility"].mean()
     assert by[("pt", "D1")] == 0 and by[("pt", "D5")] > 0
     assert by[("car", "D5")] > by[("car", "D1")] > 0
+
+
+@pytest.mark.parametrize("spec", ["m0u", "m0s", "m1c"])
+def test_example_runs_the_calibrated_specifications(tmp_path, monkeypatch, spec):
+    """The specifications whose cut-off or cost mean the command line
+    calibrates on the population (M0u, M1c) or per segment (M0s)."""
+    import json
+
+    from ikob2.cli import accessibility
+
+    monkeypatch.delenv("IKOB_DATA_ROOT", raising=False)
+    root = tmp_path / "data"
+    _make_data().build(root)
+    accessibility.main(["--data-root", str(root), "--study", "tiny",
+                        "--run", spec, "--modes", "pt", "--spec", spec,
+                        "--log-level", "ERROR"])
+    run = root / "outputs/runs" / spec
+    got = pd.read_csv(run / "accessibility.csv")
+    meta = json.loads((run / "run.json").read_text())
+    d1 = got[got.income_class == "D1"]
+    if spec == "m0u":
+        # one positive cost cut-off for everyone: decile 1 has no atom
+        assert meta["scenario"]["m0u"]["cost_cutoff_eur"] > 0
+        assert (d1["atom"] == 0).all()
+    elif spec == "m0s":
+        # decile 1's own cut-off is zero: atom 1, no priced journey passes
+        assert meta["scenario"]["m0s"]["cost_cutoff_eur"]["single_D1"] == 0.0
+        assert (d1["atom"] == 1).all() and (d1["accessibility"] == 0).all()
+    else:
+        assert meta["scenario"]["m1c"]["cost_mean_eur"] > 0
+        assert (got["atom"] == 0).all()
