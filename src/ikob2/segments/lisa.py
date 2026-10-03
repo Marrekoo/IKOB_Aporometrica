@@ -45,6 +45,16 @@ SECTOR_TO_SBI: dict[str, tuple[str, ...]] = {
 }
 SECTORS = tuple(SECTOR_TO_SBI)
 
+# LISA sector -> NACE Rev. 2 sections (= SBI2008 sections) of the Eurostat
+# occupation tables (segments.occupations); the same correspondence as
+# SECTOR_TO_SBI.
+SECTOR_TO_NACE: dict[str, tuple[str, ...]] = {
+    "L01": ("A",), "L02": ("B", "C"), "L03": ("D", "E"), "L04": ("F",),
+    "L05": ("G",), "L06": ("H",), "L07": ("I",), "L08": ("J",),
+    "L09": ("K",), "L10": ("M", "N"), "L11": ("O",), "L12": ("P",),
+    "L13": ("Q",), "L14": ("R",), "L15": ("S",),
+}
+
 # LISA sector -> KWB establishment group (CBS Kerncijfers wijken en
 # buurten reports establishments in these SBI groups). Cross-checked
 # against LISA's own establishment counts (2022): KWB/LISA is 0.97-1.09

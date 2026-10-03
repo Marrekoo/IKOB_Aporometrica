@@ -1,8 +1,8 @@
 # Jobs: sources, imputation and matching
 
 How the opportunities `D[j, c, w]` are built: jobs per LISA sector per buurt
-(`segments.lisa`, `segments.jobs_impute`, `segments.establishments`), their
-income class (`segments.jobs`) and their job type (`segments.wfh`).
+(`segments.lisa`, `segments.jobs_impute`, `segments.establishments`), and
+their income class and job type (`segments.occupations`).
 
 ## Sources
 
@@ -13,8 +13,18 @@ income class (`segments.jobs`) and their job type (`segments.wfh`).
 | KWB establishments (StatLine 85318NED, 2022) | establishments per buurt in 8 SBI groups | where each sector's establishments are |
 | LISA 2016 jobs by education (Amsterdam file) | jobs per 2016 buurt by education level | covariate of the sector model |
 | KWB 2022 | urbanisation class, mean house value | covariates of the sector model |
-| CBS 81431NED (2022) | employee jobs and mean hourly wage per SBI section | sector -> income rank |
-| CBS 85718NED (2024), 82072NED (2010) | working from home by education; education mix per SBI section | sector -> job type |
+| Eurostat LFS `lfsa_eisn2` (NL, 2022) | employed persons by NACE section x ISCO-08 major group | occupations within a sector |
+| Eurostat SES 2022 `earn_ses22_47` (NL) | mean hourly earnings by NACE section x ISCO-08 major group | wage of a sector x occupation cell |
+| CBS 85517NED (2022) | employees and hourly wage quartiles per BRC 2014 occupation group | wage spread within a cell |
+| CBS ISCO 2008 - BRC 2014 correspondence | ISCO unit groups per BRC occupation group | quartiles -> ISCO major groups |
+| Sostero et al. (2020), Zenodo 10.5281/zenodo.7716456 | technical teleworkability per ISCO 3-digit group | job type (home working) |
+| Eurostat LFS `lfsa_egai2d` (NL, 2022) | employed persons by ISCO-08 2-digit group | weights of the teleworkability |
+
+The tables are in `data/occupations` (README there: sources, licences,
+retrieval) and are seeded into `inputs/occupations`. The sector method
+(`jobs.matching = "sector"`) uses CBS 81431NED (mean hourly wage per SBI
+section) and CBS 85718NED with 82072NED (home working by education, education
+mix per section) instead.
 
 The year is a parameter (`accessibility.jobs_year`, `--year`); 2022 matches
 the KWB 2022 segment populations.
@@ -99,34 +109,52 @@ and is not validated.
 * LISA rows absent for a municipality x sector are 0.
 * One buurt ('Buitenland') has no municipality and gets no jobs.
 
-## Sector -> income class (`jobs.sector_income_weights`, `sector_pools`)
+## Income class and job type (`segments.occupations`, `jobs.matching`)
 
-The wage of a LISA sector is the job-weighted mean hourly wage (81431NED) of
-its SBI sections (`lisa.SECTOR_TO_SBI`, an assumed correspondence; L10 is
-M+N). Sectors are ranked by wage and laid along the income-rank axis in
-proportion to their national jobs; decile `Dk` covers `[(k-1)/10, k/10]`, and
-each sector's jobs are spread over the deciles it overlaps in proportion to
-the overlap. The decile pools therefore **partition** the jobs: they add up
-to the total. `onbekend` sees all jobs. `--common-jobs` gives every segment
-all jobs instead (the controlled comparison).
+**Cells.** Each LISA sector (`lisa.SECTOR_TO_NACE`, the sections of
+`lisa.SECTOR_TO_SBI`) is split into the nine ISCO-08 major groups (armed
+forces excluded) in proportion to their national employment in its NACE
+sections (LFS). A cell's jobs are that share of the sector's national LISA
+jobs. Its mean hourly wage is the employment-weighted SES mean over the
+sector's sections; a cell no section publishes takes the occupation's
+employment-weighted mean over all sections (agriculture is outside the SES).
 
-Limit: within-sector wage dispersion is ignored; every job of a sector sits
-at its mean-wage rank (financial services entirely at the top, hospitality
-entirely at the bottom). 81431NED publishes means only.
+**Wages within a cell** are lognormal with the cell's mean and one common log
+standard deviation `sigma` (0.380). `sigma` comes from the 85517NED quartiles:
+each BRC group is a lognormal with its median and interquartile range
+(`sd = ln(P75/P25)/1.349`; a group without quartiles takes those of the level
+above), its employees split evenly over its ISCO unit groups; per ISCO major
+group the spread of the mixture of its groups, averaged over the major groups
+by employees.
 
-## Job type: admits working from home (`segments.wfh`)
+**Deciles.** The job-weighted mixture of all cells is the national wage
+distribution of jobs. Its deciles (EUR 10.0, 12.7, 15.0, 17.3, 19.8, 22.6,
+25.9, 30.4, 37.6 per hour) partition every cell:
+`W[k, c] = Phi((ln b_k - mu_c)/sigma) - Phi((ln b_{k-1} - mu_c)/sigma)`,
+`mu_c = ln(mean wage) - sigma^2/2`. A sector's weight in decile `k` is the
+sum over its cells, weighted by their share of its jobs, so every sector
+reaches several deciles and each decile pool holds a tenth of the jobs. The
+pools **partition** the jobs; `onbekend` sees all jobs; `--common-jobs` gives
+every segment all jobs (the controlled comparison).
 
-The time margins differ by whether the job admits working from home. Per SBI
-section:
+**Job type.** A job admits working from home with the teleworkability of its
+occupation: the 'physical interaction' indicator of Sostero et al. (2020), the
+share of an ISCO 3-digit group that can potentially work remotely, averaged to
+2-digit groups and weighted to major groups by Dutch employment (OC1 0.76,
+OC2 0.77, OC3 0.51, OC4 0.83, OC5 0.12, OC6-OC9 0.00-0.01). The share
+therefore varies by decile through the occupations in it, from 14% of the D1
+jobs to 70% of the D10 jobs. The weights by job type are written to
+`job_weights.csv` of a run.
 
-    share_wfh(section) = sum_e P(e | section) x incidence(e)
+Limits: income deciles of households are matched to wage deciles of jobs
+(two-earner and part-time households loosen that link); the occupation mix of
+a sector and the wage spread are national; the LFS counts all employed
+persons, the SES employees; teleworkability is a European estimate of what is
+technically possible, not of practice.
 
-with `incidence(e)` the share of employed people with education `e` who at
-least sometimes work from home (85718NED, 2024) and `P(e | section)` the
-education mix of employee jobs (82072NED, 2010, the only year published);
-a LISA sector averages its sections. `split_jobs_by_wfh` splits every
-sector's jobs into `no_wfh` and `wfh_possible`.
-
-The derivation compresses the range (33% for agriculture and hospitality to
-68% for education; 45% overall against 52% of workers), ignores occupation,
-and reads "at least sometimes" as "admits".
+**Sector method** (`jobs.matching = "sector"`, `jobs.sector_income_weights`,
+`segments.wfh`): every job of a sector at the sector's mean hourly wage
+(81431NED), sectors laid along the income-rank axis in proportion to their
+jobs, and a home-working share per sector from home working by education
+(85718NED, 2024) and the education mix per SBI section (82072NED, 2010). Each
+decile then draws on one to three sectors.

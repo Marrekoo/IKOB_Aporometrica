@@ -13,6 +13,7 @@ $IKOB_DATA_ROOT or `paths.data_root` (ikob2.params.data_root).
         survey/                  fitted time margins (S_T_*.csv)
         envelope/                reference budgets per segment; sources/: their inputs
         tariffs/                 price and fare multipliers per segment
+        occupations/             jobs and wages by sector x occupation, teleworkability
         odin/                    ODiN tables and codebook
         veh_owners/              vehicle ownership per buurt (bicycle share)
         hubs/                    shared-bicycle hubs (municipal hubs)
@@ -101,6 +102,7 @@ SEED = (
     ("envelope/odin/2022_2023", "inputs", "envelope/odin/2022_2023", "*.csv"),
     ("margins", "inputs", "survey", "*.csv"),
     ("tariffs", "inputs", "tariffs", "*.csv"),
+    ("occupations", "inputs", "occupations", "*.csv"),
     ("statline", "cache", "statline", "*.csv"),
     ("calibration", "intermediate", "calibration", "*.json"),
 )
@@ -199,6 +201,10 @@ class DataLayout:
 
     def survey_margins(self, name: str = DEFAULTS.paths.survey_margins) -> Path:
         return resolve_input(name, self.inputs / "survey")
+
+    def occupations(self) -> Path:
+        """Occupation tables of the job matching (segments.occupations)."""
+        return self.inputs / "occupations"
 
     def tariff(self, name: str) -> Path:
         return resolve_input(name, self.inputs / "tariffs")

@@ -248,6 +248,19 @@ def cmd_jobs(args) -> None:
         print(f"  {k}: {v}")
 
 
+def cmd_occupations(args) -> None:
+    """Download the occupation tables of the job matching (Eurostat LFS and
+    SES, CBS 85517NED and the ISCO-BRC correspondence, the teleworkability
+    indices) into --out, with sources.json (query URL, retrieval time and
+    SHA-256 per file)."""
+    from ikob2.segments.occupations import fetch_tables
+
+    manifest = fetch_tables(args.out, year=args.year)
+    for name, m in manifest.items():
+        print(f"{name}  {m['sha256'][:12]}  {m['url']}")
+    print(f"Wrote {len(manifest)} tables and sources.json to {args.out}.")
+
+
 def main(argv=None) -> None:
     """Command line entry point (`python -m ikob2.cli.segments`)."""
     p = argparse.ArgumentParser(description=__doc__,
@@ -274,6 +287,16 @@ def main(argv=None) -> None:
                    help="StatLine KWB table with establishments by SBI "
                         "group (85318NED = 2022)")
     f.set_defaults(func=cmd_fetch)
+
+    o = sub.add_parser("occupations",
+                       help="download the occupation tables (job matching)")
+    o.add_argument("--out", required=True,
+                   help="folder to write to: data/occupations of the "
+                        "repository, then `cli.layout create` for a new data "
+                        "folder (it never overwrites)")
+    o.add_argument("--year", default="2022",
+                   help="year of the LFS, SES and 85517NED tables")
+    o.set_defaults(func=cmd_occupations)
 
     r = sub.add_parser("run", help="compute segments")
     r.add_argument("--kwb", default=None)

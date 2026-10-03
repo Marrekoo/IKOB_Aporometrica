@@ -17,7 +17,7 @@ expected number of jobs a member of `s` finds acceptable:
 
 | Symbol | Meaning | Built in |
 |---|---|---|
-| `D[j, c, w]` | jobs in `j` matched to income class `c`, split by job type `w` (admits working from home or not) | `segments.jobs_impute`, `segments.jobs`, `segments.wfh` |
+| `D[j, c, w]` | jobs in `j` matched to income class `c`, split by job type `w` (admits working from home or not) | `segments.jobs_impute`, `segments.occupations` |
 | `t_ijm` | door-to-door travel time, minutes | `skims` |
 | `c_ijm` | out-of-pocket cost of the one-way journey, euro (0 for bicycle and walking) | `skims.car`, `skims.pt_fare`, `run.shared_bike` |
 | `S_T(t; m, w)` | survival function of the maximum acceptable travel time (Weibull) | `segments.time_margins` |
@@ -219,8 +219,8 @@ rectangular and use the Hansen form (`run_hansen`).
 |---|---|---|
 | Segment populations | Poisson structure model on CBS municipal tables, IPF to buurt margins | `segments.md` |
 | Jobs by sector per buurt | LISA municipal jobs distributed over buurten (log-linear model, KWB establishments, IPF) | `data_lineage.md` |
-| Jobs by income class | sectors ranked by CBS wages, laid along the income axis; pools partition the jobs | `data_lineage.md` |
-| Job type (home working) | share per sector from CBS 85718NED and 82072NED | `data_lineage.md` |
+| Jobs by income class | sector x occupation cells (Eurostat LFS and SES 2022) with a lognormal wage spread (CBS 85517NED); the deciles of the national wage distribution of jobs partition them | `data_lineage.md` |
+| Job type (home working) | teleworkability of the cell's occupation (Sostero et al., 2020) | `data_lineage.md` |
 | Travel times | OSM (car, bicycle, walking), GTFS frequency model (PT), road-class peak load | `skims.md` |
 | Cost | car: per-km rate x routed distance + parking time; PT: NS 2026 rail table + regional boarding and per-km fare; shared bicycles: operator tariffs | `skims.md`, `scenarios.md` |
 

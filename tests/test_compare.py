@@ -9,7 +9,7 @@ from ikob2.core import families as fam
 from ikob2.run.accessibility import ModeMatrices, run_accessibility
 from ikob2.run.compare import compare_runs
 
-from test_run_accessibility import DESTS, NAMES, ORIGINS, world
+from test_run_accessibility import DESTS, NAMES, ORIGINS, weights, world
 
 
 def _table(values, mode="car"):
@@ -74,7 +74,7 @@ def test_time_curves_for_the_shape_comparison():
 def test_time_only_variants_run_without_an_envelope_and_differ():
     pop, jobs, wfh, wage, time, cost = world()
     common = dict(origins=ORIGINS, destinations=DESTS, populations=pop,
-                  sector_jobs=jobs, wfh_share=wfh, sector_wage=wage,
+                  sector_jobs=jobs, job_weights=weights(jobs, wfh, wage),
                   envelope=None, segment_names=NAMES, epsilon=None,
                   matrices={"car": ModeMatrices(time, cost, "c")})
     runs = {}

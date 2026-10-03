@@ -1,0 +1,32 @@
+{
+ "lfs_nace_isco_nl.csv": {
+  "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/lfsa_eisn2?geo=NL&sex=T&age=Y_GE15&unit=THS_PER&time=2022&format=JSON&lang=EN",
+  "retrieved": "2026-10-03T11:27:10+00:00",
+  "sha256": "6ce9ebc2a8c621a722a45f918a0acb4d618be17012e8ecf3e740b449ca76df95"
+ },
+ "ses_hourly_nace_isco_nl.csv": {
+  "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/earn_ses22_47?geo=NL&sex=T&indic_se=ERN&sizeclas=TOTAL&unit=EUR&format=JSON&lang=EN",
+  "retrieved": "2026-10-03T11:27:10+00:00",
+  "sha256": "38c71bb7ee766adebb628f87146047e18223ec57ecaa7afa656f797f63e6f99c"
+ },
+ "lfs_isco2_nl.csv": {
+  "url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/lfsa_egai2d?geo=NL&sex=T&age=Y_GE15&unit=THS_PER&time=2022&format=JSON&lang=EN",
+  "retrieved": "2026-10-03T11:27:10+00:00",
+  "sha256": "0183919e2d40aec4596428f7c17420b75bdb8b0446bc8828c72eeeb4f5faedd4"
+ },
+ "brc_wage_quartiles.csv": {
+  "url": "https://opendata.cbs.nl/ODataApi/odata/85517NED/TypedDataSet?%24select=Beroep%2CPerioden%2CWerknemer_1%2Ck_25ePercentiel_2%2Ck_50ePercentielMediaan_3%2Ck_75ePercentiel_4&%24format=json&%24filter=Perioden%20eq%20%272022JJ00%27",
+  "retrieved": "2026-10-03T11:27:10+00:00",
+  "sha256": "a85a0c8937ea07e75b3ea9c0522412c8e936b469c73e65e4273d5535f1ef0998"
+ },
+ "isco_brc_crosswalk.csv": {
+  "url": "https://www.cbs.nl/-/media/imported/onze-diensten/methoden/classificaties/documents/2015/09/schakelschema-isco2008-brc2014.xls",
+  "retrieved": "2026-10-03T11:27:10+00:00",
+  "sha256": "7fdf815ecf8941762b3605fe876e005603ec4a62569164996fcd1c00b8a59a0b"
+ },
+ "teleworkability_isco3.csv": {
+  "url": "https://zenodo.org/api/records/7716456/files/Telework%20ISCO%20indices.csv/content",
+  "retrieved": "2026-10-03T11:27:10+00:00",
+  "sha256": "9f19b145a581abedace60b4814d6ecde9e020b6a43122909612511bc3184848b"
+ }
+}

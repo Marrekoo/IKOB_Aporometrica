@@ -7,7 +7,7 @@ from ikob2.run.accessibility import OptionSet
 from ikob2.run.scenarios import Usage, calibrate_flat, choice_terms, lime_usage
 from ikob2.run.shared_bike import SharedBikeTariffs
 from tests.test_price_scale import opts
-from tests.test_run_accessibility import ENV, MARGINS, DESTS, ORIGINS, world
+from tests.test_run_accessibility import ENV, MARGINS, DESTS, ORIGINS, world, weights
 
 
 def test_choice_terms_sorts_by_time_and_tracks_the_cheaper_faster_option():
@@ -25,7 +25,7 @@ def usage(lime_cost, scale=None):
     pop, jobs, wfh, wage, *_ = world()
     plain, fast = opts(lime_cost)
     return lime_usage(origins=ORIGINS, destinations=DESTS, populations=pop,
-                      sector_jobs=jobs, wfh_share=wfh, sector_wage=wage,
+                      sector_jobs=jobs, job_weights=weights(jobs, wfh, wage),
                       envelope=ENV, time_margins=MARGINS,
                       mode=OptionSet((plain, fast), "pt"), price_scale=scale)
 
@@ -46,7 +46,7 @@ def test_no_lime_option_means_no_usage():
     pop, jobs, wfh, wage, *_ = world()
     plain, _ = opts(6.0)
     u = lime_usage(origins=ORIGINS, destinations=DESTS, populations=pop,
-                   sector_jobs=jobs, wfh_share=wfh, sector_wage=wage,
+                   sector_jobs=jobs, job_weights=weights(jobs, wfh, wage),
                    envelope=ENV, time_margins=MARGINS,
                    mode=OptionSet((plain,), "pt"))
     assert u.revenue == 0 and u.rentals == 0
@@ -114,7 +114,7 @@ def test_price_from_prices_the_baseline_choices_at_new_prices():
     choices collects half the revenue, whatever the volume response."""
     pop, jobs, wfh, wage, *_ = world()
     kw = dict(origins=ORIGINS, destinations=DESTS, populations=pop,
-              sector_jobs=jobs, wfh_share=wfh, sector_wage=wage,
+              sector_jobs=jobs, job_weights=weights(jobs, wfh, wage),
               envelope=ENV, time_margins=MARGINS)
     plain, fast = opts(6.0)
     base = OptionSet((plain, fast), "pt")

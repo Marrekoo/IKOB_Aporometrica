@@ -247,6 +247,11 @@ single_parent = 0.06
 couple_children = 0.24
 
 [jobs]
+# placing jobs in the income-decile pools: "occupation" = sector x ISCO major
+# group cells with a lognormal wage spread and home working by occupation
+# (segments/occupations.py, data/occupations); "sector" = every job of a
+# sector at the sector's mean wage, home working by the sector's education mix
+matching = "occupation"
 establishment_weight = 0.25   # weight of the establishment seed (jobs imputation)
 train_year = 2016             # LISA year matching the education shares
 ikob_jobs_year = "2018"       # year column of the IKOB job table (buurt totals)

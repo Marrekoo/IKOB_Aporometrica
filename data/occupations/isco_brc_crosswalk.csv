@@ -1,0 +1,589 @@
+isco08_unit,isco08_unit_label,brc_group,brc_group_label,brc_class
+0000,Militaire beroepen z.n.d.,0634,Militaire beroepen,06
+0110,Officieren,0634,Militaire beroepen,06
+0210,Onderofficieren,0634,Militaire beroepen,06
+0310,Andere militaire rangen,0634,Militaire beroepen,06
+1000,Managers z.n.d.,0551,Managers z.n.d.,05
+1100,"Topbestuurders, leden wetgevende instanties, beleidvoerende functies z.n.d.",0551,Managers z.n.d.,05
+1110,"Leden wetgevende instanties, beleidvoerende functies z.n.d.",0611,Overheidsbestuurders,06
+1111,Leden wetgevende instanties,0611,Overheidsbestuurders,06
+1112,Ambtenaren in beleidvoerende functies,0611,Overheidsbestuurders,06
+1113,Traditionele dorpshoofden,1311,Overig,13
+1114,Bestuurders van belangenorganisaties,0611,Overheidsbestuurders,06
+1120,Topbestuurders en algemeen directeuren van grote ondernemingen,0511,Algemeen directeuren,05
+1200,Managers op administratief en commercieel gebied z.n.d.,0551,Managers z.n.d.,05
+1210,Managers zakelijke en administratieve dienstverlening z.n.d.,0521,Managers zakelijke en administratieve dienstverlening,05
+1211,Financieel managers,0521,Managers zakelijke en administratieve dienstverlening,05
+1212,Managers personeel en organisatie,0521,Managers zakelijke en administratieve dienstverlening,05
+1213,Managers beleid en planning,0521,Managers zakelijke en administratieve dienstverlening,05
+1219,Managers zakelijke en administratieve dienstverlening n.e.g.,0521,Managers zakelijke en administratieve dienstverlening,05
+1220,"Managers verkoop, marketing en ontwikkeling z.n.d.",0522,Managers verkoop en marketing,05
+1221,Managers verkoop en marketing,0522,Managers verkoop en marketing,05
+1222,Managers reclame en public relations,0522,Managers verkoop en marketing,05
+1223,Managers onderzoek en ontwikkeling (R&D),0522,Managers verkoop en marketing,05
+1300,Managers productie en gespecialiseerde dienstverlening z.n.d.,0551,Managers z.n.d.,05
+1310,"Managers landbouw, bosbouw en visserij z.n.d.",0531,Managers productie,05
+1311,Managers landbouw en bosbouw,0531,Managers productie,05
+1312,Managers aquacultuur en visserij,0531,Managers productie,05
+1320,"Managers industrie, mijnbouw, bouwnijverheid en logistiek z.n.d.",0531,Managers productie,05
+1321,Managers industrie,0531,Managers productie,05
+1322,Managers mijnbouw,0531,Managers productie,05
+1323,Managers bouwnijverheid,0531,Managers productie,05
+1324,"Managers logistiek, distributie en aanverwante gebieden",0532,Managers logistiek,05
+1330,Managers informatie- en communicatietechnologie,0533,Managers ICT,05
+1340,Managers gespecialiseerde dienstverlening z.n.d.,0534,Managers zorginstellingen,05
+1341,Managers kinderopvang,0534,Managers zorginstellingen,05
+1342,Managers gezondheidszorg,0534,Managers zorginstellingen,05
+1343,Managers ouderenzorg,0534,Managers zorginstellingen,05
+1344,Managers sociale dienstverlening,0534,Managers zorginstellingen,05
+1345,Managers onderwijs,0535,Managers onderwijs,05
+1346,Managers financiële dienstverlening en verzekeringen,0536,Managers gespecialiseerde dienstverlening,05
+1349,Managers gespecialiseerde dienstverlening n.e.g.,0536,Managers gespecialiseerde dienstverlening,05
+1400,"Managers horeca, detailhandel en overige diensten z.n.d.",0551,Managers z.n.d.,05
+1410,Managers horeca z.n.d.,0541,Managers horeca,05
+1411,Hotelmanagers,0541,Managers horeca,05
+1412,Restaurantmanagers,0541,Managers horeca,05
+1420,Managers detail- en groothandel,0542,Managers detail- en groothandel,05
+1430,Managers overige diensten z.n.d.,0543,Managers commerciële en persoonlijke dienstverlening,05
+1431,Managers recreatie en amusement,0543,Managers commerciële en persoonlijke dienstverlening,05
+1439,Managers commerciële en persoonlijke dienstverlening n.e.g.,0543,Managers commerciële en persoonlijke dienstverlening,05
+2000,"Onderzoekers, ingenieurs, docenten en specialisten z.n.d.",0712,Ingenieurs (geen elektrotechniek),07
+2100,"Ingenieurs en onderzoekers wis-, natuur- en technische wetenschappen z.n.d.",0712,Ingenieurs (geen elektrotechniek),07
+2110,Natuur- en aardwetenschappers z.n.d.,0711,Biologen en natuurwetenschappers,07
+2111,Natuurkundigen en sterrenkundigen,0711,Biologen en natuurwetenschappers,07
+2112,Meteorologen,0711,Biologen en natuurwetenschappers,07
+2113,Chemici,0711,Biologen en natuurwetenschappers,07
+2114,Geologen en geofysici,0711,Biologen en natuurwetenschappers,07
+2120,"Wiskundigen, actuarissen en statistici",0711,Biologen en natuurwetenschappers,07
+2130,"Biologen, agrarisch en milieudeskundigen z.n.d.",0711,Biologen en natuurwetenschappers,07
+2131,"Biologen, botanici, zoölogen",0711,Biologen en natuurwetenschappers,07
+2132,"Adviseurs op het gebied van landbouw, bosbouw en visserij",0711,Biologen en natuurwetenschappers,07
+2133,Milieudeskundigen,0711,Biologen en natuurwetenschappers,07
+2140,Ingenieurs (m.u.v. elektrotechnisch ingenieurs) z.n.d.,0712,Ingenieurs (geen elektrotechniek),07
+2141,Industrieel ingenieurs en productie-ingenieurs,0712,Ingenieurs (geen elektrotechniek),07
+2142,Weg- en waterbouwkundigen,0712,Ingenieurs (geen elektrotechniek),07
+2143,Milieutechnologen,0712,Ingenieurs (geen elektrotechniek),07
+2144,Werktuigbouwkundigen,0712,Ingenieurs (geen elektrotechniek),07
+2145,Chemisch ingenieurs,0712,Ingenieurs (geen elektrotechniek),07
+2146,Mijnbouwkundigen en metaalkundigen,0712,Ingenieurs (geen elektrotechniek),07
+2149,Ingenieurs n.e.g.,0712,Ingenieurs (geen elektrotechniek),07
+2150,"Ingenieurs elektrotechniek, elektronica en telecommunicatie z.n.d.",0713,Elektrotechnisch ingenieurs,07
+2151,Elektrotechnisch ingenieurs,0713,Elektrotechnisch ingenieurs,07
+2152,Elektronica- en hardware ingenieurs,0713,Elektrotechnisch ingenieurs,07
+2153,Telecommunicatie-ingenieurs,0713,Elektrotechnisch ingenieurs,07
+2160,"Architecten, planologen, landmeetkundigen en vormgevers z.n.d.",0714,Architecten,07
+2161,Bouwkundig- en interieurarchitecten,0714,Architecten,07
+2162,Landschapsarchitecten,0714,Architecten,07
+2163,Product- en kledingontwerpers,0221,Grafisch vormgevers en productontwerpers,02
+2164,Stedenbouwkundigen en verkeersplanologen,0714,Architecten,07
+2165,Cartografen en landmeetkundigen,0714,Architecten,07
+2166,Grafisch vormgevers en multimedia vormgevers,0221,Grafisch vormgevers en productontwerpers,02
+2200,Specialisten gezondheidszorg z.n.d.,1311,Overig,13
+2210,Artsen z.n.d.,1011,Artsen,10
+2211,Huisartsen en basisartsen (niet in opleiding tot specialist),1011,Artsen,10
+2212,Medisch specialisten,1011,Artsen,10
+2220,Gespecialiseerd verpleegkundigen en verloskundigen z.n.d.,1012,Gespecialiseerd verpleegkundigen,10
+2221,Gespecialiseerd verpleegkundigen en verpleegkundig coördinatoren,1012,Gespecialiseerd verpleegkundigen,10
+2222,Verloskundigen,1012,Gespecialiseerd verpleegkundigen,10
+2230,Alternatief genezers,1013,Fysiotherapeuten,10
+2240,Physician assistents,1013,Fysiotherapeuten,10
+2250,Dierenartsen,1011,Artsen,10
+2260,Overige specialisten in de gezondheidszorg z.n.d.,1311,Overig,13
+2261,Tandartsen,1011,Artsen,10
+2262,Apothekers,1011,Artsen,10
+2263,Specialisten op het gebied van de milieu- en arbeidshygiëne,1013,Fysiotherapeuten,10
+2264,Fysiotherapeuten,1013,Fysiotherapeuten,10
+2265,Diëtisten en voedingsdeskundigen,1013,Fysiotherapeuten,10
+2266,Audiologen en logopedisten,1013,Fysiotherapeuten,10
+2267,Optometristen en orthoptisten,1013,Fysiotherapeuten,10
+2269,Specialisten op het gebied van de gezondheidszorg n.e.g.,1013,Fysiotherapeuten,10
+2300,Docenten z.n.d.,0114,Leerkrachten basisonderwijs,01
+2310,Hoogleraren en andere docenten hoger onderwijs,0111,Docenten hoger onderwijs en hoogleraren,01
+2320,Docenten beroepsgerichte vakken secundair onderwijs,0112,Docenten beroepsgerichte vakken secundair onderwijs,01
+2330,Docenten algemene vakken secundair onderwijs,0113,Docenten algemene vakken secundair onderwijs,01
+2340,Docenten basisonderwijs en voorschoolse onderwijs z.n.d.,0114,Leerkrachten basisonderwijs,01
+2341,Docenten basisonderwijs,0114,Leerkrachten basisonderwijs,01
+2342,Docenten voorschools onderwijs,0114,Leerkrachten basisonderwijs,01
+2350,Overige docenten en onderwijskundigen z.n.d.,0115,Onderwijskundigen en overige docenten,01
+2351,Specialisten op het gebied van onderwijsmethoden,0115,Onderwijskundigen en overige docenten,01
+2352,Docenten speciaal onderwijs,0114,Leerkrachten basisonderwijs,01
+2353,Docenten inburgering en docenten Nederlands als tweede taal,0115,Onderwijskundigen en overige docenten,01
+2354,Muziekleraren (particulier),0115,Onderwijskundigen en overige docenten,01
+2355,Kunstleraren (particulier),0115,Onderwijskundigen en overige docenten,01
+2356,Opleiders en trainers op het gebied van informatica,0115,Onderwijskundigen en overige docenten,01
+2359,Onderwijsbegeleiders en -adviseurs n.e.g.,0115,Onderwijskundigen en overige docenten,01
+2400,Specialisten bedrijfsbeheer en administratie z.n.d.,1311,Overig,13
+2410,Financieel specialisten z.n.d.,0412,Financieel specialisten en economen,04
+2411,Accountants,0411,Accountants,04
+2412,Financieel en beleggingsadviseurs,0412,Financieel specialisten en economen,04
+2413,Financieel analisten,0412,Financieel specialisten en economen,04
+2420,"Specialisten personeel, organisatie en beleidsadvies z.n.d.",0413,Bedrijfskundigen en organisatieadviseurs,04
+2421,Bedrijfskundigen en organisatieadviseurs,0413,Bedrijfskundigen en organisatieadviseurs,04
+2422,Beleidsadviseurs,0414,Beleidsadviseurs,04
+2423,Specialisten personeels- en loopbaanontwikkeling,0415,Specialisten personeels- en loopbaanontwikkeling,04
+2424,Specialisten bedrijfsopleidingen,0415,Specialisten personeels- en loopbaanontwikkeling,04
+2430,"Specialisten marketing, sales en public relations z.n.d.",0311,"Adviseurs marketing, public relations en sales",03
+2431,Specialisten reclame en marketing,0311,"Adviseurs marketing, public relations en sales",03
+2432,Specialisten public relations,0311,"Adviseurs marketing, public relations en sales",03
+2433,Vertegenwoordigers en accountmanagers industrie,0311,"Adviseurs marketing, public relations en sales",03
+2434,Vertegenwoordigers informatie- en communicatietechnologie,0311,"Adviseurs marketing, public relations en sales",03
+2500,Specialisten informatie- en communicatietechnologie z.n.d.,0811,Software- en applicatieontwikkelaars,08
+2510,Software- en applicatieontwikkelaars en -analisten z.n.d.,0811,Software- en applicatieontwikkelaars,08
+2511,Systeemanalisten en ICT-adviseurs,0811,Software- en applicatieontwikkelaars,08
+2512,Softwareontwikkelaars,0811,Software- en applicatieontwikkelaars,08
+2513,Web- en multimediaontwikkelaars,0811,Software- en applicatieontwikkelaars,08
+2514,Applicatieprogrammeurs,0811,Software- en applicatieontwikkelaars,08
+2519,Software- en applicatieontwikkelaars en -analisten n.e.g.,0811,Software- en applicatieontwikkelaars,08
+2520,Databank- en netwerkspecialisten z.n.d.,0812,Databank- en netwerkspecialisten,08
+2521,Ontwerpers en beheerders van databases,0812,Databank- en netwerkspecialisten,08
+2522,Systeembeheerders,0812,Databank- en netwerkspecialisten,08
+2523,Netwerkspecialisten,0812,Databank- en netwerkspecialisten,08
+2529,Databank- en netwerkspecialisten n.e.g.,0812,Databank- en netwerkspecialisten,08
+2600,"Juristen, sociaal wetenschappers en kunstenaars z.n.d.",1311,Overig,13
+2610,Juristen z.n.d.,0621,Juristen,06
+2611,Advocaten,0621,Juristen,06
+2612,Rechters,0621,Juristen,06
+2619,Juristen n.e.g.,0621,Juristen,06
+2620,"Bibliothecarissen, archivarissen en conservators z.n.d.",0211,Bibliothecarissen en conservatoren,02
+2621,Archivarissen en conservators,0211,Bibliothecarissen en conservatoren,02
+2622,Bibliothecarissen,0211,Bibliothecarissen en conservatoren,02
+2630,"Sociaal wetenschappers, specialisten sociale hulpverlening z.n.d.",1021,Maatschappelijk werkers,10
+2631,Economen,0412,Financieel specialisten en economen,04
+2632,"Sociologen, antropologen",1022,Psychologen en sociologen,10
+2633,"Filosofen, historici en politicologen",1022,Psychologen en sociologen,10
+2634,Psychologen,1022,Psychologen en sociologen,10
+2635,Maatschappelijk werkers en specialistische sociale hulpverleners,1021,Maatschappelijk werkers,10
+2636,Theologen en voorgangers van de eredienst,1022,Psychologen en sociologen,10
+2640,"Auteurs, journalisten en taalkundigen z.n.d.",0212,Auteurs en taalkundigen,02
+2641,"Auteurs, technisch schrijvers",0212,Auteurs en taalkundigen,02
+2642,Journalisten,0213,Journalisten,02
+2643,"Vertalers, tolken en andere taalkundigen",0212,Auteurs en taalkundigen,02
+2650,Scheppende en uitvoerende kunstenaars z.n.d.,0215,Uitvoerend kunstenaars,02
+2651,Beeldend kunstenaars,0214,Beeldend kunstenaars,02
+2652,"Musici, zangers en componisten",0215,Uitvoerend kunstenaars,02
+2653,Dansers en choreografen,0215,Uitvoerend kunstenaars,02
+2654,"Regisseurs en producenten televisie, film en theater",0215,Uitvoerend kunstenaars,02
+2655,Acteurs,0215,Uitvoerend kunstenaars,02
+2656,"Omroepers voor radio, televisie en andere media",0215,Uitvoerend kunstenaars,02
+2659,Entertainment artiesten,0215,Uitvoerend kunstenaars,02
+3000,Vakspecialisten z.n.d.,0721,Technici bouwkunde en natuur,07
+3100,Vakspecialisten natuur- en technische wetenschappen sub-major group z.n.d.,0721,Technici bouwkunde en natuur,07
+3110,Vakspecialisten natuur- en technische wetenschappen minor group z.n.d. ,0721,Technici bouwkunde en natuur,07
+3111,Scheikundige en natuurkundige onderzoekstechnici,0721,Technici bouwkunde en natuur,07
+3112,"Technici weg- en waterbouw, bouwinspecteurs en landmeters",0721,Technici bouwkunde en natuur,07
+3113,Elektrotechnici,0721,Technici bouwkunde en natuur,07
+3114,Technici elektronica,0721,Technici bouwkunde en natuur,07
+3115,Technici werktuigbouwkunde,0721,Technici bouwkunde en natuur,07
+3116,Procestechnici (petro)chemische industrie,0721,Technici bouwkunde en natuur,07
+3117,Technici delfstofwinning en metallurgie,0721,Technici bouwkunde en natuur,07
+3118,Technisch tekenaars,0721,Technici bouwkunde en natuur,07
+3119,Vakspecialisten op het gebied van natuur- en technische wetenschappen n.e.g.,0721,Technici bouwkunde en natuur,07
+3120,"Toezichthoudend personeel in de mijnbouw, de industrie en de bouwnijverheid z.n.d.",0722,Productieleiders industrie en bouw,07
+3121,Toezichthoudend personeel in de mijnbouw,0722,Productieleiders industrie en bouw,07
+3122,Toezichthoudend personeel in de industrie,0722,Productieleiders industrie en bouw,07
+3123,Toezichthoudend personeel in de bouwnijverheid,0722,Productieleiders industrie en bouw,07
+3130,Procesoperators z.n.d.,0723,Procesoperators,07
+3131,Procesoperators elektriciteitscentrales,0723,Procesoperators,07
+3132,Procesoperators verbrandingsovens en waterzuiveringsinstallaties,0723,Procesoperators,07
+3133,Procesoperators chemische installaties,0723,Procesoperators,07
+3134,Procesoperators aardolie- en aardgasraffinaderijen,0723,Procesoperators,07
+3135,Procesoperators hoogovens,0723,Procesoperators,07
+3139,Procesoperators n.e.g.,0723,Procesoperators,07
+3140,"Vakspecialisten levenswetenschappen, landbouw en natuurbeheer z.n.d.",0721,Technici bouwkunde en natuur,07
+3141,Analisten en laboranten levenswetenschappen (m.u.v. medisch),0721,Technici bouwkunde en natuur,07
+3142,Vakspecialisten landbouw,0721,Technici bouwkunde en natuur,07
+3143,"Boswachters, bos- en natuurbeheerders",0721,Technici bouwkunde en natuur,07
+3150,Bestuurders en vakspecialisten schepen en vliegtuigen z.n.d.,1211,Dekofficieren en piloten,12
+3151,Scheepswerktuigkundigen,1211,Dekofficieren en piloten,12
+3152,Dekofficieren en loodsen,1211,Dekofficieren en piloten,12
+3153,"Piloten, vlieginstructeurs",1211,Dekofficieren en piloten,12
+3154,Luchtverkeersleiders,1211,Dekofficieren en piloten,12
+3155,Elektrotechnicus luchtvaartveiligheid,1211,Dekofficieren en piloten,12
+3200,Vakspecialisten gezondheidszorg z.n.d.,1035,Medisch vakspecialisten,10
+3210,Medisch en farmaceutisch vakspecialisten z.n.d.,1035,Medisch vakspecialisten,10
+3211,Laboranten medische diagnostiek en therapie,1031,Laboranten,10
+3212,Medisch en pathologisch laboranten,1031,Laboranten,10
+3213,Farmaceutisch medewerkers en apothekersassistenten,1032,Apothekersassistenten,10
+3214,Prothese- en tandtechnici,1035,Medisch vakspecialisten,10
+3220,Verpleegkundigen en kraamverpleegkundigen z.n.d.,1033,Verpleegkundigen (mbo),10
+3221,Verpleegkundigen (geen coördinerende of specialistische taken),1033,Verpleegkundigen (mbo),10
+3222,Assistent-verloskundigen en kraamverpleegkundigen,1033,Verpleegkundigen (mbo),10
+3230,Vakspecialisten alternatieve geneeskunde,1035,Medisch vakspecialisten,10
+3240,Veterinaire assistenten en dierenartsassistenten,1034,Medisch praktijkassistenten,10
+3250,Overige vakspecialisten in de gezondheidszorg z.n.d.,1035,Medisch vakspecialisten,10
+3251,Tandartsassistenten en mondhygiënisten,1034,Medisch praktijkassistenten,10
+3252,Medewerkers medische registratie en medisch archief,1035,Medisch vakspecialisten,10
+3253,Medewerkers gezondheidsvoorlichting en -opvoeding,1035,Medisch vakspecialisten,10
+3254,Opticiens,1035,Medisch vakspecialisten,10
+3255,Masseurs en assistenten fysio- en bewegingstherapie,1035,Medisch vakspecialisten,10
+3256,Medische praktijkassistenten,1034,Medisch praktijkassistenten,10
+3257,"Inspecteurs veiligheid, gezondheid en voeding",1035,Medisch vakspecialisten,10
+3258,Ambulancepersoneel,1035,Medisch vakspecialisten,10
+3259,Vakspecialisten gezondheidszorg n.e.g.,1035,Medisch vakspecialisten,10
+3300,Vakspecialisten bedrijfsbeheer en administratie z.n.d.,1311,Overig,13
+3310,Financieel en wiskundig vakspecialisten z.n.d.,0421,Boekhouders,04
+3311,Effecten- en valutahandelaren en -makelaars,0421,Boekhouders,04
+3312,Medewerkers kredieten en leningen,0421,Boekhouders,04
+3313,"Boekhouders, financieel administrateurs en assistent accountants",0421,Boekhouders,04
+3314,"Actuarieel, wiskundig en statistisch analisten",0421,Boekhouders,04
+3315,Taxateurs en schade-experts,0421,Boekhouders,04
+3320,In- en verkopers en commissionairs z.n.d.,0321,Vertegenwoordigers en inkopers,03
+3321,Verzekeringsagenten,0321,Vertegenwoordigers en inkopers,03
+3322,"Vertegenwoordigers, accountmanagers retail en exportmanagers",0321,Vertegenwoordigers en inkopers,03
+3323,Inkopers,0321,Vertegenwoordigers en inkopers,03
+3324,Commissionairs,0321,Vertegenwoordigers en inkopers,03
+3330,Zakelijke dienstverleners z.n.d.,0422,Zakelijke dienstverleners,04
+3331,Inklaringsagenten en expediteurs,0422,Zakelijke dienstverleners,04
+3332,Organisatoren van conferenties en evenementen,0422,Zakelijke dienstverleners,04
+3333,Arbeidsbemiddelaars en uitzendbureaumedewerkers,0422,Zakelijke dienstverleners,04
+3334,Makelaars onroerend goed en vastgoedbeheerders,0422,Zakelijke dienstverleners,04
+3339,Zakelijke dienstverleners n.e.g.,0422,Zakelijke dienstverleners,04
+3340,Office managers en gespecialiseerde secretaressen z.n.d.,0423,Directiesecretaresses,04
+3341,Office managers,0423,Directiesecretaresses,04
+3342,Juridisch secretaressen,0423,Directiesecretaresses,04
+3343,"Directie-, project- en internationaal secretaressen",0423,Directiesecretaresses,04
+3344,Medisch secretaressen,0423,Directiesecretaresses,04
+3350,Vakspecialisten overheid z.n.d.,0612,Overheidsambtenaren,06
+3351,Douane-inspecteurs en grensbewakers,0612,Overheidsambtenaren,06
+3352,Ambtenaren belastingen en accijnzen,0612,Overheidsambtenaren,06
+3353,Ambtenaren sociale verzekeringen,0612,Overheidsambtenaren,06
+3354,Ambtenaren vergunningen,0612,Overheidsambtenaren,06
+3355,Politie-inspecteurs en rechercheurs,0631,Politie-inspecteurs,06
+3359,Overheidsambtenaren n.e.g.,0612,Overheidsambtenaren,06
+3400,"Vakspecialisten op juridisch, maatschappelijk en cultureel gebied z.n.d.",1311,Overig,13
+3410,"Juridisch medewerkers, sociaal en pastoraal werkers z.n.d.",1041,"Sociaal werkers, groeps- en woonbegeleiders",10
+3411,Notarieel en juridisch assistenten en deurwaarders,1041,"Sociaal werkers, groeps- en woonbegeleiders",10
+3412,"Sociaal werkers, groeps- en woonbegeleiders",1041,"Sociaal werkers, groeps- en woonbegeleiders",10
+3413,Pastoraal werkers,1041,"Sociaal werkers, groeps- en woonbegeleiders",10
+3420,"Sportbeoefenaren, -trainers en fitnessinstructeurs z.n.d.",0121,Sportinstructeurs,01
+3421,Atleten en andere sportbeoefenaren,0121,Sportinstructeurs,01
+3422,Sporttrainers en zweminstructeurs,0121,Sportinstructeurs,01
+3423,Fitnessinstructeurs en leiders van recreatieprogramma's,0121,Sportinstructeurs,01
+3430,"Vakspecialisten op artistiek, cultureel en culinair gebied z.n.d.",0222,Fotografen en interieurontwerpers,02
+3431,Fotografen,0222,Fotografen en interieurontwerpers,02
+3432,Interieurontwerpers en decorateurs,0222,Fotografen en interieurontwerpers,02
+3433,"Vakspecialisten galerieën, musea en bibliotheken",0222,Fotografen en interieurontwerpers,02
+3434,Chef-koks,1112,Koks,11
+3435,Vakspecialisten televisie- en theaterproductie,0222,Fotografen en interieurontwerpers,02
+3500,Vakspecialisten informatie en communicatie z.n.d.,0821,Gebruikersondersteuning ICT,08
+3510,Vakspecialisten informatie- en communicatietechnologie en gebruikersondersteuning z.n.d.,0821,Gebruikersondersteuning ICT,08
+3511,Vakspecialisten informatie- en communicatietechnologie (hardware),0821,Gebruikersondersteuning ICT,08
+3512,Gebruikersondersteuners ICT en ICT-helpdeskmedewerkers,0821,Gebruikersondersteuning ICT,08
+3513,Netwerk- en systeemtechnici,0821,Gebruikersondersteuning ICT,08
+3514,Vakspecialisten website-ontwikkeling en -beheer,0821,Gebruikersondersteuning ICT,08
+3520,"Telecommunicatie-, radio- en televisietechnici z.n.d.",0822,Radio- en televisietechnici,08
+3521,Beeld- en geluidstechnici radio en televisie,0822,Radio- en televisietechnici,08
+3522,Telecommunicatievakspecialisten,0822,Radio- en televisietechnici,08
+4000,Administratief personeel z.n.d.,0431,Administratief medewerkers,04
+4100,Administratief medewerkers z.n.d.,0431,Administratief medewerkers,04
+4110,"Administratief medewerkers, algemeen",0431,Administratief medewerkers,04
+4120,"Secretarieel medewerkers, algemeen",0432,Secretaresses,04
+4130,Typisten en medewerkers data-invoer z.n.d.,0432,Secretaresses,04
+4131,Typisten en tekstverwerkers,0432,Secretaresses,04
+4132,Medewerkers data-invoer,0432,Secretaresses,04
+4200,"Klantvoorlichters, kassiers, incassomedewerkers z.n.d.",1311,Overig,13
+4210,"Kassiers, incassomedewerkers z.n.d.",0431,Administratief medewerkers,04
+4211,Kassiers en baliemedewerkers bank,0431,Administratief medewerkers,04
+4212,"Bookmakers, croupiers",0431,Administratief medewerkers,04
+4213,Lommerdhouders en geldschieters,0431,Administratief medewerkers,04
+4214,Incassomedewerkers,0431,Administratief medewerkers,04
+4220,Klantvoorlichters z.n.d.,0433,Receptionisten en telefonisten,04
+4221,Reisconsulenten en reisbureaumedewerkers,0433,Receptionisten en telefonisten,04
+4222,Callcentermedewerkers inbound,0433,Receptionisten en telefonisten,04
+4223,Telefonisten,0433,Receptionisten en telefonisten,04
+4224,Hotelreceptionisten,0433,Receptionisten en telefonisten,04
+4225,Informatieverstrekkers,0433,Receptionisten en telefonisten,04
+4226,"Receptionisten, algemeen",0433,Receptionisten en telefonisten,04
+4227,Interviewers voor enquêtes en marktonderzoek,0433,Receptionisten en telefonisten,04
+4229,Klantenvoorlichters n.e.g.,0433,Receptionisten en telefonisten,04
+4300,Boekhoudkundig medewerkers en voorraadbeheerders z.n.d.,1311,Overig,13
+4310,Boekhoudkundig medewerkers z.n.d.,0434,Boekhoudkundig medewerkers,04
+4311,Boekhoudkundig medewerkers,0434,Boekhoudkundig medewerkers,04
+4312,"Administratief medewerkers statistiek, financiën en verzekeringen",0434,Boekhoudkundig medewerkers,04
+4313,Loonadministrateurs,0434,Boekhoudkundig medewerkers,04
+4320,Magazijnbeheerders en administratief productie- en transportpersoneel z.n.d.,0435,Transportplanners en logistiek medewerkers,04
+4321,"Logistiek medewerkers, medewerkers materiaal-, voorraadplanning en -beheer",0435,Transportplanners en logistiek medewerkers,04
+4322,"Werkvoorbereiders, productieplanners en orderbegeleiders",0435,Transportplanners en logistiek medewerkers,04
+4323,Transportplanners,0435,Transportplanners en logistiek medewerkers,04
+4400,Overig administratief personeel sub-major group z.n.d.,0431,Administratief medewerkers,04
+4410,Overig administratief personeel minor group z.n.d. ,0431,Administratief medewerkers,04
+4411,Bibliotheekmedewerkers,0431,Administratief medewerkers,04
+4412,Postboden en postsorteerders,0431,Administratief medewerkers,04
+4413,"Codeurs, correctoren",0431,Administratief medewerkers,04
+4414,Openbare schrijvers,1311,Overig,13
+4415,Archiverings- en kopieermedewerkers,0431,Administratief medewerkers,04
+4416,Medewerkers personeelsadministratie,0431,Administratief medewerkers,04
+4419,Administratief assistenten n.e.g.,0431,Administratief medewerkers,04
+5000,Dienstverlenend personeel en verkopers z.n.d.,1311,Overig,13
+5100,Medewerkers persoonlijke dienstverlening z.n.d.,1116,Verleners van overige persoonlijke diensten,11
+5110,"Reisbegeleiders, conducteurs, reisleiders en gidsen z.n.d.",1111,Reisbegeleiders,11
+5111,Reisbegeleiders en stewards,1111,Reisbegeleiders,11
+5112,Conducteurs,1111,Reisbegeleiders,11
+5113,Reisleiders en gidsen,1111,Reisbegeleiders,11
+5120,Koks,1112,Koks,11
+5130,Kelners en barpersoneel z.n.d.,1113,Kelners en barpersoneel,11
+5131,Medewerkers bediening horeca,1113,Kelners en barpersoneel,11
+5132,Barpersoneel,1113,Kelners en barpersoneel,11
+5140,"Kappers, schoonheidsspecialisten z.n.d.",1114,Kappers en schoonheidsspecialisten,11
+5141,Kappers,1114,Kappers en schoonheidsspecialisten,11
+5142,Schoonheidsspecialisten,1114,Kappers en schoonheidsspecialisten,11
+5150,"Teamleiders huishoudelijke diensten, conciërges z.n.d.",1115,Conciërges en teamleiders schoonmaak,11
+5151,Teamleiders huishoudelijke diensten en schoonmaak,1115,Conciërges en teamleiders schoonmaak,11
+5152,Butlers en pensionhouders,1115,Conciërges en teamleiders schoonmaak,11
+5153,Conciërges,1115,Conciërges en teamleiders schoonmaak,11
+5160,Overige verleners van persoonlijke diensten z.n.d.,1116,Verleners van overige persoonlijke diensten,11
+5161,"Astrologen, waarzeggers",1116,Verleners van overige persoonlijke diensten,11
+5162,"Gezelschapspersonen, buddy's en persoonlijk assistenten",1116,Verleners van overige persoonlijke diensten,11
+5163,Uitvaartmedewerkers en balsemers,1116,Verleners van overige persoonlijke diensten,11
+5164,Dierverzorgers,1116,Verleners van overige persoonlijke diensten,11
+5165,Rij-instructeurs,1116,Verleners van overige persoonlijke diensten,11
+5169,Verleners van persoonlijke diensten n.e.g.,1116,Verleners van overige persoonlijke diensten,11
+5200,Verkopers z.n.d.,0334,Callcentermedewerkers outbound en overige verkopers,03
+5210,Straat- en marktverkopers z.n.d.,0334,Callcentermedewerkers outbound en overige verkopers,03
+5211,Markt- en kioskverkopers,0334,Callcentermedewerkers outbound en overige verkopers,03
+5212,Straatverkopers voedsel,0334,Callcentermedewerkers outbound en overige verkopers,03
+5220,Verkopers in winkels z.n.d.,0332,Verkoopmedewerkers detailhandel,03
+5221,Winkeliers,0331,Winkeliers en teamleiders detailhandel,03
+5222,Teamleiders detailhandel,0331,Winkeliers en teamleiders detailhandel,03
+5223,Verkoopmedewerkers detailhandel,0332,Verkoopmedewerkers detailhandel,03
+5230,Kassamedewerkers en kaartverkopers,0333,Kassamedewerkers,03
+5240,Overige verkopers z.n.d.,0334,Callcentermedewerkers outbound en overige verkopers,03
+5241,Mannequins en modellen,0334,Callcentermedewerkers outbound en overige verkopers,03
+5242,Demonstrateurs,0334,Callcentermedewerkers outbound en overige verkopers,03
+5243,Colporteurs,0334,Callcentermedewerkers outbound en overige verkopers,03
+5244,Callcentermedewerkers outbound,0334,Callcentermedewerkers outbound en overige verkopers,03
+5245,Pompbedienden,0334,Callcentermedewerkers outbound en overige verkopers,03
+5246,Verkopers in fastfoodrestaurants en snackbars,0334,Callcentermedewerkers outbound en overige verkopers,03
+5249,Verhuurmedewerkers en verkopers n.e.g.,0334,Callcentermedewerkers outbound en overige verkopers,03
+5300,Verzorgend personeel z.n.d.,1051,Verzorgenden,10
+5310,Kinderverzorgers en onderwijsassistenten z.n.d.,0131,Leidsters kinderopvang en onderwijsassistenten,01
+5311,Kinderverzorgers,0131,Leidsters kinderopvang en onderwijsassistenten,01
+5312,Onderwijsassistenten,0131,Leidsters kinderopvang en onderwijsassistenten,01
+5320,Verzorgend personeel in de gezondheidszorg z.n.d.,1051,Verzorgenden,10
+5321,Verzorgenden intramuraal,1051,Verzorgenden,10
+5322,Verzorgenden thuiszorg,1051,Verzorgenden,10
+5329,Assistenten gezondheidszorg n.e.g.,1051,Verzorgenden,10
+5400,Beveiligingswerkers sub-major group z.n.d.,0633,Beveiligingspersoneel,06
+5410,Beveiligingswerkers minor group z.n.d. ,0633,Beveiligingspersoneel,06
+5411,Brandweerlieden,0632,Politie en brandweer,06
+5412,Politiepersoneel,0632,Politie en brandweer,06
+5413,Gevangenbewaarders,0633,Beveiligingspersoneel,06
+5414,Beveiligingspersoneel,0633,Beveiligingspersoneel,06
+5419,"Parkeerwachters, strandwachten en beveiligingswerkers n.e.g.",0633,Beveiligingspersoneel,06
+6000,"Landbouwers, bosbouwers en vissers z.n.d.",0911,Land- en bosbouwers,09
+6100,"Tuinders, akkerbouwers en veetelers z.n.d.",0911,Land- en bosbouwers,09
+6110,Tuinders en akkerbouwers z.n.d.,0911,Land- en bosbouwers,09
+6111,Akkerbouwers en groentetelers volle grond,0911,Land- en bosbouwers,09
+6112,Telers van fruit en andere boom- en struikvruchten,0911,Land- en bosbouwers,09
+6113,"Hoveniers, tuinders en kwekers",0912,"Hoveniers, tuinders en kwekers",09
+6114,Telers van diverse gewassen,0911,Land- en bosbouwers,09
+6120,Veetelers z.n.d.,0913,Veetelers,09
+6121,Veehouders m.u.v. pluimvee,0913,Veetelers,09
+6122,Pluimveehouders,0913,Veetelers,09
+6123,Bijenhouders en telers van andere insecten en wormen,0913,Veetelers,09
+6129,Pelsdierenfokkers en veetelers n.e.g.,0913,Veetelers,09
+6130,Agrariërs gemengd bedrijf,0911,Land- en bosbouwers,09
+6200,"Bosbouwers, vissers en jagers z.n.d.",0911,Land- en bosbouwers,09
+6210,Bosbouwers,0911,Land- en bosbouwers,09
+6220,Vissers en jagers z.n.d.,0913,Veetelers,09
+6221,Viskwekers en kwekers van schaaldieren,0913,Veetelers,09
+6222,Vissers in binnen- en kustwateren,0913,Veetelers,09
+6223,"Vissers, op volle zee",0913,Veetelers,09
+6224,Jagers en vallenzetters,0913,Veetelers,09
+6300,"Landbouwers, veetelers, vissers, jagers en verzamelaars, voor zelfvoorziening z.n.d.",1311,Overig,13
+6310,"Landbouwers, voor zelfvoorziening",1311,Overig,13
+6320,"Veetelers, voor zelfvoorziening",1311,Overig,13
+6330,"Agrariërs gemengd bedrijf, voor zelfvoorziening",1311,Overig,13
+6340,"Vissers, jagers, vallenzetters en verzamelaars, voor zelfvoorziening",1311,Overig,13
+7000,Ambachtslieden z.n.d.,1311,Overig,13
+7100,"Bouwarbeiders, m.u.v. elektriciens z.n.d.",0731,Bouwarbeiders ruwbouw,07
+7110,Bouwarbeiders ruwbouw z.n.d.,0731,Bouwarbeiders ruwbouw,07
+7111,"Allround bouwvakkers, kleine bouwaannemers",0731,Bouwarbeiders ruwbouw,07
+7112,"Stratenmakers, metselaars",0731,Bouwarbeiders ruwbouw,07
+7113,"Steenhouwers, -bewerkers en -snijders",0731,Bouwarbeiders ruwbouw,07
+7114,"Betonwerkers, betonafwerkers",0731,Bouwarbeiders ruwbouw,07
+7115,Timmerlieden,0732,Timmerlieden,07
+7119,"Steigerbouwers, bouwarbeiders ruwbouw n.e.g.",0731,Bouwarbeiders ruwbouw,07
+7120,Bouwarbeiders afbouw z.n.d.,0733,Bouwarbeiders afbouw,07
+7121,Dakdekkers,0733,Bouwarbeiders afbouw,07
+7122,Vloerleggers en tegelzetters,0733,Bouwarbeiders afbouw,07
+7123,Stukadoors,0733,Bouwarbeiders afbouw,07
+7124,Isoleerders,0733,Bouwarbeiders afbouw,07
+7125,Glaszetters,0733,Bouwarbeiders afbouw,07
+7126,Loodgieters en pijpfitters,0734,Loodgieters en pijpfitters,07
+7127,Installateurs luchtbehandeling en koeltechniek,0733,Bouwarbeiders afbouw,07
+7130,"Schilders, schoonmakers bouwwerken z.n.d.",0735,Schilders en metaalspuiters,07
+7131,Schilders en behangers,0735,Schilders en metaalspuiters,07
+7132,Verf- en lakspuiters,0735,Schilders en metaalspuiters,07
+7133,Schoorsteenvegers en gevelreinigers,0735,Schilders en metaalspuiters,07
+7200,"Metaalarbeiders, machinemonteurs z.n.d.",0744,Machinemonteurs,07
+7210,"Plaat- en constructiewerkers, metaalgieters en lassers z.n.d.",0741,Metaalbewerkers en constructiewerkers,07
+7211,Metaalgieters en kernmakers,0741,Metaalbewerkers en constructiewerkers,07
+7212,Lassers en snijders,0742,Lassers en plaatwerkers,07
+7213,Plaatwerkers,0742,Lassers en plaatwerkers,07
+7214,Constructiewerkers,0741,Metaalbewerkers en constructiewerkers,07
+7215,Takelaars en kabelsplitsers,0741,Metaalbewerkers en constructiewerkers,07
+7220,"Metaalbewerkers, gereedschapsmakers z.n.d.",0741,Metaalbewerkers en constructiewerkers,07
+7221,"Smeden, voorslagers en smeedperswerkers",0741,Metaalbewerkers en constructiewerkers,07
+7222,Gereedschapsmakers,0741,Metaalbewerkers en constructiewerkers,07
+7223,Machinestellers en -bedieners metaalproduktvervaardiging,0741,Metaalbewerkers en constructiewerkers,07
+7224,"Metaalpolijsters, -slijpers en gereedschapslijpers",0741,Metaalbewerkers en constructiewerkers,07
+7230,"Machinemonteurs, montage en reparatie z.n.d.",0744,Machinemonteurs,07
+7231,Automonteurs,0743,Automonteurs,07
+7232,Vliegtuigmonteurs,0744,Machinemonteurs,07
+7233,Monteurs industriële en landbouwmachines,0744,Machinemonteurs,07
+7234,Rijwielmonteurs,0744,Machinemonteurs,07
+7300,Medewerkers drukkerij en kunstnijverheid z.n.d.,0755,Medewerkers drukkerij en kunstnijverheid,07
+7310,Medewerkers kunstnijverheid z.n.d.,0755,Medewerkers drukkerij en kunstnijverheid,07
+7311,Fijninstrumentmakers en -reparateurs,0755,Medewerkers drukkerij en kunstnijverheid,07
+7312,Vervaardigers en stemmers van muziekinstrumenten,0755,Medewerkers drukkerij en kunstnijverheid,07
+7313,Juweliers en bewerkers van edele metalen,0755,Medewerkers drukkerij en kunstnijverheid,07
+7314,Pottenbakkers,0755,Medewerkers drukkerij en kunstnijverheid,07
+7315,"Glasblazers, -snijders, -slijpers en -polijsters",0755,Medewerkers drukkerij en kunstnijverheid,07
+7316,"Letterschilders, decoratieschilders, graveurs en etsers",0755,Medewerkers drukkerij en kunstnijverheid,07
+7317,"Ambachtslieden werkend met hout, vlechtwerk",0755,Medewerkers drukkerij en kunstnijverheid,07
+7318,"Ambachtslieden werkend met textiel, leder",0755,Medewerkers drukkerij en kunstnijverheid,07
+7319,Ambachtslieden traditionele ambachten n.e.g.,0755,Medewerkers drukkerij en kunstnijverheid,07
+7320,Drukkerijmedewerkers z.n.d.,0755,Medewerkers drukkerij en kunstnijverheid,07
+7321,Drukwerkvoorbereiders,0755,Medewerkers drukkerij en kunstnijverheid,07
+7322,Drukkers,0755,Medewerkers drukkerij en kunstnijverheid,07
+7323,Grafisch nabewerkers en boekbinders,0755,Medewerkers drukkerij en kunstnijverheid,07
+7400,Elektriciens en elektronicamonteurs z.n.d.,0761,Elektriciens en elektronicamonteurs,07
+7410,Installateurs en reparateurs van elektrische apparatuur z.n.d.,0761,Elektriciens en elektronicamonteurs,07
+7411,Elektriciens gebouwaansluitingen,0761,Elektriciens en elektronicamonteurs,07
+7412,"Elektromonteurs voertuigen, machines, motoren",0761,Elektriciens en elektronicamonteurs,07
+7413,Monteur elektriciteitsnetten,0761,Elektriciens en elektronicamonteurs,07
+7420,Installateurs en reparateurs van elektronische en telecommunicatieapparatuur z.n.d.,0761,Elektriciens en elektronicamonteurs,07
+7421,Elektronicamonteurs,0761,Elektriciens en elektronicamonteurs,07
+7422,Monteurs ICT en telecommunicatie,0761,Elektriciens en elektronicamonteurs,07
+7500,"Voedselverwerkende beroepen, houtwerkers, kleermakers en andere ambachtslieden z.n.d.",0753,Productcontroleurs,07
+7510,"Slagers, bakkers en overige voedselverwerkende beroepen z.n.d.",0753,Productcontroleurs,07
+7511,"Slagers, vishandelaren",0751,Slagers,07
+7512,Bakkers en banketbakkers,0752,Bakkers,07
+7513,Zuivelbereiders,0753,Productcontroleurs,07
+7514,Bereiders van groente- en fruitconserven,0753,Productcontroleurs,07
+7515,Productcontroleurs voedingsmiddelen en dranken,0753,Productcontroleurs,07
+7516,Tabaksbereiders en vervaardigers van tabaksproducten,0753,Productcontroleurs,07
+7520,"Houtbehandelaars, meubelmakers z.n.d.",0754,"Meubelmakers, kleermakers en stoffeerders",07
+7521,Houtbehandelaars,0754,"Meubelmakers, kleermakers en stoffeerders",07
+7522,Meubelmakers,0754,"Meubelmakers, kleermakers en stoffeerders",07
+7523,Machinestellers en bedieners van houtbewerkingsmachines,0754,"Meubelmakers, kleermakers en stoffeerders",07
+7530,"Kleermakers, stoffeerders, schoenmakers z.n.d.",0754,"Meubelmakers, kleermakers en stoffeerders",07
+7531,"Kleermakers, bontwerkers en hoedenmakers",0754,"Meubelmakers, kleermakers en stoffeerders",07
+7532,Patroonmakers en snijders voor kleding,0754,"Meubelmakers, kleermakers en stoffeerders",07
+7533,"Naaisters, borduursters",0754,"Meubelmakers, kleermakers en stoffeerders",07
+7534,Stoffeerders,0754,"Meubelmakers, kleermakers en stoffeerders",07
+7535,Pelsbereiders en leerlooiers,0754,"Meubelmakers, kleermakers en stoffeerders",07
+7536,Schoenmakers,0754,"Meubelmakers, kleermakers en stoffeerders",07
+7540,Overige ambachtslieden z.n.d.,0753,Productcontroleurs,07
+7541,Duikers,0753,Productcontroleurs,07
+7542,Springmeesters,0753,Productcontroleurs,07
+7543,Productcontroleurs non-food,0753,Productcontroleurs,07
+7544,Ongedierte- en onkruidbestrijders,0753,Productcontroleurs,07
+7549,Ambachtslieden n.e.g.,0753,Productcontroleurs,07
+8000,"Bedieners machines en installaties, assemblagemedewerkers z.n.d.",0771,Productiemachinebedieners,07
+8100,Bedieners vaste machines en installaties z.n.d.,0771,Productiemachinebedieners,07
+8110,Bedieners mijninstallaties en installaties voor de verwerking van mineralen z.n.d.,0771,Productiemachinebedieners,07
+8111,Delfstoffenwinnaars,0771,Productiemachinebedieners,07
+8112,Bedieners installaties verwerking mineralen en gesteente,0771,Productiemachinebedieners,07
+8113,Boorwerkers en boormeesters,0771,Productiemachinebedieners,07
+8114,"Machinebedieners vervaardiging cement, stenen en andere minerale producten",0771,Productiemachinebedieners,07
+8120,"Machinebedieners metaalbewerking, -verwerking en -oppervlaktebehandeling z.n.d.",0771,Productiemachinebedieners,07
+8121,Bedieners installaties metaalbewerkings- en verwerking,0771,Productiemachinebedieners,07
+8122,Machinebedieners oppervlaktebehandelingen van metalen,0771,Productiemachinebedieners,07
+8130,Machinebedieners vervaardiging van chemische en fotografische producten z.n.d.,0771,Productiemachinebedieners,07
+8131,Bedieners machines en installaties vervaardiging chemische producten,0771,Productiemachinebedieners,07
+8132,Machinebedieners fotolaboratorium,0771,Productiemachinebedieners,07
+8140,"Machinebedieners vervaardiging rubber-, kunststof- of papierproducten z.n.d.",0771,Productiemachinebedieners,07
+8141,Machinebedieners vervaardiging rubberprodukten,0771,Productiemachinebedieners,07
+8142,Machinebedieners vervaardiging kunststofprodukten,0771,Productiemachinebedieners,07
+8143,Machinebedieners vervaardiging papierprodukten,0771,Productiemachinebedieners,07
+8150,"Machinebedieners vervaardiging textiel-, bont- en leerproducten z.n.d.",0771,Productiemachinebedieners,07
+8151,Machinebedieners vervaardiging textiele garens,0771,Productiemachinebedieners,07
+8152,Weefgetouw- en breimachinebedieners,0771,Productiemachinebedieners,07
+8153,Naaimachinebedieners,0771,Productiemachinebedieners,07
+8154,"Machinebedieners bleken, verven en reinigen van weefsels",0771,Productiemachinebedieners,07
+8155,Machinebedieners bont- en leerbereiding,0771,Productiemachinebedieners,07
+8156,Machinebedieners vervaardigen van schoeisel,0771,Productiemachinebedieners,07
+8157,Wasmachinebedieners,0771,Productiemachinebedieners,07
+8159,"Machinebedieners vervaardiging textiel-, bont- en leerproducten n.e.g.",0771,Productiemachinebedieners,07
+8160,Machinebedieners vervaardiging voedingsmiddelen,0771,Productiemachinebedieners,07
+8170,Machinebedieners houtbewerking en papiervervaardiging z.n.d.,0771,Productiemachinebedieners,07
+8171,Machinebedieners vervaardiging papierpulp en papier,0771,Productiemachinebedieners,07
+8172,Bedieners installaties houtbewerking,0771,Productiemachinebedieners,07
+8180,Bedieners overige vaste machines en installaties z.n.d.,0771,Productiemachinebedieners,07
+8181,Bedieners installaties vervaardiging glas en aardewerk,0771,Productiemachinebedieners,07
+8182,Stoommachine en -ketelbedieners,0771,Productiemachinebedieners,07
+8183,"Verpakkings-, bottel- en etiketteringsmachinebedieners",0771,Productiemachinebedieners,07
+8189,Bedieners stationaire machines en installaties n.e.g.,0771,Productiemachinebedieners,07
+8200,Assemblagemedewerkers sub-major group z.n.d. ,0772,Assemblagemedewerkers,07
+8210,Assemblagemedewerkers minor group z.n.d. ,0772,Assemblagemedewerkers,07
+8211,Assemblagemedewerkers mechanische werktuigen,0772,Assemblagemedewerkers,07
+8212,Assemblagemedewerkers elektrische en elektronische apparatuur,0772,Assemblagemedewerkers,07
+8219,Assemblagemedewerkers n.e.g.,0772,Assemblagemedewerkers,07
+8300,Bestuurders voertuigen en bedieners mobiele installaties z.n.d.,1214,Vrachtwagenchauffeurs,12
+8310,Treinmachinisten z.n.d.,1215,Bedieners mobiele machines,12
+8311,Treinmachinisten,1215,Bedieners mobiele machines,12
+8312,"Remmers, sein en wisselwachters",1215,Bedieners mobiele machines,12
+8320,"Auto-, bestelwagenchauffeurs en bestuurders van motorrijwielen z.n.d.",1212,"Chauffeurs auto's, taxi's en bestelwagens",12
+8321,Bestuurders motorrijwielen,1212,"Chauffeurs auto's, taxi's en bestelwagens",12
+8322,"Chauffeurs auto's, taxi's en bestelwagens",1212,"Chauffeurs auto's, taxi's en bestelwagens",12
+8330,Vrachtwagen- en buschauffeurs z.n.d.,1214,Vrachtwagenchauffeurs,12
+8331,Buschauffeurs en trambestuurders,1213,Buschauffeurs en trambestuurders,12
+8332,Vrachtwagenchauffeurs,1214,Vrachtwagenchauffeurs,12
+8340,Bedieners mobiele installaties z.n.d.,1215,Bedieners mobiele machines,12
+8341,Bedieners mobiele land- en bosbouwmachines,1215,Bedieners mobiele machines,12
+8342,Bedieners grondverzetmachines,1215,Bedieners mobiele machines,12
+8343,Kraandrijvers en bedieningspersoneel mobiele kranen,1215,Bedieners mobiele machines,12
+8344,Heftruckchauffeurs,1215,Bedieners mobiele machines,12
+8350,Dekpersoneel op schepen,1215,Bedieners mobiele machines,12
+9000,Elementaire beroepen z.n.d.,1311,Overig,13
+9100,Huishoudelijke hulpen en schoonmakers z.n.d.,1121,Schoonmakers,11
+9110,"Schoonmakers in huishoudens, hotels en kantoren z.n.d.",1121,Schoonmakers,11
+9111,Schoonmakers in huishoudens,1121,Schoonmakers,11
+9112,"Schoonmakers in hotels, kantoren",1121,Schoonmakers,11
+9120,"Autowassers, glazenwassers en overige schoonmakers z.n.d.",1121,Schoonmakers,11
+9121,Personeel voor het wassen en strijken met de hand,1121,Schoonmakers,11
+9122,Autowassers,1121,Schoonmakers,11
+9123,Glazenwassers,1121,Schoonmakers,11
+9129,"Industrieel schoonmakers, stralers, rioolreinigers en schoonmakers n.e.g.",1121,Schoonmakers,11
+9200,"Hulparbeiders land- en bosbouw, visserij sub-major group z.n.d.",0921,Hulpkrachten landbouw,09
+9210,Hulparbeiders in de land- en bosbouw en de visserij minor group z.n.d.,0921,Hulpkrachten landbouw,09
+9211,Hulparbeiders akkerbouw,0921,Hulpkrachten landbouw,09
+9212,Hulparbeiders veeteelt,0921,Hulpkrachten landbouw,09
+9213,Hulparbeiders op gemengde bedrijven,0921,Hulpkrachten landbouw,09
+9214,Hulparbeiders tuinbouw,0921,Hulpkrachten landbouw,09
+9215,Hulparbeiders bosbouw,0921,Hulpkrachten landbouw,09
+9216,Hulparbeiders visserij en visteelt,0921,Hulpkrachten landbouw,09
+9300,"Hulparbeiders mijnbouw, bouwnijverheid, industrie en vervoer z.n.d.",0781,Hulpkrachten bouw en industrie,07
+9310,Hulparbeiders in de mijnbouw en de bouwnijverheid z.n.d.,0781,Hulpkrachten bouw en industrie,07
+9311,Hulparbeiders mijnbouw,0781,Hulpkrachten bouw en industrie,07
+9312,Hulparbeiders weg- en waterbouw,0781,Hulpkrachten bouw en industrie,07
+9313,Bouwvakhulpen,0781,Hulpkrachten bouw en industrie,07
+9320,Inpakkers en overige hulparbeiders in de industrie z.n.d.,0781,Hulpkrachten bouw en industrie,07
+9321,Inpakkers,0781,Hulpkrachten bouw en industrie,07
+9329,Hulparbeiders industrie n.e.g.,0781,Hulpkrachten bouw en industrie,07
+9330,"Laders en lossers, vakkenvullers, fietskoeriers en koetsiers z.n.d.",1221,"Laders, lossers en vakkenvullers",12
+9331,Fietskoeriers en fietstaxichauffeurs,1221,"Laders, lossers en vakkenvullers",12
+9332,Koetsiers en palfreniers,1221,"Laders, lossers en vakkenvullers",12
+9333,Laders en lossers,1221,"Laders, lossers en vakkenvullers",12
+9334,Vakkenvullers,1221,"Laders, lossers en vakkenvullers",12
+9400,Keukenhulpen en fastfoodbereiders sub-major group z.n.d.,1122,Keukenhulpen,11
+9410,Keukenhulpen en fastfoodbereiders minor group z.n.d.,1122,Keukenhulpen,11
+9411,Fastfoodbereiders,1122,Keukenhulpen,11
+9412,Keukenhulpen,1122,Keukenhulpen,11
+9500,Straatverkopers en op straat uitgeoefende dienstverlenende beroepen z.n.d.,1222,Vuilnisophalers en dagbladenbezorgers,12
+9510,"Kranten-, flyeruitdelers en andere op straat uitgeoefende dienstverlenende beroepen",1222,Vuilnisophalers en dagbladenbezorgers,12
+9520,Straatverkopers (m.u.v. voedsel),1222,Vuilnisophalers en dagbladenbezorgers,12
+9600,Vuilnisophalers en overige elementaire beroepen z.n.d.,1222,Vuilnisophalers en dagbladenbezorgers,12
+9610,Vuilnisophalers en -verwerkers z.n.d.,1222,Vuilnisophalers en dagbladenbezorgers,12
+9611,Vuilnisophalers en ophalers van afval voor recycling,1222,Vuilnisophalers en dagbladenbezorgers,12
+9612,Vuilnissorteerders,1222,Vuilnisophalers en dagbladenbezorgers,12
+9613,Straatvegers,1222,Vuilnisophalers en dagbladenbezorgers,12
+9620,Andere elementaire beroepen z.n.d.,1222,Vuilnisophalers en dagbladenbezorgers,12
+9621,"Boden, kruiers en bestellers",1222,Vuilnisophalers en dagbladenbezorgers,12
+9622,Losse arbeiders,1222,Vuilnisophalers en dagbladenbezorgers,12
+9623,Meteropnemers en geldophalers verkoopautomaten,1222,Vuilnisophalers en dagbladenbezorgers,12
+9624,Waterdragers en brandhoutverzamelaars,1311,Overig,13
+9629,Elementaire beroepen n.e.g.,1222,Vuilnisophalers en dagbladenbezorgers,12
+9999,Onbekend,1311,Overig,13

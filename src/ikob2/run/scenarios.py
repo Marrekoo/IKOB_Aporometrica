@@ -73,8 +73,8 @@ def choice_terms(times: np.ndarray, costs: np.ndarray):
     return order, t, c, np.maximum(c, hi)
 
 
-def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
-               sector_wage, envelope, time_margins, mode: MixedMode | OptionSet,
+def lime_usage(*, origins, destinations, populations, sector_jobs, job_weights,
+               envelope, time_margins, mode: MixedMode | OptionSet,
                price_scale: Mapping[str, float] | None = None,
                margin_mode: str = "pt", unreachable_minutes: float = 1e4,
                price_from: MixedMode | OptionSet | None = None,
@@ -91,8 +91,8 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, wfh_share,
     origins = [str(o) for o in origins]
     destinations = [str(d) for d in destinations]
     names, pop, pools = prepare_inputs(
-        origins, destinations, populations, sector_jobs, wfh_share,
-        sector_wage, envelope, None)
+        origins, destinations, populations, sector_jobs, job_weights,
+        envelope, None)
     n_o = len(origins)
     segs = {s.name: s for s in build_segments(
         time_margins[(margin_mode, WFH_TYPES[0])], envelope=envelope,

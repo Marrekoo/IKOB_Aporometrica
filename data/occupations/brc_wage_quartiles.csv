@@ -1,0 +1,170 @@
+brc,title,employees_thousands,p25,p50,p75
+Totaal,Totaal,8009,16.2,22.2,30.0
+01,01 Pedagogische beroepen,638,20.1,25.3,33.1
+011,011 Docenten,437,23.5,30.4,35.4
+0111,0111 Docenten hoger onderwijs en hoog...,71,23.6,34.1,40.0
+0112,0112 Docenten beroepsgerichte vakken ...,38,24.7,29.6,33.8
+0113,0113 Docenten algemene vakken secunda...,105,24.6,31.5,36.9
+0114,0114 Leerkrachten basisonderwijs,151,22.7,28.9,32.9
+0115,0115 Onderwijskundigen en overige doc...,71,23.0,30.3,35.9
+012,012 Sportinstructeurs,33,12.5,16.3,21.7
+0121,0121 Beroepsgroep sportinstructeurs,33,12.5,16.3,21.7
+013,013 Leidsters kinderopvang en onderw...,169,16.4,18.8,21.7
+0131,0131 Leidsters kinderopvang en onderw...,169,16.4,18.8,21.7
+02,02 Creatieve en taalkundige beroepen,113,17.7,23.8,31.3
+021,021 Auteurs en kunstenaars,58,19.6,26.9,33.7
+0211,0211 Bibliothecarissen en conservatoren,8,,,
+0212,0212 Auteurs en taalkundigen,13,,,
+0213,0213 Journalisten,20,,,
+0214,0214 Beeldend kunstenaars,1,,,
+0215,0215 Uitvoerend kunstenaars,16,,,
+022,022 Vakspecialisten op artistiek en ...,55,16.4,20.9,27.5
+0221,0221 Grafisch vormgevers en producton...,43,17.0,22.3,28.6
+0222,0222 Fotografen en interieurontwerpers,12,,,
+03,03 Commerciële beroepen,906,12.7,17.0,26.2
+031,"031 Adviseurs marketing, public relat...",197,20.6,28.2,36.3
+0311,"0311 Adviseurs marketing, public rela...",197,20.6,28.2,36.3
+032,032 Vertegenwoordigers en inkopers,153,21.4,27.4,36.5
+0321,0321 Vertegenwoordigers en inkopers,153,21.4,27.4,36.5
+033,033 Verkopers,556,10.2,13.8,17.1
+0331,0331 Winkeliers en teamleiders detail...,70,14.0,17.0,20.7
+0332,0332 Verkoopmedewerkers detailhandel,287,10.2,13.2,15.7
+0333,0333 Kassamedewerkers,86,6.7,9.0,13.6
+0334,0334 Callcentermedewerkers outbound...,113,13.2,17.2,21.8
+04,04 Bedrijfseconomische en administrat...,1651,18.3,23.3,30.9
+041,041 Specialisten bedrijfsbeheer en ad...,522,24.5,32.0,40.0
+0411,0411 Accountants,103,25.1,33.1,41.6
+0412,0412 Financieel specialisten en economen,79,24.1,31.3,42.1
+0413,0413 Bedrijfskundigen en organisatie...,155,25.4,32.4,41.2
+0414,0414 Beleidsadviseurs,83,28.3,35.1,42.2
+0415,0415 Specialisten personeels- en loop...,103,21.4,27.6,33.7
+042,042 Vakspecialisten bedrijfsbeheer en...,313,19.9,23.9,29.6
+0421,0421 Boekhouders,119,19.3,24.5,30.6
+0422,0422 Zakelijke dienstverleners,66,19.1,25.6,32.8
+0423,0423 Directiesecretaresses,129,20.6,23.4,27.3
+043,043 Administratief personeel,815,16.1,20.1,24.1
+0431,0431 Administratief medewerkers,224,15.2,19.4,23.2
+0432,0432 Secretaresses,46,18.3,21.3,23.4
+0433,0433 Receptionisten en telefonisten,183,14.9,18.3,22.5
+0434,0434 Boekhoudkundig medewerkers,144,18.1,21.2,25.3
+0435,0435 Transportplanners en logistiek...,219,16.5,20.9,26.6
+05,05 Managers,342,27.5,38.0,50.2
+051,051 Algemeen directeuren,12,,,
+0511,0511 Algemeen directeuren,12,,,
+052,052 Managers op administratief en com...,120,30.1,41.1,53.5
+0521,0521 Managers zakelijke en administra...,64,29.8,40.7,51.8
+0522,0522 Managers verkoop en marketing,56,30.2,41.4,54.7
+053,053 Managers productie en gespecialis...,149,30.5,38.9,48.8
+0531,0531 Managers productie,37,30.2,38.7,49.8
+0532,0532 Managers logistiek,20,,,
+0533,0533 Managers ICT,25,,,
+0534,0534 Managers zorginstellingen,27,,,
+0535,0535 Managers onderwijs,20,,,
+0536,0536 Managers gespecialiseerde dienst...,19,,,
+054,"054 Managers horeca, detailhandel en...",52,17.5,23.1,32.9
+0541,0541 Managers horeca,11,,,
+0542,0542 Managers detail- en groothandel,32,18.6,24.7,35.3
+0543,0543 Managers commerciële en persoonl...,9,,,
+055,055 Managers z.n.d.,9,,,
+0551,0551 Managers z.n.d.,9,,,
+06,"06 Openbaar bestuur, veiligheid en ju...",305,20.4,26.5,34.0
+061,061 Overheidsambtenaren en -bestuurders,113,23.0,28.4,36.4
+0611,0611 Overheidsbestuurders,29,,,
+0612,0612 Overheidsambtenaren,84,22.1,26.5,30.3
+062,062 Juristen,51,25.2,33.8,45.9
+0621,0621 Juristen,51,25.2,33.8,45.9
+063,063 Beveiligingswerkers,141,17.9,22.6,29.7
+0631,0631 Politie-inspecteurs,14,,,
+0632,0632 Politie en brandweer,45,21.0,26.0,31.9
+0633,0633 Beveiligingspersoneel,54,15.8,19.6,23.3
+0634,0634 Militaire beroepen,28,,,
+07,07 Technische beroepen,1041,17.2,22.3,28.5
+071,071 Ingenieurs en onderzoekers wis...,272,21.9,28.5,36.9
+0711,0711 Biologen en natuurwetenschappers,55,20.8,27.1,36.2
+0712,0712 Ingenieurs (geen elektrotechniek),157,22.4,29.0,37.4
+0713,0713 Elektrotechnisch ingenieurs,18,,,
+0714,0714 Architecten,42,21.8,29.9,37.2
+072,072 Vakspecialisten natuur en techniek,193,20.5,26.1,32.1
+0721,0721 Technici bouwkunde en natuur,118,19.5,24.6,30.4
+0722,0722 Productieleiders industrie en bouw,54,22.2,27.4,33.8
+0723,0723 Procesoperators,20,,,
+073,073 Bouwarbeiders,130,15.9,21.0,24.5
+0731,0731 Bouwarbeiders ruwbouw,32,15.3,19.9,23.7
+0732,0732 Timmerlieden,42,15.8,21.3,25.3
+0733,0733 Bouwarbeiders afbouw,18,,,
+0734,0734 Loodgieters en pijpfitters,20,,,
+0735,0735 Schilders en metaalspuiters,18,,,
+074,"074 Metaalarbeiders, machinemonteurs",133,16.1,20.4,24.4
+0741,0741 Metaalbewerkers en constructiewe...,26,,,
+0742,0742 Lassers en plaatwerkers,20,,,
+0743,0743 Automonteurs,44,13.6,18.1,21.9
+0744,0744 Machinemonteurs,44,17.4,21.5,25.4
+075,075 Voedselverwerkende beroepen en ov...,75,13.7,17.2,20.9
+0751,0751 Slagers,6,,,
+0752,0752 Bakkers,14,,,
+0753,0753 Productcontroleurs,18,,,
+0754,"0754 Meubelmakers, kleermakers en sto...",19,,,
+0755,0755 Medewerkers drukkerij en kunstni...,19,,,
+076,076 Elektriciens en elektronicamonteurs,76,17.0,21.0,25.5
+0761,0761 Elektriciens en elektronicamonteurs,76,17.0,21.0,25.5
+077,077 Productiemachinebedieners en asse...,103,16.1,19.6,24.3
+0771,0771 Productiemachinebedieners,77,16.9,20.4,25.1
+0772,0772 Assemblagemedewerkers,26,,,
+078,078 Hulpkrachten bouw en industrie,58,12.4,14.2,17.2
+0781,0781 Hulpkrachten bouw en industrie,58,12.4,14.2,17.2
+08,08 ICT beroepen,479,22.5,29.3,36.7
+081,081 Specialisten ICT,411,23.5,30.1,37.6
+0811,0811 Software- en applicatieontwikkel...,320,23.2,30.4,38.2
+0812,0812 Databank- en netwerkspecialisten,90,24.3,29.5,34.7
+082,082 Vakspecialisten ICT,68,17.4,23.1,29.3
+0821,0821 Gebruikersondersteuning ICT,57,17.6,23.2,29.4
+0822,0822 Radio- en televisietechnici,11,,,
+09,09 Agrarische beroepen,90,12.3,15.1,19.0
+091,"091 Tuinders, akkerbouwers en veetelers",63,13.3,16.3,21.2
+0911,0911 Land- en bosbouwers,9,,,
+0912,"0912 Hoveniers, tuinders en kwekers",44,13.3,16.2,20.8
+0913,0913 Veetelers,9,,,
+092,092 Hulpkrachten landbouw,28,,,
+0921,0921 Hulpkrachten landbouw,28,,,
+10,10 Zorg en welzijn beroepen,1153,20.6,24.4,29.5
+101,"101 Artsen, therapeuten en gespeciali...",295,25.3,29.6,35.1
+1011,1011 Artsen,98,26.8,34.2,52.8
+1012,1012 Gespecialiseerd verpleegkundigen,130,26.1,29.2,33.1
+1013,1013 Fysiotherapeuten,66,22.4,27.3,32.3
+102,102 Specialisten op maatschappelijk g...,140,23.3,28.2,33.5
+1021,1021 Maatschappelijk werkers,73,22.3,25.4,29.9
+1022,1022 Psychologen en sociologen,67,26.1,31.7,38.4
+103,103 Vakspecialisten gezondheidszorg,252,19.2,22.8,27.7
+1031,1031 Laboranten,30,20.5,24.9,28.8
+1032,1032 Apothekersassistenten,27,,,
+1033,1033 Verpleegkundigen (mbo),69,21.3,25.0,28.2
+1034,1034 Medisch praktijkassistenten,73,18.4,21.3,23.5
+1035,1035 Medisch vakspecialisten,53,18.7,24.4,32.2
+104,"104 Sociaal werkers, groeps- en woon...",238,19.7,22.8,25.9
+1041,"1041 Sociaal werkers, groeps- en woon...",238,19.7,22.8,25.9
+105,105 Verzorgenden,229,18.2,21.9,24.8
+1051,1051 Verzorgenden,229,18.2,21.9,24.8
+11,11 Dienstverlenende beroepen,623,11.8,14.5,17.2
+111,111 Medewerkers persoonlijke dienstve...,346,11.5,14.4,18.3
+1111,1111 Reisbegeleiders,22,,,
+1112,1112 Koks,55,13.0,15.8,19.9
+1113,1113 Kelners en barpersoneel,182,8.9,12.4,15.0
+1114,1114 Kappers en schoonheidsspecialisten,21,,,
+1115,1115 Conciërges en teamleiders schoon...,39,16.0,18.8,23.0
+1116,1116 Verleners van overige persoonlij...,27,,,
+112,112 Schoonmakers en keukenhulpen,277,12.2,14.5,16.3
+1121,1121 Schoonmakers,204,13.9,15.3,16.9
+1122,1122 Keukenhulpen,73,6.0,8.8,12.9
+12,12 Transport en logistiek beroepen,583,7.9,14.7,18.9
+121,121 Bestuurders voertuigen en bediene...,258,15.6,18.6,21.4
+1211,1211 Dekofficieren en piloten,26,,,
+1212,"1212 Chauffeurs auto's, taxi's en bes...",75,13.5,15.3,17.0
+1213,1213 Buschauffeurs en trambestuurders,19,,,
+1214,1214 Vrachtwagenchauffeurs,85,17.5,18.7,20.2
+1215,1215 Bedieners mobiele machines,53,16.0,19.4,24.2
+122,122 Hulpkrachten transport en logistiek,324,5.8,9.3,14.7
+1221,"1221 Laders, lossers en vakkenvullers",290,5.7,8.6,14.4
+1222,1222 Vuilnisophalers en dagbladenbezo...,35,,,
+13,13 Beroepsklasse overig,87,13.2,17.7,24.5
+131,131 Beroepssegment overig,87,13.2,17.7,24.5
+1311,1311 Beroepsgroep overig,87,13.2,17.7,24.5

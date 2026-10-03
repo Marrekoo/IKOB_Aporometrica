@@ -47,6 +47,16 @@ snapshots of the repository's `data/statline/` there, so this step is only
 needed for other periods (`--income-period`, `--wage-period`,
 `--wfh-period`, `--kwb-table`, or the matching parameters).
 
+The occupation tables of the job matching (Eurostat LFS and SES, CBS
+85517NED and the ISCO-BRC correspondence, the teleworkability indices) are
+downloaded with
+
+    python -m ikob2.cli.segments occupations --out data/occupations
+
+which also writes `sources.json` (query URL, retrieval time and SHA-256 per
+file; `data/occupations/README.md`). `layout create` copies them to
+`<root>/inputs/occupations`.
+
 `cli.segments` takes its values from the parameters (`[segments]`,
 `[jobs]`, `[ownership]`, `accessibility.*_year` and `*_period`; `--params`,
 `--set` or the flags) and its input and output paths from the data folder;
@@ -160,9 +170,9 @@ What a run does:
 
 1. computes the 44 segments per buurt from KWB and the StatLine snapshots and
    keeps the 40 with a budget (`--censored atom|drop` for decile 1);
-2. matches the sector jobs to income deciles (`sector_income_weights`) and
-   splits them by job type (`split_jobs_by_wfh`), or gives every segment all
-   jobs (`--common-jobs`);
+2. matches the sector jobs to income deciles and job types (`jobs.matching`:
+   sector x occupation cells from `inputs/occupations`, `--occupations`; see
+   `data_lineage.md`), or gives every segment all jobs (`--common-jobs`);
 3. loads the Weibull margins and the reference budgets;
 4. builds the mode matrices: car time plus parking search time and car cost
    (`--car-model`, `--no-parking-search`), bicycle time, PT time and fare

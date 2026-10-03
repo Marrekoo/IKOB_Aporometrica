@@ -41,6 +41,10 @@ def test_example_reproduces_the_stored_output(tmp_path, monkeypatch):
     for col in ("population", "accessibility", "atom", "accessibility_normalised"):
         np.testing.assert_allclose(got[col], want[col], rtol=1e-5, atol=1e-6,
                                    err_msg=col)
+    # the job weights written next to it partition every sector's jobs
+    jw = pd.read_csv(root / "outputs/runs/example/job_weights.csv")
+    by_sector = jw[jw.income_class != "onbekend"].groupby("sector").weight.sum()
+    np.testing.assert_allclose(by_sector, 1.0, atol=1e-9)
     # the run is meaningful: decile 1 reaches only free trips, others more
     by = got.groupby(["mode", "income_class"])["accessibility"].mean()
     assert by[("pt", "D1")] == 0 and by[("pt", "D5")] > 0

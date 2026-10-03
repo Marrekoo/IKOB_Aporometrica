@@ -63,13 +63,19 @@ ESTABLISHMENT_GROUPS: dict[str, str] = {
 CHILDREN_SNAPSHOT = "{table}_{period}.csv"
 
 
-def _odata_get(table: str, select: list[str], filter_expr: str | None,
-               timeout: float = 120.0, root: str = ODATA_ROOT) -> pd.DataFrame:
+def odata_url(table: str, select: list[str], filter_expr: str | None,
+              root: str = ODATA_ROOT) -> str:
+    """The OData query of `_odata_get` (first page)."""
     params = {"$select": ",".join(select), "$format": "json"}
     if filter_expr:
         params["$filter"] = filter_expr
-    url = (f"{root}/{table}/TypedDataSet?"
-           f"{urllib.parse.urlencode(params, quote_via=urllib.parse.quote)}")
+    return (f"{root}/{table}/TypedDataSet?"
+            f"{urllib.parse.urlencode(params, quote_via=urllib.parse.quote)}")
+
+
+def _odata_get(table: str, select: list[str], filter_expr: str | None,
+               timeout: float = 120.0, root: str = ODATA_ROOT) -> pd.DataFrame:
+    url = odata_url(table, select, filter_expr, root)
     rows: list[dict] = []
     while url:
         logger.info("GET %s", url)
@@ -81,6 +87,15 @@ def _odata_get(table: str, select: list[str], filter_expr: str | None,
     for col in df.select_dtypes(include="object"):
         df[col] = df[col].str.strip()
     return df
+
+
+def _odata_get_dimension(table: str, dimension: str, timeout: float = 120.0,
+                         root: str = ODATA_ROOT) -> dict[str, str]:
+    """Key -> title of one dimension of a StatLine table."""
+    url = f"{root}/{table}/{dimension}?$format=json"
+    logger.info("GET %s", url)
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
+        return {r["Key"].strip(): r["Title"] for r in json.load(resp)["value"]}
 
 
 def fetch_income_seed(

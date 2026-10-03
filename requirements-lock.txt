@@ -72,3 +72,4 @@ typing_extensions==4.16.0
 urllib3==2.8.0
 virtualenv==21.13.0
 wrapt==2.4.1
+xlrd==2.0.2

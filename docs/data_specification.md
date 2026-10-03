@@ -31,6 +31,7 @@ File names inside `inputs/` that the commands look for by default are
 | `envelope/reference_budgets.csv` | reference budgets: `household_type, income_class (D1-D10), low, high` (EUR per priced one-way journey, 2022 euros; `unit` = journey), `km_low, km_high` (distance equivalents), `central`, `unit`, `upper_bound`, `gate_slack`; D1 rows blank (censored, atom 1). A table per home-based tour (`unit` = tour, or no `unit` column) is divided by `accessibility.legs_per_tour` on loading | the paper's envelope (seed: `data/envelope/`) | `segments.bridge.load_reference_budgets` |
 | `envelope/odin/<2023, 2022_2023>/*.csv` | ODiN aggregates for the envelope (tour and journey rates, composition, commuting, distance distribution); published, see `data/envelope/odin/README.md` | seed: `data/envelope/odin/` | `ikob2.envelope` |
 | `envelope/sources/*.csv` | the inputs of the reference-budget envelope: Nibud basket, Warnaar anchors, CBS income percentiles, car costs, ...; each row with its source (`envelope/README.md`) | seed: `data/envelope/sources/` | `ikob2.envelope` |
+| `occupations/*.csv` | jobs and wages by NACE section x ISCO-08 major group (Eurostat LFS `lfsa_eisn2`, SES `earn_ses22_47`, NL 2022), employment by ISCO 2-digit group (`lfsa_egai2d`), wage quartiles per BRC occupation group (CBS 85517NED, 2022), the ISCO 2008 - BRC 2014 correspondence (CBS), teleworkability per ISCO 3-digit group (Sostero et al., 2020) | seed: `data/occupations/` (README there) | `segments.occupations` |
 | `tariffs/lime_price_scales*.csv`, `tariffs/pt_fare_scales*.csv` | multipliers on the Lime price and on the PT fare by segment: `household_type, income_class, scale` (`*` = all, later rows override) | scenario definitions (seed: `data/tariffs/`) | `run.shared_bike.load_price_scales` |
 | `odin/ODIN_22_23_clean.csv` | pooled ODiN 2022-23 (persons, households, tours, legs) | CBS / RWS | `segments.car_availability`, `segments.pt_spend` |
 | `veh_owners/bike_ownership_buurten.csv` | one row per Utrecht buurt: `buurtcode, buurtnaam, wijkcode, wijknaam, aantal_inwoners, buurtteam, pct_with_bicycle` (0-100), `mapping_confidence`; the Utrecht buurtteam survey 2025 assigned to buurten by hand | Municipality of Utrecht | `segments.ownership.load_bike_ownership` |
@@ -49,6 +50,7 @@ not these.
 | `data/envelope/reference_budgets.csv` | reference budgets (see `inputs/envelope/` above) |
 | `data/margins/S_T_work.csv` | Weibull time margins (see `inputs/survey/`) |
 | `data/tariffs/*.csv` | price and fare scale tables (see `inputs/tariffs/`) |
+| `data/occupations/*.csv` | occupation tables of the job matching (see `inputs/occupations/`; README with sources and licences) |
 | `data/statline/*.csv` | StatLine snapshots: 86161NED (households by type and income decile, 2022), 71487ned (households with children), 81431ned (jobs and hourly wage by sector, 2022), 85318NED (KWB establishments per buurt in 8 SBI groups), 85718NED (working from home by education, 2024), 82072NED (education of employee jobs by sector, 2010) |
 | `data/calibration/car_detour.json` | detour factor (route / crow-fly distance) by distance band |
 | `src/ikob2/skims/ns_2026_2e_klas.csv` | NS single fare, second class, full tariff, from 1 January 2026: `te` (tariff units) -> `eur` |
@@ -102,7 +104,8 @@ Money costs are not stored; they are computed at run time
 |---|---|
 | `accessibility.csv` | one row per origin x mode x segment: `buurtcode, mode, segment, household_type, income_class, population, accessibility` (acceptable jobs, conditional on having the mode), `atom`, `accessibility_normalised`; with `--ownership` also `availability` and `accessibility_expected` |
 | `summary_income.csv`, `summary_household.csv` | population-weighted means by mode and income class / household type; `*_expected.csv` for `accessibility_expected` |
-| `run.json` | resolved parameters, arguments, specification, scenario (calibrated S4 price, Lime usage, public cost), and `input_files`: path and SHA-256 of every input file |
+| `run.json` | resolved parameters, arguments, specification, scenario (calibrated S4 price, Lime usage, public cost), `job_matching` (method, within-cell spread, decile edges in EUR per hour, teleworkability per ISCO major group), and `input_files`: path and SHA-256 of every input file |
+| `job_weights.csv` | `job_type`, `income_class`, `sector`, `weight`: the share of a LISA sector's jobs in each income-class pool and job type (over job types and deciles D1-D10 a sector adds up to 1) |
 | `segments.csv` | segment definitions: budget interval, atom, Lime price scale |
 | `time_margins.csv` | Weibull margins used |
 | `hubs.csv` | shared-bicycle hubs used (name, kind, lat, lon) |

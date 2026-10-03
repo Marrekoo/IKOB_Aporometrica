@@ -38,7 +38,7 @@ these; `cli` uses everything.
 | domain | `filter_config`, `segments` | `CurveSpec`, `CopulaSpec`, `ClassFilter` (with parsing of curve and copula blocks); `Segment` and its filter identity |
 | domain | `zones`, `state` | `ZoneSet`, immutable `ModelState` (square runs) |
 | segments | `pipeline`, `structure`, `ipf`, `marginals`, `kwb`, `config` | household x income segments per buurt |
-| segments | `lisa`, `jobs_impute`, `establishments`, `jobs`, `wfh` | jobs by sector, income class and job type |
+| segments | `lisa`, `jobs_impute`, `establishments`, `jobs`, `occupations`, `wfh` | jobs by sector, income class (sector x occupation cells) and job type |
 | segments | `time_margins`, `bridge`, `specs` | Weibull margins, reference budgets, specifications M0-M3 |
 | segments | `car_availability`, `ownership`, `pt_spend` | mode availability; PT fare spending by decile (ODiN) |
 | segments | `statline` | CBS StatLine snapshots |

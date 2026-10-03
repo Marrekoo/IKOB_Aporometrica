@@ -37,12 +37,11 @@ from ikob2.segments.bridge import (
     envelope_segment_names,
     segment_name,
 )
-from ikob2.segments.jobs import sector_income_weights, sector_pools
+from ikob2.segments.jobs import sector_pools
 from ikob2.core.compose import apply_copula
 from ikob2.segments.specs import (
     SPECS, atom_reported, cost_curve_factory, reported_atoms, spec_copula,
     time_margin_for, vot_factor, vot_weighted_cost)
-from ikob2.segments.wfh import split_jobs_by_wfh
 
 logger = logging.getLogger(__name__)
 
@@ -176,11 +175,12 @@ def _single_threaded_blas():
     return threadpool_limits(limits=1, user_api="blas")
 
 
-def prepare_inputs(origins, destinations, populations, sector_jobs, wfh_share,
-                   sector_wage, envelope, segment_names, common_jobs=False):
+def prepare_inputs(origins, destinations, populations, sector_jobs,
+                   job_weights, envelope, segment_names, common_jobs=False):
     """(segment names, populations by origin, job pools by job type and
     income class) of a run; shared by the accessibility run and the
-    scenario calibration."""
+    scenario calibration. `job_weights` maps each job type to its weights
+    income class x sector (segments.occupations.JobMatching.by_type)."""
     if envelope is not None:
         names = envelope_segment_names(envelope)
     elif segment_names is not None:
@@ -195,13 +195,14 @@ def prepare_inputs(origins, destinations, populations, sector_jobs, wfh_share,
     if missing_pop:
         raise KeyError(f"Populations lack segment column(s) "
                        f"{missing_pop[:5]}.")
-    # income pools for both job types, one weight table (partition)
-    W = sector_income_weights(sector_wage, sector_jobs.sum())
-    jobs_by_type = dict(zip(WFH_TYPES,
-                            split_jobs_by_wfh(sector_jobs, wfh_share)))
+    # income pools for both job types: the weights partition the jobs
+    lacking = [w for w in WFH_TYPES if w not in job_weights]
+    if lacking:
+        raise KeyError(f"job_weights lacks job type(s) {lacking}.")
     used = {n.rsplit("_", 1)[1] for n in names}
-    pools = {w: {c: v for c, v in
-                 sector_pools(jobs_by_type[w], destinations, W).items()
+    all_pools = {w: sector_pools(sector_jobs, destinations, job_weights[w])
+                 for w in WFH_TYPES}
+    pools = {w: {c: v for c, v in all_pools[w].items()
                  if c in used}                 # 'onbekend' has no segment
              for w in WFH_TYPES}
     if common_jobs:
@@ -209,8 +210,8 @@ def prepare_inputs(origins, destinations, populations, sector_jobs, wfh_share,
         # income matching of the opportunities is switched off
         for w in WFH_TYPES:
             everything = sum(np.asarray(v, dtype=np.float64)
-                             for v in sector_pools(jobs_by_type[w],
-                                                   destinations, W).values())
+                             for c, v in all_pools[w].items()
+                             if c != "onbekend")
             pools[w] = {c: everything for c in pools[w]}
     return names, pop, pools
 
@@ -221,8 +222,7 @@ def run_accessibility(
     destinations: Sequence[str],
     populations: pd.DataFrame,
     sector_jobs: pd.DataFrame,
-    wfh_share: pd.Series,
-    sector_wage: pd.Series,
+    job_weights: Mapping[str, pd.DataFrame],
     envelope: pd.DataFrame | None,
     time_margins: Mapping,
     matrices: Mapping[str, ModeMatrices],
@@ -247,7 +247,10 @@ def run_accessibility(
         origin buurt, indexed or keyed by `buurtcode`.
     sector_jobs : imputed jobs, buurt x LISA sector (covering the
         destinations; buurten missing there have no jobs).
-    wfh_share / sector_wage : per LISA sector.
+    job_weights : job type -> weights income class x LISA sector, which
+        place the jobs in the income-matched pools
+        (segments.occupations: `occupation_job_weights`,
+        `sector_job_weights`).
     envelope : validated cost-margin table (only its segments are run);
         None switches the cost gate off: time-only accessibility, cost
         matrices are ignored, and `segment_names` says which segments to
@@ -288,8 +291,8 @@ def run_accessibility(
     destinations = [str(d) for d in destinations]
     n_o, n_d = len(origins), len(destinations)
     names, pop, pools = prepare_inputs(
-        origins, destinations, populations, sector_jobs, wfh_share,
-        sector_wage, envelope, segment_names, common_jobs)
+        origins, destinations, populations, sector_jobs, job_weights,
+        envelope, segment_names, common_jobs)
 
     runner = SegmentedRunner(decay_epsilon=epsilon)
 

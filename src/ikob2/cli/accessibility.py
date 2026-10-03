@@ -365,6 +365,8 @@ def resolve_paths(args, prm) -> None:
         if not args.detour and lay.detour_model().exists():
             args.detour = str(lay.detour_model())
         args.margins = args.margins or str(lay.survey_margins())
+        args.occupations = (getattr(args, "occupations", None)
+                            or str(lay.occupations()))
     folder = (lambda sub: lay.inputs / sub) if lay is not None else (
         lambda sub: None)
     args.budgets = str(resolve_input(args.budgets, folder("envelope")))
@@ -390,6 +392,33 @@ def resolve_paths(args, prm) -> None:
                            "ikob2.cli.layout create) or give the path.")
 
 
+def job_matching(prm, args, sector_jobs: pd.DataFrame):
+    """How jobs are placed in the income-matched pools, per job type
+    (`jobs.matching`): sector x occupation cells (segments.occupations) or
+    every sector at its mean wage."""
+    from ikob2.segments import occupations as occ
+    from ikob2.segments.lisa import SECTOR_TO_NACE
+
+    types = tuple(prm.accessibility.wfh_types)
+    total = sector_jobs.sum()
+    if prm.jobs.matching == "sector":
+        wage, wfh = _sector_tables(Path(args.statline), args.wage_period,
+                                   args.wfh_period)
+        return occ.sector_job_weights(wage, total.reindex(wage.index), wfh,
+                                      types)
+    if prm.jobs.matching != "occupation":
+        raise SystemExit(f"Unknown jobs.matching {prm.jobs.matching!r}; "
+                         f"use 'occupation' or 'sector'.")
+    if not args.occupations:
+        raise SystemExit("Give --occupations or --data-root.")
+    t = occ.load_tables(args.occupations)
+    return occ.occupation_job_weights(
+        occ.sector_cells(t, SECTOR_TO_NACE),
+        occ.within_cell_sd(t.quartiles, t.crosswalk),
+        occ.teleworkability_by_major(t.telework, t.employment_isco2),
+        total.reindex(list(SECTOR_TO_NACE)), types)
+
+
 def input_fingerprints(args) -> dict:
     """Path and SHA-256 of every input file of the run, so an archived data
     folder can be matched to run.json."""
@@ -398,9 +427,10 @@ def input_fingerprints(args) -> dict:
     files = {n: getattr(args, n, None) for n in (
         "budgets", "margins", "price_scales", "pt_fare_scales", "sector_jobs",
         "bike_ownership", "car_availability", "detour", "kwb")}
-    if args.statline:
-        for f in sorted(Path(args.statline).glob("*.csv")):
-            files[f"statline/{f.name}"] = f
+    for folder in ("statline", "occupations"):
+        if getattr(args, folder, None):
+            for f in sorted(Path(getattr(args, folder)).glob("*.csv")):
+                files[f"{folder}/{f.name}"] = f
     out = {}
     for name, path in files.items():
         if not path or not Path(path).is_file():
@@ -452,8 +482,8 @@ def cmd_run(args) -> None:
            == "population_scaled" else segs.household_based)
 
     sector_jobs = pd.read_csv(args.sector_jobs, index_col=0)
-    wage, wfh = _sector_tables(Path(args.statline), args.wage_period,
-                               args.wfh_period)
+    matching = job_matching(prm, args, sector_jobs)
+    weights = matching.by_type
     envelope = load_reference_budgets(args.budgets,
                                       censored=args.censored,
                                       legs_per_tour=args.legs_per_tour)
@@ -552,8 +582,8 @@ def cmd_run(args) -> None:
                     bike_fixed_min=prm.bike_leg.fixed_minutes)["pt_v2"]
                 return lime_usage(
                     origins=store.origins, destinations=dest_codes,
-                    populations=pop, sector_jobs=sector_jobs, wfh_share=wfh,
-                    sector_wage=wage, envelope=envelope_arg,
+                    populations=pop, sector_jobs=sector_jobs,
+                    job_weights=weights, envelope=envelope_arg,
                     time_margins=margins, mode=mode, price_scale=price_scale,
                     unreachable_minutes=prm.accessibility.unreachable_minutes)
 
@@ -569,8 +599,8 @@ def cmd_run(args) -> None:
                 bike_fixed_min=prm.bike_leg.fixed_minutes)["pt_v2"]
             u = lime_usage(
                 origins=store.origins, destinations=dest_codes,
-                populations=pop, sector_jobs=sector_jobs, wfh_share=wfh,
-                sector_wage=wage, envelope=envelope_arg, time_margins=margins,
+                populations=pop, sector_jobs=sector_jobs,
+                job_weights=weights, envelope=envelope_arg, time_margins=margins,
                 mode=mode, price_scale=price_scale,
                 unreachable_minutes=prm.accessibility.unreachable_minutes)
             scenario["lime_usage"] = {
@@ -588,8 +618,8 @@ def cmd_run(args) -> None:
                 bike_fixed_min=prm.bike_leg.fixed_minutes)["pt_v2"]
             usage_kw = dict(
                 origins=store.origins, destinations=dest_codes,
-                populations=pop, sector_jobs=sector_jobs, wfh_share=wfh,
-                sector_wage=wage, envelope=envelope_arg, time_margins=margins,
+                populations=pop, sector_jobs=sector_jobs,
+                job_weights=weights, envelope=envelope_arg, time_margins=margins,
                 unreachable_minutes=prm.accessibility.unreachable_minutes)
             u0 = lime_usage(mode=base_mode, **usage_kw)
             u_at0 = lime_usage(mode=base_mode, price_from=mode,
@@ -620,7 +650,7 @@ def cmd_run(args) -> None:
 
     result = run_accessibility(
         origins=store.origins, destinations=dest_codes, populations=pop,
-        sector_jobs=sector_jobs, wfh_share=wfh, sector_wage=wage,
+        sector_jobs=sector_jobs, job_weights=weights,
         envelope=envelope_arg, time_margins=margins, matrices=matrices,
         copula=copula, epsilon=args.epsilon,
         segment_names=envelope_segment_names(envelope),
@@ -638,7 +668,13 @@ def cmd_run(args) -> None:
             result.summary(by, "accessibility_expected").to_csv(
                 out_dir / f"summary_{by.split('_')[0]}_expected.csv")
     result.summary("household_type").to_csv(out_dir / "summary_household.csv")
+    pd.concat([w.rename_axis("income_class").reset_index().melt(
+        id_vars="income_class", var_name="sector", value_name="weight")
+        .assign(job_type=k) for k, w in weights.items()])[
+        ["job_type", "income_class", "sector", "weight"]].to_csv(
+        out_dir / "job_weights.csv", index=False)
     meta = {**result.meta, "parameters": prm.to_dict(), "scenario": scenario,
+            "job_matching": matching.meta,
             "lime_price_scales": price_scale, "pt_fare_scales": fare_scale,
             "created": dt.datetime.now().isoformat(
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
@@ -683,6 +719,9 @@ def main(argv=None) -> None:
                    help="CSV from `cli.segments jobs`")
     p.add_argument("--out", default=None)
     p.add_argument("--statline", default=None)
+    p.add_argument("--occupations", default=None,
+                   help="folder with the occupation tables (jobs.matching = "
+                        "'occupation'; default inputs/occupations)")
     p.add_argument("--budgets", default=None)
     p.add_argument("--margins", default=None)
     p.add_argument("--modes", nargs="+", default=None)

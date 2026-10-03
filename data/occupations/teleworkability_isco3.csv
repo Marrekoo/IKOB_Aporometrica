@@ -1,0 +1,121 @@
+isco08,title,physical_interaction,social_interaction
+111,Legislators and senior officials,1.0,0.681
+112,Managing directors and chief executives,1.0,0.69
+121,Business services and administration managers,1.0,0.606
+122,"Sales, marketing and development managers",1.0,0.651
+131,"Production managers in agriculture, forestry and fisheries",0.0,0.622
+132,"Manufacturing, mining, construction, and distribution managers",0.179,0.621
+133,Information and communications technology service managers,1.0,0.567
+134,Professional services managers,1.0,0.665
+141,Hotel and restaurant managers,0.97,0.633
+142,Retail and wholesale trade managers,0.067,0.672
+143,Other services managers,0.887,0.614
+211,Physical and earth science professionals,0.232,0.449
+212,"Mathematicians, actuaries and statisticians",1.0,0.585
+213,Life science professionals,0.26,0.543
+214,Engineering professionals (excluding electrotechnology),0.25,0.495
+215,Electrotechnology engineers,0.0,0.505
+216,"Architects, planners, surveyors and designers",0.376,0.358
+221,Medical doctors,0.392,0.793
+222,Nursing and Midwifery Professionals,0.0,0.936
+225,Veterinarians,0.0,0.644
+226,Other health professionals,0.587,0.748
+231,University and higher education teachers,0.495,0.796
+232,Vocational education teachers,1.0,0.755
+233,Secondary education teachers,1.0,0.769
+234,Primary school and early childhood teachers,0.612,0.779
+235,Other teaching professionals,0.86,0.737
+241,Finance professionals,1.0,0.458
+242,Administration professionals,0.971,0.565
+243,"Sales, marketing and public relations professionals",1.0,0.564
+251,Software and applications developers and analysts,1.0,0.464
+252,Database and network professionals,1.0,0.412
+261,Legal professionals,1.0,0.429
+262,"Librarians, archivists and curators",1.0,0.513
+263,Social and religious professionals,0.977,0.674
+264,"Authors, journalists and linguists",1.0,0.429
+265,Creative and performing artists,0.339,0.54
+311,Physical and engineering science technicians,0.007,0.449
+312,"Mining, manufacturing and construction supervisors",0.0,0.566
+313,Process control technicians,0.019,0.384
+314,Life science technicians and related associate professionals,0.63,0.354
+315,Ship and aircraft controllers and technicians,0.091,0.6
+321,Medical and pharmaceutical technicians,0.0,0.394
+322,Nursing and midwifery associate professionals,0.0,0.936
+324,Veterinary technicians and assistants,0.0,0.387
+325,Other health associate professionals,0.347,0.656
+331,Financial and mathematical associate professionals,0.997,0.406
+332,Sales and purchasing agents and brokers,1.0,0.655
+333,Business services agents,1.0,0.52
+334,Administrative and specialised secretaries,1.0,0.534
+335,Regulatory government associate professionals,0.526,0.572
+341,"Legal, social and religious associate professionals",1.0,0.744
+342,Sports and fitness workers,0.044,0.672
+343,"Artistic, cultural and culinary associate professionals",0.11,0.483
+351,Information and communications technology operations and user support technicians,0.934,0.429
+352,Telecommunications and broadcasting technicians,0.0,0.322
+411,General office clerks,1.0,0.391
+412,Secretaries (general),1.0,0.438
+413,Keyboard operators,1.0,0.289
+421,"Tellers, money collectors and related clerks",0.929,0.504
+422,Client information workers,1.0,0.476
+431,Numerical clerks,1.0,0.259
+432,Material-recording and transport clerks,0.399,0.417
+441,Other clerical support workers,0.819,0.402
+511,"Travel attendants, conductors and guides",0.73,0.785
+512,Cooks,0.0,0.477
+513,Waiters and bartenders,0.0,0.557
+514,"Hairdressers, beauticians and related workers",0.0,0.577
+515,Building and housekeeping supervisors,0.0,0.7
+516,Other personal services workers,0.324,0.55
+521,Street and market salespersons,0.0,0.836
+522,Shop salespersons,0.042,0.796
+523,Cashiers and ticket clerks,0.101,0.511
+524,Other sales workers,0.327,0.497
+531,Child care workers and teachers’ aides,0.0,0.75
+532,Personal care workers in health services,0.0,0.539
+541,Protective services workers,0.396,0.574
+611,Market gardeners and crop growers,0.0,0.428
+612,Animal producers,0.0,0.332
+613,Mixed crop and animal producers,0.0,0.363
+621,Forestry and related workers,0.0,0.457
+622,"Fishery workers, hunters and trappers",0.0,0.405
+711,Building frame and related trades workers,0.0,0.266
+712,Building finishers and related trades workers,0.0,0.379
+713,"Painters, building structure cleaners and related trades workers",0.0,0.311
+721,"Sheet and structural metal workers, moulders and welders, and related workers",0.0,0.379
+722,"Blacksmiths, toolmakers and related trades workers",0.0,0.316
+723,Machinery mechanics and repairers,0.0,0.334
+731,Handicraft workers,0.0,0.361
+732,Printing trades workers,0.335,0.305
+741,Electrical equipment installers and repairers,0.0,0.397
+742,Electronics and telecommunications installers and repairers,0.0,0.418
+751,Food processing and related trades workers,0.003,0.498
+752,"Wood treaters, cabinet-makers and related trades workers",0.0,0.374
+753,Garment and related trades workers,0.0,0.357
+754,Other craft and related workers,0.0,0.364
+811,Mining and mineral processing plant operators,0.0,0.267
+812,Metal processing and finishing plant operators,0.0,0.33
+813,Chemical and photographic products plant and machine operators,0.0,0.301
+814,"Rubber, plastic and paper products machine operators",0.0,0.275
+815,"Textile, fur and leather products machine operators",0.252,0.306
+816,Food and related products machine operators,0.0,0.329
+817,Wood processing and papermaking plant operators,0.0,0.347
+818,Other stationary plant and machine operators,0.0,0.293
+821,Assemblers,0.0,0.259
+831,Locomotive engine drivers and related workers,0.0,0.176
+832,"Car, van and motorcycle drivers",0.0,0.52
+833,Heavy truck and bus drivers,0.0,0.178
+834,Mobile plant operators,0.0,0.251
+835,Ships’ deck crews and related workers,0.0,0.257
+911,"Domestic, hotel and office cleaners and helpers",0.0,0.322
+912,"Vehicle, window, laundry and other hand cleaning workers",0.0,0.447
+921,"Agricultural, forestry and fishery labourers",0.0,0.241
+931,Mining and construction labourers,0.0,0.188
+932,Manufacturing labourers,0.0,0.238
+933,Transport and storage labourers,0.0,0.2
+941,Food preparation assistants,0.0,0.26
+951,Street and related service workers,0.0,0.431
+952,Street vendors (excluding food),0.0,0.708
+961,Refuse workers,0.0,0.288
+962,Other elementary workers,0.283,0.359

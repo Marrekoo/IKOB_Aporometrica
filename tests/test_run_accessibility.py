@@ -14,6 +14,7 @@ from ikob2.run.accessibility import (
 from ikob2.segments.bridge import envelope_segment_names, load_reference_budgets
 from ikob2.segments.jobs import sector_income_weights, sector_pools
 from ikob2.segments.lisa import SECTORS
+from ikob2.segments.occupations import sector_job_weights
 from ikob2.segments.time_margins import load_time_margins
 from ikob2.segments.wfh import split_jobs_by_wfh
 
@@ -39,10 +40,17 @@ def world(seed=0):
     return pop, jobs, wfh, wage, time, cost
 
 
+def weights(jobs, wfh, wage):
+    """Job weights of the sector method (one wage and home-working share per
+    sector): the hand computations below use `sector_income_weights` and
+    `split_jobs_by_wfh`, the same arithmetic."""
+    return sector_job_weights(wage, jobs.sum(), wfh, WFH_TYPES).by_type
+
+
 def run(pop, jobs, wfh, wage, matrices, **kw):
     return run_accessibility(
         origins=ORIGINS, destinations=DESTS, populations=pop,
-        sector_jobs=jobs, wfh_share=wfh, sector_wage=wage, envelope=ENV,
+        sector_jobs=jobs, job_weights=weights(jobs, wfh, wage), envelope=ENV,
         time_margins=MARGINS, matrices=matrices, epsilon=None, **kw)
 
 
@@ -111,7 +119,7 @@ def test_identical_wfh_curves_reduce_to_a_single_job_pool():
     same = {("bike", w): CurveSpec("weibull", (2.5, 30.0)) for w in WFH_TYPES}
     res = run_accessibility(
         origins=ORIGINS, destinations=DESTS, populations=pop,
-        sector_jobs=jobs, wfh_share=wfh, sector_wage=wage, envelope=ENV,
+        sector_jobs=jobs, job_weights=weights(jobs, wfh, wage), envelope=ENV,
         time_margins=same, matrices={"bike": ModeMatrices(time)},
         epsilon=None)
     W = sector_income_weights(wage, jobs.sum())

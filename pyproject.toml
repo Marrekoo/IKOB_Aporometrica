@@ -25,7 +25,7 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest>=7.0", "pytest-cov>=5"]
 routing = ["r5py>=1.1", "pyvalhalla>=3.9", "osmium>=3.7"]   # R5 (Java 21), a local Valhalla server, OSM extracts
-legacy = ["openpyxl>=3.1"]   # read the Excel inputs (LISA, IKOB job table)
+legacy = ["openpyxl>=3.1", "xlrd>=2.0"]   # read the Excel inputs (LISA, IKOB job table, CBS ISCO-BRC correspondence)
 dev = ["ruff>=0.6", "pre-commit>=3.7"]
 
 [tool.setuptools.packages.find]
