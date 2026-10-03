@@ -20,9 +20,19 @@ Built by `cli.skims build-pt` (`skims.md`); names are store modes:
 `<kind>` is a hub tariff (`lime`, `ovfiets`), one mode per kind because the
 tariffs differ and a slower hub can be the affordable one. The kinds read are
 `shared_bike.egress_hub_kinds`; with an empty list the run reads `pt_wb` and
-`pt_bb` at the OV-fiets charge. `shared_bike.egress_suffix` maps a kind to a
-mode suffix, so `{lime = "_s2"}` reads `pt_wb_lime_s2` and `pt_bb_lime_s2`
-(scenario S2).
+`pt_bb` at the OV-fiets charge.
+
+A scenario's hub set (`shared_bike.egress_suffix`, e.g. `{lime = "_s2c"}`) adds
+the chains `pt_wb_lime_s2c` and `pt_bb_lime_s2c` (existing and added hubs) as
+options next to `pt_wb_lime` and `pt_bb_lime` (existing hubs only). A skim
+mode holds one journey per pair, the fastest; with more hubs the fastest
+journey can run through another stop with a dearer fare (a rail leg, another
+boarding), and the cheaper journey of the existing hubs would drop out. With
+both chains as options the set of a scenario contains every option of the
+baseline, so adding hubs never lowers accessibility (union of options,
+`model_theory.md` section 5; tested). The same holds for any set of chains
+that differ only in where a bicycle leg can start: each is kept as its own
+option.
 
 ### Tariffs
 

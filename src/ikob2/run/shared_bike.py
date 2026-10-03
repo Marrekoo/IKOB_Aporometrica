@@ -226,12 +226,21 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
     # Egress chains, one per hub kind (skim modes pt_wb_<kind>, pt_bb_<kind>):
     # the tariffs differ, so each kind is its own alternative journey and a
     # person accepts the pair if ANY of them clears both gates (a slower hub
-    # may be the one that is affordable). Without kinds: pt_wb / pt_bb at the
-    # OV-fiets flat charge.
+    # may be the one that is affordable). A hub set of a scenario
+    # (pt_wb_<kind>_<suffix>, `egress_suffix`) is a further option of the same
+    # kind next to the existing hubs: a skim mode keeps the fastest journey
+    # per pair, and with more hubs that can be a dearer one, so only both
+    # together contain every option of the baseline. Without kinds: pt_wb /
+    # pt_bb at the OV-fiets flat charge.
     kinds = [k for k in tariffs.hub_tariffs
              if f"pt_wb_{k}" in chains or f"pt_bb_{k}" in chains]
-    egress = [(f"pt_wb_{k}", f"pt_bb_{k}", k) for k in kinds] \
-        or [("pt_wb", "pt_bb", None)]
+    egress = []
+    for k in kinds:
+        egress.append((f"pt_wb_{k}", f"pt_bb_{k}", k))
+        for name in sorted(chains):
+            if name.startswith(f"pt_wb_{k}_"):
+                egress.append((name, f"pt_bb_{k}{name[len(f'pt_wb_{k}'):]}", k))
+    egress = egress or [("pt_wb", "pt_bb", None)]
     # the bicycle access leg is the same in every egress kind
     bb0 = next((bb for _, bb, _k in egress if bb in chains), None)
     dock_bb = None if bb0 is None else tariffs.dockless_eur(

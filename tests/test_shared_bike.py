@@ -160,3 +160,67 @@ def test_lime_scale_scales_every_tier_for_access_and_lime_hubs_not_ovfiets():
     assert half.dockless_eur([10.0], 1.0)[0] == 1.5
     with pytest.raises(ValueError, match="lime_scale"):
         SharedBikeTariffs(lime_scale=-1)
+
+
+def scenario_chains():
+    """Lime hubs of a scenario (pt_wb_lime_s2c): the extra hubs make another
+    journey the fastest one, 40 instead of 48 minutes, with a dearer public
+    transport fare (EUR 14 instead of 8, e.g. a rail leg)."""
+    c, f = kind_chains()
+    for mode, tm in (("pt_wb_lime_s2c", 40.0), ("pt_bb_lime_s2c", 30.0)):
+        c[mode] = {"time": np.full(SHAPE, tm, dtype=np.float32),
+                   "egress_min": np.full(SHAPE, 10.0, dtype=np.float32)}
+        f[mode] = np.full(SHAPE, 14.0, dtype=np.float32)
+    c["pt_bb_lime_s2c"]["access_min"] = np.full(SHAPE, 12.0, np.float32)
+    return c, f
+
+
+def test_scenario_hubs_are_options_next_to_the_existing_hubs():
+    c, f = scenario_chains()
+    v1 = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v1",))["pt_v1"]
+    got = sorted((float(o.time[0, 0]), round(float(o.cost[0, 0]), 2))
+                 for o in v1.options)
+    # plain, Lime (48 min, 8 + 3), scenario Lime (40 min, 14 + 3), OV-fiets
+    assert got == [(40.0, 17.0), (48.0, 11.0), (50.0, 12.8), (60.0, 8.0)]
+    v2 = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v2",))["pt_v2"]
+    (_, owners), (_, others) = v2.parts
+    # both bicycle-access and walk-access chains of the scenario are added
+    assert len(owners.options) == 2 + 2 * 3 and len(others.options) == 2 + 2 * 3
+
+
+@pytest.mark.parametrize("spec", ["m0s", "m2"])
+def test_adding_scenario_hubs_never_lowers_accessibility(spec):
+    """A pair the baseline reaches through the cheaper hub stays reachable
+    when a faster but dearer journey appears with the scenario's hubs."""
+    from tests.test_run_accessibility import NAMES, run, world
+
+    pop, jobs, wfh, wage, *_ = world()
+    shape = (3, 4)
+    base_c, base_f = scenario_chains()
+    for d in (base_c, base_f):
+        for m in [m for m in d if m.endswith("_s2c")]:
+            d.pop(m)
+    scen_c, scen_f = scenario_chains()
+
+    def resized(c, f):
+        c = {m: {k: np.resize(v, shape).astype(np.float32) for k, v in x.items()}
+             for m, x in c.items()}
+        return c, {m: np.resize(v, shape).astype(np.float32) for m, v in f.items()}
+
+    p = np.array([0.0, 0.5, 1.0])
+    base = shared_bike_modes(*resized(base_c, base_f), p, variants=("v1",))["pt_v1"]
+    scen = shared_bike_modes(*resized(scen_c, scen_f), p, variants=("v1",))["pt_v1"]
+    res = run(pop, jobs, wfh, wage, {"base": base, "scen": scen}, spec=spec)
+    t = res.table.pivot_table(index=["buurtcode", "segment"], columns="mode",
+                              values="accessibility")
+    assert (t["scen"] >= t["base"] - 1e-6).all()
+    assert (t["scen"] > t["base"] + 1e-6).any()            # the faster option adds
+    # replacing the existing hubs by the scenario's (the fastest journey only)
+    # loses the pairs that only the cheaper journey passes
+    only = OptionSet(tuple(o for o in scen.options
+                           if not (o.time[0, 0] == 48.0)), "pt")
+    lost = run(pop, jobs, wfh, wage, {"only": only, "base": base}, spec=spec)
+    u = lost.table.pivot_table(index=["buurtcode", "segment"], columns="mode",
+                               values="accessibility")
+    assert (u["only"] < u["base"] - 1e-6).any()
+    assert set(NAMES) == set(t.index.get_level_values("segment"))

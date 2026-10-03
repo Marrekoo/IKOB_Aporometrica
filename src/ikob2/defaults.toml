@@ -144,7 +144,7 @@ flat_bracket_step = 1.15   # fixed point: factor by which the bracket around the
 # duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
 lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]
 hub_tariffs = ["ovfiets", "lime"]      # known hub tariff kinds (pt.hub_kinds, egress_hub_kinds)
-egress_suffix = {}                     # skim mode suffix per hub kind, e.g. {lime = "_s2"} reads pt_wb_lime_s2
+egress_suffix = {}                     # hub set of a scenario per kind, e.g. {lime = "_s2c"}: the chains pt_wb_lime_s2c, pt_bb_lime_s2c are options next to pt_wb_lime, pt_bb_lime
 egress_hub_kinds = ["lime", "ovfiets"]   # egress skim modes pt_wb_<kind>, pt_bb_<kind>; [] = plain pt_wb, pt_bb
 
 [skims]

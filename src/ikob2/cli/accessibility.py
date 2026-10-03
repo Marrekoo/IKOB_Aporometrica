@@ -230,7 +230,11 @@ def tariffs_from(prm):
 
 def load_chains(prm, args, store, codes, model):
     """(chains, fares, bicycle share per origin) of the shared-bicycle
-    variants: the store modes pt, pt_bw and the egress modes."""
+    variants: the store modes pt, pt_bw and the egress modes. A hub kind
+    with a scenario suffix (`shared_bike.egress_suffix`, e.g. {lime =
+    "_s2c"}) also gets the chains pt_wb_<kind><suffix> and
+    pt_bb_<kind><suffix>: the existing and the added hubs, options next to
+    those of the existing hubs (`run.shared_bike.shared_bike_modes`)."""
     from ikob2.segments.ownership import load_bike_ownership
 
     chains, fares = {}, {}
@@ -240,10 +244,11 @@ def load_chains(prm, args, store, codes, model):
     suffix = prm.shared_bike.egress_suffix.to_dict()
     egress = [f"{m}_{k}" for k in kinds for m in ("pt_wb", "pt_bb")] \
         or ["pt_wb", "pt_bb"]
-    for mode in ("pt", "pt_bw", *egress):
-        # a kind may read other skim modes (S2: pt_wb_lime_s2 with more hubs)
-        stored = mode + suffix.get(mode.split("_", 2)[-1], "") \
-            if mode.startswith(("pt_wb_", "pt_bb_")) else mode
+    scenario = [m + suffix[m.split("_", 2)[-1]] for m in egress
+                if m.startswith(("pt_wb_", "pt_bb_"))
+                and suffix.get(m.split("_", 2)[-1])]
+    for mode in ("pt", "pt_bw", *egress, *scenario):
+        stored = mode
         if ("all", stored, "time") not in store.arrays():
             raise SystemExit(f"Store lacks mode '{stored}': build it with "
                              f"`cli.skims build-pt --mode-name {stored}` "

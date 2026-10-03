@@ -97,3 +97,21 @@ takes its specifications, scenarios, pairs and targeting runs from `[paper]`
 of the parameters and writes `outputs/comparisons/specs/` and
 `outputs/comparisons/targeting/`. The figures and the remaining tables are
 made from these outputs by the R analysis pipeline.
+
+## Notes for the paper
+
+* **Alternative journeys and scenario hubs (Appendix A.5).** The union over
+  options is taken over the chains the skims provide, and a skim holds the
+  fastest journey of a chain per pair. Extra hubs can make a faster journey
+  with a dearer fare the fastest one (another stop, a rail leg), so a chain
+  built with the extra hubs alone would hide the cheaper journey of the
+  existing hubs, and adding hubs could lower accessibility for segments
+  whose budget only the cheaper journey meets. The scenario chains are
+  therefore options next to the baseline chains: the option set of S2
+  contains that of S0, and by Corollary A.2 accessibility cannot fall. The
+  same frontier argument holds within any chain: the efficient set of
+  Lemma A.3 is the efficient set of the journeys the skims supply.
+* **M0u and price cuts.** The single cost cut-off of M0u (EUR 37.84 per
+  journey, the median of the population's cost thresholds) lies above every
+  fare in the model, so no price scenario changes M0u accessibility.
+

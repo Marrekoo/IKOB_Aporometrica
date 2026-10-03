@@ -167,6 +167,15 @@ option by its rail share), and M0u and M0s with their steps (a pair counts
 when some option passes both cut-offs); M0 takes the option with the least
 generalised time.
 
+**Fastest journeys per chain.** A skim mode holds the fastest journey of a
+chain per pair, not every journey on the time-cost frontier. Options of
+different chains (plain PT, bicycle access, bicycle egress per hub kind) keep
+the frontier between chains, but within a chain a faster and dearer journey
+hides a slower and cheaper one. Where a scenario only adds possibilities to
+a chain (extra hubs), its chain is therefore an option next to the
+baseline's, not in place of it, so the scenario's options include the
+baseline's and P cannot fall (`scenarios.md`, scenario hubs).
+
 **Leg-wise gates** (`LegOptionSet`, variant v3): each leg of a chain is
 judged on its own time margin (bicycle legs on the bicycle margin, the PT leg
 on the PT margin for the in-PT time) and the cost margin on the journey
