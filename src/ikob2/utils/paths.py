@@ -7,7 +7,7 @@ $IKOB_DATA_ROOT or `paths.data_root` (ikob2.params.data_root).
       inputs/                    source data, read only
         kwb/                     CBS wijken en buurten GeoPackages (per year)
         lisa/                    LISA jobs per municipality and sector
-        legacy_ikob/             IKOB job table per buurt; LISA 2016 jobs by education
+        ikob/                    IKOB job table per buurt; LISA 2016 jobs by education
         osm/                     OpenStreetMap extracts (.pbf)
         gtfs/                    GTFS feeds
         survey/                  fitted time margins (S_T_*.csv)
@@ -53,7 +53,7 @@ from pathlib import Path
 
 from ikob2.params import DEFAULTS
 
-INPUT_DIRS = ("kwb", "lisa", "legacy_ikob", "osm", "gtfs", "survey",
+INPUT_DIRS = ("kwb", "lisa", "ikob", "osm", "gtfs", "survey",
               "envelope", "tariffs", "odin", "veh_owners", "hubs", "ovfiets")
 CACHE_DIRS = ("statline",)
 INTERMEDIATE_DIRS = ("segments", "jobs", "ownership", "hubs", "envelope", "skims",
@@ -64,7 +64,7 @@ README = """# IKOB data
 
 Data folder of the IKOB Aporometrica project (code: IKOB_Aporometrica).
 
-    inputs/          source data, read only (kwb, lisa, legacy_ikob, osm,
+    inputs/          source data, read only (kwb, lisa, ikob, osm,
                      gtfs, survey, envelope, tariffs, odin, veh_owners,
                      hubs, ovfiets)
     cache/statline/  CBS StatLine snapshots (python -m ikob2.cli.segments fetch)
@@ -213,10 +213,10 @@ class DataLayout:
         return self.inputs / "lisa" / DEFAULTS.paths.lisa
 
     def ikob_jobs(self) -> Path:
-        return self.inputs / "legacy_ikob" / DEFAULTS.paths.ikob_jobs
+        return self.inputs / "ikob" / DEFAULTS.paths.ikob_jobs
 
     def education_jobs(self) -> Path:
-        return self.inputs / "legacy_ikob" / DEFAULTS.paths.education_jobs
+        return self.inputs / "ikob" / DEFAULTS.paths.education_jobs
 
     def odin(self) -> Path:
         return self.inputs / "odin" / DEFAULTS.paths.odin

@@ -83,6 +83,7 @@ FLAGS = {
     "report_usage": "shared_bike.report_usage",
     "price_scales": "paths.lime_price_scales",
     "price_zones": "paths.lime_price_zones",
+    "study": "paths.study",
     "pt_fare_scales": "paths.pt_fare_scales",
     "car_model": "car.default_model", "parking_search": "car.parking_search",
     "pt_rail_table": "pt_fare.rail_table",
@@ -421,6 +422,30 @@ def job_matching(prm, args, sector_jobs: pd.DataFrame):
         total.reindex(list(SECTOR_TO_NACE)), types)
 
 
+def code_version() -> dict:
+    """The package version and, in a git checkout, the commit and whether
+    the working tree differs from it."""
+    import subprocess
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        out = {"ikob2": version("ikob2")}
+    except PackageNotFoundError:
+        out = {"ikob2": None}
+    here = Path(__file__).resolve().parent
+    try:
+        commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=here,
+                                capture_output=True, text=True, check=True)
+        dirty = subprocess.run(["git", "status", "--porcelain",
+                                "--untracked-files=no"], cwd=here,
+                               capture_output=True, text=True, check=True)
+        out.update(git_commit=commit.stdout.strip(),
+                   uncommitted_changes=bool(dirty.stdout.strip()))
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    return out
+
+
 def input_fingerprints(args) -> dict:
     """Path and SHA-256 of every input file of the run, so an archived data
     folder can be matched to run.json."""
@@ -703,7 +728,7 @@ def cmd_run(args) -> None:
         timespec="seconds"), "args": {k: str(v) for k, v in vars(args).items()
                                       if k != "func"},
             "detour": detour.meta, "skim_meta": store.meta,
-            "input_files": input_fingerprints(args)}
+            "input_files": input_fingerprints(args), "code": code_version()}
     (out_dir / "run.json").write_text(json.dumps(meta, indent=1, default=str))
     if prm.accessibility.export:
         from ikob2.outputs.export import write_products
@@ -727,8 +752,9 @@ def main(argv=None) -> None:
     p.add_argument("--data-root", default=None,
                    help="data folder (utils.paths.DataLayout); fills the "
                         "paths below from --study, --run and the years")
-    p.add_argument("--study", default="utrecht_nl",
-                   help="skim store name under intermediate/skims")
+    p.add_argument("--study", default=None,
+                   help="skim store name under intermediate/skims (default "
+                        "paths.study)")
     p.add_argument("--run", default="run",
                    help="output folder name under outputs/runs")
     p.add_argument("--distance-study", default=None,

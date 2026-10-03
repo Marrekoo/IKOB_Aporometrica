@@ -8,10 +8,10 @@
 #   pip install -r requirements-lock.txt
 #   pip install -e . --no-deps
 #
-# All extras of pyproject.toml are included (test, routing, legacy, dev).
+# All extras of pyproject.toml are included (test, routing, excel, dev).
 # Regenerate after changing dependencies:
 #   python -m venv /tmp/lockenv
-#   /tmp/lockenv/bin/pip install -c <(pip freeze --exclude-editable) ".[test,routing,legacy,dev]"
+#   /tmp/lockenv/bin/pip install -c <(pip freeze --exclude-editable) ".[test,routing,excel,dev]"
 #   /tmp/lockenv/bin/pip freeze --exclude ikob2   (below this header)
 affine==3.0.1
 attrs==26.1.0

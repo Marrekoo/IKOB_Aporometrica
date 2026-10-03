@@ -103,19 +103,19 @@ def _setup():
         index=["Alpha", "Beta"])
     codes = ["A1", "A2", "A3", "B1", "B2"]
     gem = pd.Series(["Alpha"] * 3 + ["Beta"] * 2, index=codes)
-    legacy = pd.Series([10.0, 30.0, 60.0, 50.0, 50.0], index=codes)
+    ikob = pd.Series([10.0, 30.0, 60.0, 50.0, 50.0], index=codes)
     cov = pd.DataFrame(np.tile(model.lower * 0.5 + model.upper * 0.5,
                                (5, 1)), index=codes,
                        columns=list(COVARIATES))     # identical buurten
     est = pd.DataFrame(0.0, index=codes, columns=["total", *GROUPS])
     est["total"] = 10.0
     est["G+I"] = 10.0
-    return model, lisa, gem, legacy, cov, est
+    return model, lisa, gem, ikob, cov, est
 
 
 def test_marginals_stay_exact_with_establishments():
-    model, lisa, gem, legacy, cov, est = _setup()
-    res = impute_sector_jobs(legacy, gem, lisa, model, cov,
+    model, lisa, gem, ikob, cov, est = _setup()
+    res = impute_sector_jobs(ikob, gem, lisa, model, cov,
                              establishments=est)
     np.testing.assert_allclose(res.jobs.loc[["A1", "A2", "A3"]].sum(),
                                lisa.loc["Alpha"], atol=1e-5)
@@ -125,36 +125,36 @@ def test_marginals_stay_exact_with_establishments():
 
 
 def test_establishment_weight_controls_the_buurt_totals():
-    model, lisa, gem, legacy, cov, est = _setup()
+    model, lisa, gem, ikob, cov, est = _setup()
     est.loc[["A1", "A2", "A3"], "total"] = [60.0, 30.0, 10.0]
     est.loc[["A1", "A2", "A3"], "G+I"] = [60.0, 30.0, 10.0]   # groups add up
     members = ["A1", "A2", "A3"]
-    r0 = impute_sector_jobs(legacy, gem, lisa, model, cov, establishments=est,
+    r0 = impute_sector_jobs(ikob, gem, lisa, model, cov, establishments=est,
                             establishment_weight=0.0).jobs.loc[members]
     np.testing.assert_allclose(
         r0.sum(axis=1) / r0.to_numpy().sum(), [0.1, 0.3, 0.6], atol=1e-6)
-    r1 = impute_sector_jobs(legacy, gem, lisa, model, cov, establishments=est,
+    r1 = impute_sector_jobs(ikob, gem, lisa, model, cov, establishments=est,
                             establishment_weight=1.0).jobs.loc[members]
     np.testing.assert_allclose(
         r1.sum(axis=1) / r1.to_numpy().sum(), [0.6, 0.3, 0.1], atol=1e-6)
-    half = impute_sector_jobs(legacy, gem, lisa, model, cov,
+    half = impute_sector_jobs(ikob, gem, lisa, model, cov,
                               establishments=est,
                               establishment_weight=0.5).jobs.loc[members]
     np.testing.assert_allclose(
         half.sum(axis=1) / half.to_numpy().sum(), [0.35, 0.3, 0.35],
         atol=1e-6)
     with pytest.raises(ValueError, match="establishment_weight"):
-        impute_sector_jobs(legacy, gem, lisa, model, cov, establishments=est,
+        impute_sector_jobs(ikob, gem, lisa, model, cov, establishments=est,
                            establishment_weight=1.5)
 
 
 def test_group_establishments_steer_sector_placement():
-    model, lisa, gem, legacy, cov, est = _setup()
+    model, lisa, gem, ikob, cov, est = _setup()
     est = est.copy()
     est.loc["A1", ["G+I", "O-Q"]] = [0.0, 40.0]      # only O-Q here
     est.loc["A2", ["G+I", "O-Q"]] = [40.0, 0.0]      # only G+I here
     est.loc["A3", ["G+I", "O-Q"]] = [0.0, 0.0]
-    equal = pd.Series(1.0, index=legacy.index)
+    equal = pd.Series(1.0, index=ikob.index)
     res = impute_sector_jobs(equal, gem, lisa, model, cov,
                              establishments=est, establishment_weight=0.0)
     J = res.jobs
@@ -165,17 +165,17 @@ def test_group_establishments_steer_sector_placement():
 
 
 def test_buurt_without_establishment_row_still_gets_jobs():
-    model, lisa, gem, legacy, cov, est = _setup()
+    model, lisa, gem, ikob, cov, est = _setup()
     est = est.drop(index="A3")
-    res = impute_sector_jobs(legacy, gem, lisa, model, cov, establishments=est)
+    res = impute_sector_jobs(ikob, gem, lisa, model, cov, establishments=est)
     assert res.jobs.loc["A3"].sum() > 0
     assert np.isfinite(res.jobs.to_numpy()).all()
 
 
 def test_without_establishments_behaviour_is_unchanged():
-    model, lisa, gem, legacy, cov, est = _setup()
-    a = impute_sector_jobs(legacy, gem, lisa, model, cov)
-    b = impute_sector_jobs(legacy, gem, lisa, model, cov, establishments=None)
+    model, lisa, gem, ikob, cov, est = _setup()
+    a = impute_sector_jobs(ikob, gem, lisa, model, cov)
+    b = impute_sector_jobs(ikob, gem, lisa, model, cov, establishments=None)
     pd.testing.assert_frame_equal(a.jobs, b.jobs)
 
 

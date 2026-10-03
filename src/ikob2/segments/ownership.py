@@ -2,7 +2,7 @@
 Private bicycle ownership per buurt.
 
 Input: a CSV with one row per buurt and the percentage of residents with one
-or more bicycles (`pct_with_bicycle`, 0-100), for now assigned from the
+or more bicycles (`pct_with_bicycle`, 0-100), assigned from the
 Utrecht buurtteam survey (2025). Extra columns (names, `buurtteam`,
 `mapping_confidence`) are documentation and ignored.
 

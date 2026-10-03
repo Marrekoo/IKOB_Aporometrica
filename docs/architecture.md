@@ -70,7 +70,8 @@ these; `cli` uses everything.
 | `cli.hubs` | `propose`: extra hubs for S2 |
 | `cli.compare` | two runs: ranks, levels, effectiveness |
 | `cli.interchange` | ratio R between two scenarios |
-| `cli.paper_tables` | tables over a specification grid |
+| `cli.paper_tables` | tables over a specification grid, targeting tables |
+| `cli.batch` | a set of runs from a run plan (`paper/runs.toml`) |
 
 ## Design rules
 

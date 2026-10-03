@@ -1,4 +1,4 @@
-"""Configuration of the segment pipeline (mirrors `cfg` of the R script)."""
+"""Configuration of the segment pipeline."""
 
 from __future__ import annotations
 

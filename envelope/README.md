@@ -30,9 +30,8 @@ The ODiN aggregates of 2023 and 2022-23 are published in `data/envelope/odin/`
 | residuals | `nibud` | anchors, income axis | `envelope.csv`: residual after the example and the minimum basket per decile and rent scenario |
 | tours and X_M | `xm` | residuals, ODiN aggregates, car costs | `tour_bounds.csv`, `grid.csv` (X_M for every scenario), `reference_budgets.csv` |
 
-The source tables (their numbers were taken from the envelope script
-`X_M calc.R` by `export_sources_from_r.R`; the `source` column names the
-publication behind each):
+The source tables (the `source` column names the publication behind each
+row):
 
 | Table | Content |
 |---|---|
@@ -41,7 +40,7 @@ publication behind each):
 | `bijstand_published` | income at social-assistance level and the published saldo |
 | `warnaar_anchors` | Warnaar's net income, rent and residual `b_norm` at minimum wage, modal and 1.5 x modal |
 | `rents`, `equivalence_cbs`, `price_index` | rent lineages, CBS equivalence factors, the uprating kappa = 1107 / 1076 |
-| `cbs_income_percentiles` | CBS percentiles p10..p90, 2021-2024 (table ID not recorded in the R script; unverified there) |
+| `cbs_income_percentiles` | CBS percentiles p10..p90, 2021-2024 (the StatLine table is not recorded) |
 | `car_bundles`, `car_class` | fixed and per-km car costs per class; the class of each household type |
 | `odin_household_types` | ODiN HHSam -> household type |
 
@@ -140,7 +139,6 @@ not modelled: the Nibud basket charges full local taxes at every income.
 |---|---|
 | `switches.py` | the sensitivity to every switch (`results/switch_effects.csv`, `results/switch_summary.csv`) |
 | `journeys_per_tour.py` | one-way journeys per home-based tour in ODiN: the divisor for a table per tour (`accessibility.legs_per_tour` = 2.2) |
-| `export_sources_from_r.R` | writes the literal tables of `X_M calc.R`, the numbers of `data/envelope/sources/` |
 
     python envelope/switches.py
     python envelope/journeys_per_tour.py <ODiN csv> [...]

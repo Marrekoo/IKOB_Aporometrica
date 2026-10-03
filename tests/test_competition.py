@@ -31,8 +31,8 @@ def test_competition_sparse_matches_dense():
 def test_competition_zero_passes_through_raw():
     """Unreachable destinations must yield ZERO competition, not a floor.
 
-    The old floor-at-1e-6 behaviour let an empty-but-employed zone
-    inject O * 1e6 into every origin's accessibility. The raw zero is
+    A floor such as 1e-6 would let an empty-but-employed zone inject
+    O * 1e6 into every origin's accessibility. The raw zero is
     handled downstream by safe_divide (O / 0 -> 0 contribution).
     """
     decay = np.zeros((2, 2))

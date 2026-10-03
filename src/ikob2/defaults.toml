@@ -10,6 +10,7 @@
 # Data folder (see utils/paths.py). Empty: taken from $IKOB_DATA_ROOT or
 # --data-root; there is no built-in location.
 data_root = ""
+study = "utrecht_nl"       # skim store under intermediate/skims (--study)
 # Reference files: a name is looked up in its folder of the data layout (a path
 # that exists as given is used as it is); `cli.layout create` seeds these
 # folders from the repository's data/ folder.
@@ -31,8 +32,8 @@ osm_regions = ["utrecht", "noord-holland", "zuid-holland", "flevoland"]   # <nam
 survey_margins = "S_T_work.csv"                       # under inputs/survey: Weibull time margins
 bike_ownership = "bike_ownership_buurten.csv"         # under inputs/veh_owners
 lisa = "LISA_Gemeenten_2025.xlsx"                     # under inputs/lisa
-ikob_jobs = "Alle_Zones_2030_2040.xlsx"               # under inputs/legacy_ikob: buurt job totals
-education_jobs = "Ralph_Sahar_CBS_buurten_met_banen_naar_opleidingsniveau.xlsx"   # under inputs/legacy_ikob
+ikob_jobs = "Alle_Zones_2030_2040.xlsx"               # under inputs/ikob: buurt job totals
+education_jobs = "Ralph_Sahar_CBS_buurten_met_banen_naar_opleidingsniveau.xlsx"   # under inputs/ikob
 odin = "ODIN_22_23_clean.csv"                         # under inputs/odin
 
 [vot]                      # EUR per hour (LMS/NRM), used by M1
@@ -136,6 +137,9 @@ lime_scale = 1.0           # multiplier on every Lime price (S1: 0.5)
 flat_eur = 0.0             # dockless_model "flat": EUR per rental; 0 = calibrate for revenue neutrality
 report_usage = false      # record the Lime revenue and rentals of the run (v2) in run.json
 flat_method = "fixed_point"   # calibration: fixed_point (revenue neutral after behaviour) or weighted_mean (baseline volumes)
+flat_tol_eur = 0.005       # fixed point: tolerance of the flat price (EUR)
+flat_max_evals = 30        # fixed point: most usage evaluations
+flat_bracket_step = 1.15   # fixed point: factor by which the bracket around the price widens
 # Lime (municipal hubs, from Jan 2026, RTV Utrecht 2025-11-03): price by rental
 # duration, [longest minutes, EUR]; rental minutes = ride + fixed minutes
 lime_tiers = [[20.0, 3.0], [30.0, 4.0], [40.0, 5.0]]
@@ -259,6 +263,7 @@ couple_children = 0.24
 # (segments/occupations.py, data/occupations); "sector" = every job of a
 # sector at the sector's mean wage, home working by the sector's education mix
 matching = "occupation"
+occupation_year = "2022"   # year of the LFS, SES and 85517NED occupation tables (cli.segments occupations)
 establishment_weight = 0.25   # weight of the establishment seed (jobs imputation)
 train_year = 2016             # LISA year matching the education shares
 ikob_jobs_year = "2018"       # year column of the IKOB job table (buurt totals)
@@ -302,16 +307,16 @@ income_measure = "gest"    # CBS percentiles: gest (standardised) or disp
 income_year = 2023         # CBS incomes: the year of the Nibud minima (2023); price_base sets the price level
 top_decile_rule = "pareto_p95"   # pareto_p95 or boundary_p90
 # ---- the method's choices (envelope/README.md; sensitivity: envelope/switches.py)
-aggregates = "2022_2023"        # ODiN aggregates under inputs/envelope/odin/: 2023 (as X_M calc.R) or 2022_2023
+aggregates = "2022_2023"        # ODiN aggregates under inputs/envelope/odin/: 2023 or 2022_2023
 unit = "journey"           # budget per priced home-based tour, or per priced one-way "journey"
 n_lower = "lowest_decile"  # lower bound on tours per month: fixed (n_min_fixed) or lowest_decile of the household type
 spread = "gamma"           # low/high over all scenario assumptions, or over "gamma" only (others central)
-gamma_anchor = 0.5         # where Warnaar's b_norm lies: 0.5 (midpoint, as X_M calc.R) or 0 (the example-basket residual)
-income_bridge = "per_adult" # none (as X_M calc.R) or per_adult: add the basic health premium per adult to CBS incomes
+gamma_anchor = 0.5         # where Warnaar's b_norm lies: 0.5 (midpoint of the two residuals) or 0 (the example-basket residual)
+income_bridge = "per_adult" # none or per_adult: add the basic health premium per adult to CBS incomes
 basic_premium_eur = 137.75 # average nominal basic health premium 2023, EUR/month per adult
-quantile_kappa = true      # published price base only: uprate the decile baskets by kappa (as X_M calc.R) or not
-price_base = "2022"        # published (each input at its own price date, as X_M calc.R) or "2022": every amount in 2022 euros (CPI), the price level of the KWB population year
-car_all_tariffs = true     # car options in every PT-tariff scenario (X_M calc.R: only in "chipkaart")
+quantile_kappa = true      # published price base only: uprate the decile baskets by kappa or not
+price_base = "2022"        # published (each input at its own price date) or "2022": every amount in 2022 euros (CPI), the price level of the KWB population year
+car_all_tariffs = true     # car options in every PT-tariff scenario (false: only in the first, "chipkaart")
 boardings_per_journey = 1
 slack_share = 0.95         # gate_slack flag: the high budget reaches more than this share of tours
 days_per_month = 30.44
@@ -327,3 +332,27 @@ urbanity_adj_eur = 0.0
 rent_scenarios = ["lo", "interp", "hi"]
 commute_scenarios = ["none", "average", "worker"]
 pt_bases = ["nibud_flat", "chipkaart"]
+
+[analysis]                 # cli.compare, cli.interchange, cli.paper_tables
+mode = "pt_v2"             # the mode compared
+value = "accessibility"    # the column compared
+compare_top_share = 0.10   # cli.compare: overlap of the top share of origins
+interchange_quantiles = [0.9, 0.1]   # R: the interquantile ratio across an origin's segments
+interchange_tol = 1e-9     # R is undefined where |gain(B)| <= this
+interchange_min_segments = 3   # origins with fewer defined segments get no dispersion
+
+[diagnostics]              # money-gate curves per origin (outputs/diagnostics.py)
+floor = 0.05               # hazard read where the aggregate survival exceeds this share of S(0+)
+ttt_band = 0.05            # TTT area above +band: IFR, below -band: DFR, else near-exponential
+hazard_increasing = 0.8    # share of rising hazard steps from which the bulk counts as increasing
+hazard_decreasing = 0.2    # share at or below which it counts as decreasing
+
+[paper]                    # cli.paper_tables (docs/paper_runs.md)
+tags = ["m0", "m0u", "m0s", "m1", "m1p", "m2", "m3t1.25", "m3t1.5", "m3t2", "m3t4", "m3tinf"]
+scenarios = ["s1", "s1a", "s2c", "s2t", "s3c", "s3t", "s4", "s4a"]
+pairs = ["s1:s2c", "s4:s2t"]   # R = gain(A) / gain(B)
+gap_scenarios = ["s1", "s1a", "s4", "s4a"]   # price scenarios after which the reachability gap is reported
+targeting = ["S1=scen_s1", "S1a=scen_s1a", "S4=scen_s4", "S4a=scen_s4a"]   # label=run of the targeting tables
+base_run = "scen_s0"       # baseline run of the targeting tables
+target_classes = ["D2", "D3", "D4"]
+zone = "lime_price_zones_overvecht_kanaleneiland.csv"   # under inputs/tariffs

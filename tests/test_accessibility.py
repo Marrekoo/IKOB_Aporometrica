@@ -22,11 +22,13 @@ def make_state(n=2, beta=1.0):
 
 
 def test_accessibility_exponential():
+    # by hand: weights exp(-cost) = [[1, e^-1], [e^-1, 1]], competition per
+    # destination 1 + e^-1 (one person per zone), A_i = sum_j w_ij O_j / V_j
     state = make_state()
     A = compute_accessibility(state)
-
-    assert A.shape == (2,)
-    assert np.all(A > 0)
+    w = np.exp(-1.0)
+    expected = np.array([10.0 + 20.0 * w, 10.0 * w + 20.0]) / (1.0 + w)
+    np.testing.assert_allclose(A, expected, rtol=1e-6)
 
 
 def test_accessibility_accepts_prebuilt_decay_matrix():
@@ -66,8 +68,8 @@ def test_shen_conservation():
 def test_unreachable_opportunities_contribute_zero():
     """A zone with jobs but zero competition (nobody can reach it)
     must contribute exactly nothing — the safe_divide contract
-    downstream of compute_competition's raw zeros. The old
-    floor-at-1e-6 injected O * 1e6 here."""
+    downstream of compute_competition's raw zeros. A floor such as
+    1e-6 would inject O * 1e6 here."""
     D = np.array([
         [1.0, 0.0],
         [1.0, 0.0],

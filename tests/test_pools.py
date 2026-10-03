@@ -49,7 +49,7 @@ def _state(n=2, cost=None, population=None, opportunities=None):
 def test_logistic_through_apply_decay_matches_direct_formula():
     rng = np.random.default_rng(0)
     cost = rng.uniform(0, 170, size=(30, 30)).astype(DTYPE)
-    alpha, omega, scaling = 0.125, 45.0, 0.95   # legacy work-constants shape
+    alpha, omega, scaling = 0.125, 45.0, 0.95   # IKOB work-constants shape
 
     got = ensure_dense(apply_decay(cost, "logistic", (alpha, omega, scaling),
                                    epsilon=1e-3))

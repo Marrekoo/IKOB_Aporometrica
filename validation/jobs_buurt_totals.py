@@ -23,7 +23,7 @@ change between 2016 and 2022). KWB 2016 (83487NED) does not publish the O-Q
 group; it is the total minus the other groups. Suppressed group cells count
 as zero. The municipality is the GM code inside the buurt code.
 
-Inputs (data folder): inputs/legacy_ikob/ (IKOB job table, education file),
+Inputs (data folder): inputs/ikob/ (IKOB job table, education file),
 inputs/lisa/ (LISA municipal file) and cache/statline/
 kwb_establishments_83487NED.csv, which is downloaded from CBS StatLine on the
 first run (network).

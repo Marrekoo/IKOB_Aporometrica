@@ -32,6 +32,7 @@ hub scenarios.
 | [docs/architecture.md](docs/architecture.md) | package layers and modules, parameters, design rules, tests |
 | [docs/pipeline.md](docs/pipeline.md) | the commands from raw data to accessibility tables, in order |
 | [docs/scenarios.md](docs/scenarios.md) | shared-bicycle variants, scenarios S0-S4, costs, R, the reachability gap, paper tables |
+| [docs/paper_runs.md](docs/paper_runs.md) | the set-up of the paper runs (`paper/runs.toml`, `cli.batch`) |
 | [docs/data_specification.md](docs/data_specification.md) | every input, intermediate and output file |
 | [docs/segments.md](docs/segments.md) | household x income segments, reference budgets, the engine bridge |
 | [docs/data_lineage.md](docs/data_lineage.md) | jobs: sources, imputation onto buurten, income and home-working split |
@@ -49,7 +50,7 @@ hub scenarios.
     ruff check src tests examples validation
 
 `requirements-lock.txt` pins every package; R5 and OpenTripPlanner also need
-Java 21. `pip install -e ".[test,routing,legacy,dev]"` installs from the
+Java 21. `pip install -e ".[test,routing,excel,dev]"` installs from the
 version ranges of `pyproject.toml` instead. CI runs the lint and the tests on
 the locked environment on every push (`.github/workflows/tests.yml`);
 `pre-commit install --hook-type pre-commit --hook-type pre-push` runs them

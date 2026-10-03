@@ -1,5 +1,5 @@
 """
-Baskets and residuals (X_M calc.R, sections 3 and 6).
+Baskets and residuals.
 
   * `basket_aggregates`: per Nibud household, the total of the minimum basket
     and its parts: shelter (rent), mobility (`mob_min`) and the rest
@@ -8,7 +8,7 @@ Baskets and residuals (X_M calc.R, sections 3 and 6).
     rent, the minimum basket `m_bas` and an example basket `m_ex`. At
     Warnaar's anchors `m_ex` is backed out of the published residual b_norm,
     read as the residual at gamma = `gamma_anchor` (0.5: the midpoint of the
-    two residuals, as in X_M calc.R; 0: the example-basket residual itself):
+    two residuals; 0: the example-basket residual itself):
 
         b_norm = y - rent - kappa ((1 - a) m_ex + a m_bas),  a = gamma_anchor
 
@@ -63,7 +63,7 @@ def basket_aggregates(src: Sources) -> pd.DataFrame:
 def price_factors(src: Sources, prm) -> dict:
     """Multipliers that bring each input to the price base.
 
-    `published` keeps every input at its own price date (as X_M calc.R):
+    `published` keeps every input at its own price date:
     factors 1, the Warnaar rows and (with `quantile_kappa`) the deciles
     carry the basket uprating kappa. `2022` converts everything to 2022
     euros with the CPI (price_levels): the Nibud basket, social-assistance

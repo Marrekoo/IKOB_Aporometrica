@@ -1,5 +1,5 @@
 hh_type,hh_key,source
-single,single,X_M calc.R: the B.4.1 household that represents each household type of the model
-couple,couple,X_M calc.R: the B.4.1 household that represents each household type of the model
-single_parent,ep_2k813,X_M calc.R: the B.4.1 household that represents each household type of the model
-couple_children,pk_2k813,X_M calc.R: the B.4.1 household that represents each household type of the model
+single,single,author's choice: the B.4.1 household that represents each household type of the model
+couple,couple,author's choice: the B.4.1 household that represents each household type of the model
+single_parent,ep_2k813,author's choice: the B.4.1 household that represents each household type of the model
+couple_children,pk_2k813,author's choice: the B.4.1 household that represents each household type of the model

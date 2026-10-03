@@ -23,8 +23,8 @@ File names inside `inputs/` that the commands look for by default are
 |---|---|---|---|
 | `kwb/wijkenbuurten_<year>_v3.gpkg` | CBS Kerncijfers wijken en buurten: buurt polygons and attributes, RD New (EPSG:28992); 2022 is the model year | CBS/PDOK | `data.geopackage.load_cbs_buurten`, `segments.kwb` |
 | `lisa/LISA_Gemeenten_2025.xlsx` | jobs per municipality and LISA sector (15 sectors), 2016-2025 on 2025 boundaries | LISA | `segments.lisa` |
-| `legacy_ikob/Alle_Zones_2030_2040.xlsx` | IKOB job table: jobs per 2022 buurt by income group and year (sheet `buurten-arbeidsplaatsen`), derived from NRM zone totals | IKOB model | `segments.jobs.parse_legacy_jobs` (buurt job totals) |
-| `legacy_ikob/Ralph_Sahar_CBS_buurten_met_banen_naar_opleidingsniveau.xlsx` | LISA 2016 jobs per buurt by education level | Municipality of Amsterdam | `segments.jobs_impute.parse_education_shares` |
+| `ikob/Alle_Zones_2030_2040.xlsx` | IKOB job table: jobs per 2022 buurt by income group and year (sheet `buurten-arbeidsplaatsen`), derived from NRM zone totals | IKOB model | `segments.jobs.parse_ikob_jobs` (buurt job totals) |
+| `ikob/Ralph_Sahar_CBS_buurten_met_banen_naar_opleidingsniveau.xlsx` | LISA 2016 jobs per buurt by education level | Municipality of Amsterdam | `segments.jobs_impute.parse_education_shares` |
 | `osm/*.osm.pbf` | OpenStreetMap: national extract (`paths.osm_national`) and province extracts (`paths.osm_regions`) | Geofabrik | R5, Valhalla, OTP, `skims.peak`, `skims.osm_walk` |
 | `gtfs/gtfs-nl.zip` | national GTFS feed | OVapi / NDOV | `skims.gtfs_pt`, OTP |
 | `survey/S_T_work.csv` | Weibull time margins per mode and job type: `wfh` (No home working / Home working), `mode`, `eta` (minutes), `k`, `median`, `class` | survey fit (seed: `data/margins/`) | `segments.time_margins` |
@@ -105,7 +105,7 @@ Money costs are not stored; they are computed at run time
 |---|---|
 | `accessibility.csv` | one row per origin x mode x segment: `buurtcode, mode, segment, household_type, income_class, population, accessibility` (acceptable jobs, conditional on having the mode), `atom`, `accessibility_normalised`; with `--ownership` also `availability` and `accessibility_expected` |
 | `summary_income.csv`, `summary_household.csv` | population-weighted means by mode and income class / household type; `*_expected.csv` for `accessibility_expected` |
-| `run.json` | resolved parameters, arguments, specification, scenario (calibrated flat price, Lime usage and public cost per segment and origin), `lime_price_zones` (the origins whose residents get the price scales), `job_matching` (method, within-cell spread, decile edges in EUR per hour, teleworkability per ISCO major group), and `input_files`: path and SHA-256 of every input file |
+| `run.json` | resolved parameters, arguments, specification, scenario (calibrated flat price, Lime usage and public cost per segment and origin), `lime_price_zones` (the origins whose residents get the price scales), `job_matching` (method, within-cell spread, decile edges in EUR per hour, teleworkability per ISCO major group), `input_files`: path and SHA-256 of every input file, and `code`: package version, git commit and whether the working tree had uncommitted changes |
 | `job_weights.csv` | `job_type`, `income_class`, `sector`, `weight`: the share of a LISA sector's jobs in each income-class pool and job type (over job types and deciles D1-D10 a sector adds up to 1) |
 | `segments.csv` | segment definitions: budget interval, atom, Lime price scale |
 | `time_margins.csv` | Weibull margins used |

@@ -1,4 +1,4 @@
-"""Legacy job table (buurt totals) and its use with sector pools."""
+"""IKOB job table (buurt totals) and its use with sector pools."""
 
 import os
 
@@ -23,7 +23,7 @@ from ikob2.segments.jobs import (
 CLASSES = list(INCOME_CLASSES)
 
 
-# ── Legacy table parsing ─────────────────────────────────────────────
+# ── IKOB table parsing ─────────────────────────────────────────────
 
 def _raw(year="2018"):
     cols = ["Rijlabels"] + [f"Som van arb_{year}_{g}" for g in JOB_GROUPS] \
@@ -53,7 +53,7 @@ def test_parse_errors():
         parse_ikob_jobs(neg)
 
 
-# ── Legacy table drives the sector-pool engine path ──────────────────
+# ── IKOB table drives the sector-pool engine path ──────────────────
 
 def test_pools_drive_hansen_with_income_matched_jobs():
     n = 3
@@ -85,14 +85,14 @@ def test_pools_drive_hansen_with_income_matched_jobs():
     assert not np.allclose(out["single_D1"], out["single_D10"])
 
 
-# ── The real legacy file (optional) ──────────────────────────────────
+# ── The real IKOB file (optional) ──────────────────────────────────
 
-LEGACY = os.environ.get("IKOB_LEGACY_ALLZONES", "")
+IKOB_FILE = os.environ.get("IKOB_JOBS_ALLZONES", "")
 
 
-@pytest.mark.skipif(not os.path.exists(LEGACY),
-                    reason="set IKOB_LEGACY_ALLZONES to Alle_Zones_2030_2040.xlsx")
+@pytest.mark.skipif(not os.path.exists(IKOB_FILE),
+                    reason="set IKOB_JOBS_ALLZONES to Alle_Zones_2030_2040.xlsx")
 def test_real_ikob_jobs_shape_and_totals():
-    jobs = load_ikob_jobs(LEGACY, "2018")
+    jobs = load_ikob_jobs(IKOB_FILE, "2018")
     assert len(jobs) == 14327 and jobs.notna().all().all()
     assert jobs.sum().sum() == pytest.approx(8_657_025, rel=1e-3)

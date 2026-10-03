@@ -203,29 +203,42 @@ def main(argv=None) -> None:
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)
     p.add_argument("--data-root", default=None)
-    p.add_argument("--tags", nargs="+", required=True)
-    p.add_argument("--mode", default="pt_v2")
-    p.add_argument("--scenarios", nargs="+",
-                   default=["s1", "s2c", "s2t", "s3c", "s3t", "s4"])
-    p.add_argument("--pairs", nargs="+", default=["s1:s2c", "s4:s2t"],
-                   metavar="A:B", help="R = gain(A) / gain(B)")
-    p.add_argument("--gap-scenarios", nargs="+", default=["s1", "s4"],
-                   help="price scenarios after which the gap is reported")
-    p.add_argument("--targeting", nargs="*", default=[], metavar="LABEL=RUN",
-                   help="scenario runs for the targeting tables, e.g. "
-                        "S1=scen_s1 S1a=scen_s1a S4=scen_s4 S4a=scen_s4a")
-    p.add_argument("--base-run", default="scen_s0",
-                   help="baseline run of the targeting tables")
+    p.add_argument("--tags", nargs="+", default=None, help="default paper.tags")
+    p.add_argument("--mode", default=None, help="default analysis.mode")
+    p.add_argument("--scenarios", nargs="+", default=None,
+                   help="default paper.scenarios")
+    p.add_argument("--pairs", nargs="+", default=None, metavar="A:B",
+                   help="R = gain(A) / gain(B); default paper.pairs")
+    p.add_argument("--gap-scenarios", nargs="+", default=None,
+                   help="price scenarios after which the gap is reported; "
+                        "default paper.gap_scenarios")
+    p.add_argument("--targeting", nargs="*", default=None, metavar="LABEL=RUN",
+                   help="scenario runs of the targeting tables; default "
+                        "paper.targeting; none: no targeting tables")
+    p.add_argument("--base-run", default=None,
+                   help="baseline run of the targeting tables; default "
+                        "paper.base_run")
     p.add_argument("--zone", default=None,
-                   help="price zone of the targeting tables (default "
-                        "paths.lime_price_zones, else the S4 zone file)")
-    p.add_argument("--target-classes", nargs="+", default=["D2", "D3", "D4"])
+                   help="price zone of the targeting tables; default paper.zone")
+    p.add_argument("--target-classes", nargs="+", default=None,
+                   help="default paper.target_classes")
     p.add_argument("--log-level", default="INFO")
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level,
                         format="%(levelname)s %(name)s: %(message)s")
-    lay = DataLayout(params_mod.data_root(args.data_root,
-                                          params_mod.from_args(args)))
+    prm = params_mod.from_args(args, {
+        "tags": "paper.tags", "mode": "analysis.mode",
+        "scenarios": "paper.scenarios", "pairs": "paper.pairs",
+        "gap_scenarios": "paper.gap_scenarios", "targeting": "paper.targeting",
+        "base_run": "paper.base_run", "zone": "paper.zone",
+        "target_classes": "paper.target_classes"})
+    paper = prm.paper
+    args.tags, args.mode = paper.tags, prm.analysis.mode
+    args.scenarios, args.pairs = paper.scenarios, paper.pairs
+    args.gap_scenarios, args.targeting = paper.gap_scenarios, paper.targeting
+    args.base_run, args.zone = paper.base_run, paper.zone
+    args.target_classes = paper.target_classes
+    lay = DataLayout(params_mod.data_root(args.data_root, prm))
     res = tables(lay, args.tags, args.mode, scenarios=tuple(args.scenarios),
                  pairs=tuple(tuple(x.split(":", 1)) for x in args.pairs),
                  gap_scenarios=tuple(args.gap_scenarios))
@@ -242,10 +255,7 @@ def main(argv=None) -> None:
     print(f"Tables written to {out}")
     if args.targeting:
         from ikob2.utils.paths import resolve_input
-        prm = params_mod.from_args(args)
-        zone = resolve_input(args.zone or prm.paths.lime_price_zones
-                             or "lime_price_zones_overvecht_kanaleneiland.csv",
-                             lay.inputs / "tariffs")
+        zone = resolve_input(args.zone, lay.inputs / "tariffs")
         tt = targeting_tables(lay, args.base_run,
                               dict(x.split("=", 1) for x in args.targeting),
                               zone, args.mode, args.target_classes)

@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+from ikob2.params import DEFAULTS
 from scipy import stats
 
 
@@ -22,7 +24,8 @@ def _wmean(values: pd.Series, weights: pd.Series) -> float:
 
 
 def compare_runs(a: pd.DataFrame, b: pd.DataFrame, value: str = "accessibility",
-                 top_share: float = 0.10) -> dict[str, pd.DataFrame]:
+                 top_share: float = DEFAULTS.analysis.compare_top_share
+                 ) -> dict[str, pd.DataFrame]:
     """Compare two run tables cell by cell.
 
     Returns

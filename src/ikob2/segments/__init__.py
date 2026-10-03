@@ -1,8 +1,7 @@
 """
 Household-type x income-decile segment shares per CBS buurt.
 
-Python port of the GSPREE-style R script (gspree_segments.R): a
-Poisson structure model fitted on municipality-level cross-tabs
+A GSPREE-style method: a Poisson structure model fitted on municipality-level cross-tabs
 (CBS 86161NED) supplies the household-type x income *association*;
 each buurt's predicted table is then raked (IPF) to that buurt's own
 household-type and income marginals derived from Kerncijfers wijken

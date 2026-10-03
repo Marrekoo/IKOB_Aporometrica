@@ -97,7 +97,7 @@ def read_kwb(path: str | Path, cfg: SegmentConfig) -> pd.DataFrame:
 
 
 def diagnose_kwb(kwb: pd.DataFrame) -> dict:
-    """Log the two input diagnostics of the R script and return them."""
+    """Log the two input diagnostics of the KWB table and return them."""
     comp = kwb["p_hh_single"] + kwb["p_hh_no_child"] + kwb["p_hh_with_child"]
     diag = {
         "n_buurten": len(kwb),

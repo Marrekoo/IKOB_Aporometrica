@@ -26,6 +26,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
+
 KEY = ["buurtcode", "segment"]
 
 
@@ -41,9 +43,12 @@ def gains(base: pd.DataFrame, run: pd.DataFrame, mode: str,
 
 def interchange_ratio(base: pd.DataFrame, run_a: pd.DataFrame,
                       run_b: pd.DataFrame, mode: str = "pt_v2", *,
-                      value: str = "accessibility", tol: float = 1e-9,
-                      quantiles: tuple[float, float] = (0.9, 0.1),
-                      min_segments: int = 3) -> dict[str, pd.DataFrame]:
+                      value: str = "accessibility",
+                      tol: float = DEFAULTS.analysis.interchange_tol,
+                      quantiles: tuple[float, float] = tuple(
+                          DEFAULTS.analysis.interchange_quantiles),
+                      min_segments: int = DEFAULTS.analysis.interchange_min_segments
+                      ) -> dict[str, pd.DataFrame]:
     """R per origin and segment, the dispersion per origin and pooled.
 
     Returns

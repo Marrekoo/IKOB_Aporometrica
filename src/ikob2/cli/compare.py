@@ -34,18 +34,21 @@ def main(argv=None) -> None:
                                 formatter_class=argparse.RawTextHelpFormatter)
     params_mod.add_arguments(p)
     p.add_argument("--data-root", default=None)
-    p.add_argument("--value", default="accessibility")
-    p.add_argument("--mode", default="pt_v2",
+    p.add_argument("--value", default=None, help="default analysis.value")
+    p.add_argument("--mode", default=None,
                    help="mode for the effectiveness table (needs runs made "
-                        "with --report-usage)")
+                        "with --report-usage; default analysis.mode)")
     p.add_argument("run_a")
     p.add_argument("run_b")
     args = p.parse_args(argv)
-    lay = DataLayout(params_mod.data_root(args.data_root,
-                                          params_mod.from_args(args)))
+    prm = params_mod.from_args(args, {"mode": "analysis.mode",
+                                      "value": "analysis.value"})
+    args.mode, args.value = prm.analysis.mode, prm.analysis.value
+    lay = DataLayout(params_mod.data_root(args.data_root, prm))
     a = pd.read_csv(lay.run_dir(args.run_a) / "accessibility.csv")
     b = pd.read_csv(lay.run_dir(args.run_b) / "accessibility.csv")
-    res = compare_runs(a, b, value=args.value)
+    res = compare_runs(a, b, value=args.value,
+                       top_share=prm.analysis.compare_top_share)
     out = lay.comparison_dir() / f"{args.run_a}__vs__{args.run_b}"
     out.mkdir(parents=True, exist_ok=True)
     for name, df in res.items():

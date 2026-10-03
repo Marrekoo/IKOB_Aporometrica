@@ -1,5 +1,5 @@
 """
-The income axis (X_M calc.R, section 7): the standardised income of each
+The income axis: the standardised income of each
 decile, EUR/month, from CBS percentiles.
 
   * D2..D9: the within-decile median (percentiles 15, 25, ..., 85),

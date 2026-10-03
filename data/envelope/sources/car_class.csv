@@ -1,5 +1,5 @@
 hh_type,bundle,source
-single,car_mini,X_M calc.R (CAR_CLASS): car class per household type
-couple,car_compact,X_M calc.R (CAR_CLASS): car class per household type
-single_parent,car_compact,X_M calc.R (CAR_CLASS): car class per household type
-couple_children,car_midsize,X_M calc.R (CAR_CLASS): car class per household type
+single,car_mini,author's choice: car class per household type
+couple,car_compact,author's choice: car class per household type
+single_parent,car_compact,author's choice: car class per household type
+couple_children,car_midsize,author's choice: car class per household type

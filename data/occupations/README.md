@@ -22,7 +22,7 @@ copies them to `inputs/occupations/` of a data folder. Retrieved 3 October
 downloads every table from its public API or file and writes `sources.json`:
 per file the exact query URL, the time of retrieval (UTC) and the SHA-256 of
 the CSV. Reading the CBS correspondence (an Excel 97 file) needs `xlrd`
-(extra `legacy`). A refetch on 2026-10-03 reproduced the files here
+(extra `excel`). A refetch on 2026-10-03 reproduced the files here
 byte for byte. The queries:
 
 | File | Query |

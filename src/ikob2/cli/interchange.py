@@ -30,18 +30,27 @@ def main(argv=None) -> None:
     p.add_argument("--base", required=True, help="baseline run (S0)")
     p.add_argument("--a", required=True, help="numerator run (fare cut, S1)")
     p.add_argument("--b", required=True, help="denominator run (hubs, S2)")
-    p.add_argument("--mode", default="pt_v2")
-    p.add_argument("--value", default="accessibility")
-    p.add_argument("--quantiles", nargs=2, type=float, default=[0.9, 0.1],
-                   metavar=("HI", "LO"))
-    p.add_argument("--tol", type=float, default=1e-9)
+    p.add_argument("--mode", default=None, help="default analysis.mode")
+    p.add_argument("--value", default=None, help="default analysis.value")
+    p.add_argument("--quantiles", nargs=2, type=float, default=None,
+                   metavar=("HI", "LO"),
+                   help="default analysis.interchange_quantiles")
+    p.add_argument("--tol", type=float, default=None,
+                   help="default analysis.interchange_tol")
     args = p.parse_args(argv)
-    lay = DataLayout(params_mod.data_root(args.data_root,
-                                          params_mod.from_args(args)))
+    prm = params_mod.from_args(args, {
+        "mode": "analysis.mode", "value": "analysis.value",
+        "quantiles": "analysis.interchange_quantiles",
+        "tol": "analysis.interchange_tol"})
+    args.mode, args.value = prm.analysis.mode, prm.analysis.value
+    args.quantiles = prm.analysis.interchange_quantiles
+    args.tol = prm.analysis.interchange_tol
+    lay = DataLayout(params_mod.data_root(args.data_root, prm))
     read = lambda r: pd.read_csv(lay.run_dir(r) / "accessibility.csv")  # noqa: E731
     res = interchange_ratio(read(args.base), read(args.a), read(args.b),
                             args.mode, value=args.value, tol=args.tol,
-                            quantiles=tuple(args.quantiles))
+                            quantiles=tuple(args.quantiles),
+                            min_segments=prm.analysis.interchange_min_segments)
     out = lay.comparison_dir() / f"{args.a}_over_{args.b}"
     out.mkdir(parents=True, exist_ok=True)
     for name, df in res.items():

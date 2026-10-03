@@ -90,9 +90,9 @@ The blend beats both components; weighting establishments by job size makes
 it worse (the O-Q group, about 65 jobs per establishment, dominates), so it
 is not used. The optimum is flat between 0.25 and 0.5. The comparison uses
 2016 truth against 2018 totals and 2016 establishments. The script is
-`validation/jobs_buurt_totals.py` (KWB 2016 via 83487NED); it was
-reconstructed from this description and has not yet been rerun against the
-table, see `validation/README.md`.
+`validation/jobs_buurt_totals.py` (KWB 2016 via 83487NED), which follows
+this description; `validation/README.md` gives how far it reproduces the
+table.
 
 The placement of *sectors* within a municipality has no buurt-level truth
 and is not validated.

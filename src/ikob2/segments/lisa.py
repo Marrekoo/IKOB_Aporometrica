@@ -22,6 +22,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from ikob2.params import DEFAULTS
+
 logger = logging.getLogger(__name__)
 
 # LISA sector code (prefix of the sector label) -> SBI2008 section keys
@@ -96,7 +98,8 @@ def sector_code(label: str) -> str:
     return str(label).split(".")[0].strip()
 
 
-def read_lisa_sectors(path: str | Path, year: int = 2022) -> pd.DataFrame:
+def read_lisa_sectors(path: str | Path,
+                      year: int = DEFAULTS.accessibility.jobs_year) -> pd.DataFrame:
     """Jobs per municipality x LISA sector for one year (needs openpyxl).
 
     Returns a frame indexed by LISA municipality name with the 15 sector

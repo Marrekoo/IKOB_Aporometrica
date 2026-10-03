@@ -52,7 +52,8 @@ def cmd_propose(args) -> None:
     kwb = args.kwb or str(lay.kwb(prm.accessibility.kwb_year,
                                   prm.paths.kwb_version))
     zones, _ = load_cbs_buurten(kwb)
-    store = SkimStore.open(args.skims or str(lay.skim_dir(args.study)))
+    store = SkimStore.open(args.skims or str(lay.skim_dir(
+        args.study or prm.paths.study)))
     idx = {str(c): i for i, c in enumerate(zones.codes)}
     rows = [idx[o] for o in store.origins]
 
@@ -125,7 +126,7 @@ def main(argv=None) -> None:
     sub = p.add_subparsers(dest="command", required=True)
     s = sub.add_parser("propose", help="place the extra hubs of S2")
     s.add_argument("--data-root", default=None)
-    s.add_argument("--study", default="utrecht_nl")
+    s.add_argument("--study", default=None, help="default paths.study")
     s.add_argument("--kwb", default=None)
     s.add_argument("--skims", default=None)
     s.add_argument("--bike-ownership", default=None)

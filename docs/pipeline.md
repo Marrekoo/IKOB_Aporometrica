@@ -67,7 +67,7 @@ every path can also be given explicitly.
     python -m ikob2.cli.segments --data-root <root> jobs
 
 reads `inputs/kwb/wijkenbuurten_<kwb year>_v3.gpkg`, `inputs/lisa/` (the
-LISA file, `paths.lisa`), `inputs/legacy_ikob/` (the IKOB job table
+LISA file, `paths.lisa`), `inputs/ikob/` (the IKOB job table
 `paths.ikob_jobs` and the education file `paths.education_jobs`) and the
 KWB establishment snapshot, and writes
 `intermediate/jobs/sector_jobs_<year>.csv`. It imputes LISA municipal jobs

@@ -18,8 +18,11 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
 
+from ikob2.params import DEFAULTS
 
-def score_candidates(candidates: pd.DataFrame, access_weight: float = 0.5
+
+def score_candidates(candidates: pd.DataFrame,
+                     access_weight: float = DEFAULTS.siting.access_weight
                      ) -> pd.Series:
     """Score in [0, 1]; lower = more in need (low access, low ownership)."""
     if not 0.0 <= access_weight <= 1.0:
@@ -30,8 +33,10 @@ def score_candidates(candidates: pd.DataFrame, access_weight: float = 0.5
 
 
 def propose_hubs(candidates: pd.DataFrame, existing_xy: np.ndarray,
-                 n_new: int | None, *, min_spacing_m: float = 400.0,
-                 access_weight: float = 0.5, within=None) -> pd.DataFrame:
+                 n_new: int | None, *,
+                 min_spacing_m: float = DEFAULTS.siting.min_spacing_m,
+                 access_weight: float = DEFAULTS.siting.access_weight,
+                 within=None) -> pd.DataFrame:
     """The `n_new` extra hubs (None: as many as fit). candidates: code, x, y
     (RD New metres), access, bike_share; `within` restricts them to these
     codes (the ranks are taken among them). Returns the chosen buurten in

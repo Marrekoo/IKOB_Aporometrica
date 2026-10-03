@@ -1,10 +1,9 @@
 """
-Tours per month, commuting costs and the budget per tour X_M
-(X_M calc.R, sections 8 and 13), from the residual envelope (`nibud`) and the
-ODiN aggregates (`odin`).
+Tours per month, commuting costs and the budget per tour X_M, from the
+residual envelope (`nibud`) and the ODiN aggregates (`odin`).
 
-The unit (`envelope.unit`) is a priced home-based tour (as X_M calc.R) or a
-priced one-way journey; every count below is then of tours or of journeys.
+The unit (`envelope.unit`) is a priced home-based tour or a priced one-way
+journey; every count below is then of tours or of journeys.
 
 Tours per household and month, per household type and income decile:
 
@@ -14,8 +13,7 @@ Tours per household and month, per household type and income decile:
   * summed over the mean household composition, times (1 - share of tours
     as car passenger) for households of more than one person
     (`N_emp`, discretionary tours);
-  * made non-decreasing over the deciles (pairwise averaging, as in the R
-    script); `N_max` is the highest value of the household type; `N_min` is
+  * made non-decreasing over the deciles (pairwise averaging); `N_max` is the highest value of the household type; `N_min` is
     `n_min_fixed` (in journeys: times the journeys per tour) or, with
     `n_lower` = lowest_decile, the lowest value of the household type.
 
@@ -30,7 +28,7 @@ the largest budget per tour over the household's feasible bundles (public
 transport, or the car class of the household type).
 
 The envelope per cell: `low` and `high` are the minimum and maximum of X_M
-over the whole grid (`spread` all, as X_M calc.R) or over gamma only with
+over the whole grid (`spread` all) or over gamma only with
 the other assumptions at the central scenario (`spread` gamma); `central`
 is X_M at the central scenario (gamma 0.5, N_emp, rent interp, commuting
 average, PT nibud_flat). Flags: `upper_bound` (the cell lies above the
@@ -64,8 +62,7 @@ def _unit(prm) -> str:
 
 def pairwise_pava(y: np.ndarray) -> np.ndarray:
     """Make y non-decreasing by repeatedly replacing the first decreasing
-    pair with its mean (the R script's `pava`; unchanged when y has a
-    missing value)."""
+    pair with its mean (unchanged when y has a missing value)."""
     y = np.asarray(y, dtype=float).copy()
     if len(y) < 2 or np.isnan(y).any():
         return y
@@ -145,13 +142,12 @@ def bundles(agg: dict, src: Sources, prm) -> pd.DataFrame:
              "cost_per_km": v[0], "cost_fixed_per_tour": v[1]}
             for k, v in pt.items() if k in e.pt_bases]
     cars = src["car_bundles"]
-    # X_M calc.R builds the bundles with tidyr::crossing(), which sorts, and
-    # keeps the first row per car bundle: the car classes therefore belong to
-    # the alphabetically first PT basis only ("chipkaart"). This changes
-    # max_km, not X_M (PT, without fixed costs, always leaves more per tour).
-    # `car_all_tariffs` puts them in every PT-tariff scenario.
+    # `car_all_tariffs` puts the car classes in every PT-tariff scenario;
+    # without it they belong to the alphabetically first PT basis only
+    # ("chipkaart"). This changes max_km, not X_M (PT, without fixed costs,
+    # always leaves more per tour).
     car_bases = list(e.pt_bases) if e.car_all_tariffs else [sorted(e.pt_bases)[0]]
-    # car costs are uprated by kappa to Warnaar's level (as X_M calc.R);
+    # car costs are uprated by kappa to Warnaar's level;
     # at price base 2022 that is kappa x warnaar factor = the basket factor
     fc = src.kappa * pf["warnaar"] if e.price_base == "2022" else src.kappa
     for basis in car_bases:

@@ -7,7 +7,7 @@ and, for the PT comparison, a running OpenTripPlanner server.
 | Script | Documented in | Status |
 |---|---|---|
 | `pt_router_vs_otp.py` | `docs/servers.md`, validation of the frequency-model PT router | the samples in `results/` reproduce every documented figure (`summary`) |
-| `jobs_buurt_totals.py` | `docs/data_lineage.md`, validation of the buurt totals | reconstructed from the documented method; not yet rerun with KWB 2016 (see below) |
+| `jobs_buurt_totals.py` | `docs/data_lineage.md`, validation of the buurt totals | follows the documented method; run with the 2022 establishments as a stand-in for KWB 2016 (see below) |
 
 ## PT router against OpenTripPlanner
 
@@ -27,19 +27,18 @@ GTFS feed or the skim store differ.
     python validation/jobs_buurt_totals.py --data-root <root>
 
 Downloads the KWB 2016 establishments (CBS 83487NED) into
-`<root>/cache/statline/` on the first run. The original analysis was a
-one-off; this script follows the method described in `docs/data_lineage.md`.
-It has only been run with the 2022 establishments as a stand-in
-(`--establishments`), because CBS StatLine was unreachable when it was
-written. In that run the two rows that do not depend on the establishments
+`<root>/cache/statline/` on the first run. The script follows the method
+described in `docs/data_lineage.md`. It has been run with the 2022
+establishments as a stand-in (`--establishments`), because CBS StatLine was
+unreachable at the time. In that run the two rows that do not depend on the establishments
 came out at 0.452 (uniform) and 0.299 (IKOB job table) on 10,123 buurten in
 306 municipalities, against the documented 0.454 and 0.301 on 10,137 buurten
-in 304 municipalities. Check, when rerunning with KWB 2016:
+in 304 municipalities. Check, when running with KWB 2016:
 
 * whether the buurt set then matches (10,137 buurten, 304 municipalities);
 * the job size per SBI group: the documentation gives about 65 jobs per
   establishment for O-Q, while national LISA jobs per KWB establishment give
-  about 8 with the 2022 counts. The definition used originally may have been
-  different.
+  about 8 with the 2022 counts, so the documented figure may rest on a
+  different definition of job size.
 
 Update the table in `docs/data_lineage.md` with the result.

@@ -41,6 +41,8 @@ from typing import TYPE_CHECKING, Callable, Mapping
 import numpy as np
 from scipy import optimize
 
+from ikob2.params import DEFAULTS
+
 from ikob2.engine.runner import evaluate_marginal
 from ikob2.run.accessibility import (WFH_TYPES, MixedMode, OptionSet,
                                      _finite, prepare_inputs)
@@ -180,8 +182,11 @@ def lime_usage(*, origins, destinations, populations, sector_jobs, job_weights,
 
 
 def calibrate_flat(usage_for: Callable[[float | None], Usage], *,
-                   method: str = "fixed_point", tol_eur: float = 0.005,
-                   max_evals: int = 30) -> tuple[float, dict]:
+                   method: str = "fixed_point",
+                   tol_eur: float = DEFAULTS.shared_bike.flat_tol_eur,
+                   max_evals: int = DEFAULTS.shared_bike.flat_max_evals,
+                   bracket_step: float = DEFAULTS.shared_bike.flat_bracket_step
+                   ) -> tuple[float, dict]:
     """The revenue-neutral flat price per rental.
 
     usage_for(None) is the baseline (the tiers); usage_for(p) the usage at a
@@ -211,7 +216,7 @@ def calibrate_flat(usage_for: Callable[[float | None], Usage], *,
 
     lo = hi = p_mean
     g = gap(p_mean)
-    step = 1.15 if g < 0 else 1 / 1.15
+    step = bracket_step if g < 0 else 1 / bracket_step
     for _ in range(max_evals):
         nxt = hi * step if g < 0 else lo * step
         gn = gap(nxt)

@@ -132,7 +132,7 @@ def household_marginals(kwb: pd.DataFrame, sp_shares: pd.Series,
         "couple_children": np.maximum(kwb["hh_met_kind"] * (1 - share), 0.0),
     })
     # skipna=False: any missing component makes the raw total missing,
-    # which (like the R script) triggers the fallback mix.
+    # which triggers the fallback mix.
     total_raw = raw.sum(axis=1, skipna=False)
     use_fallback = (hh > 0) & (total_raw.isna() | (total_raw <= 0))
 

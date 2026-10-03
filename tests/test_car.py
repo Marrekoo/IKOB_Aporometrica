@@ -23,7 +23,7 @@ def test_parking_times_by_urbanisation_class():
     np.testing.assert_array_equal(dep, arr / 4)
 
 
-def test_legacy_rates():
+def test_ikob_rates():
     assert FOSSIL_CAR.variable_eur_per_km == 0.16
     assert ELECTRIC_CAR.variable_eur_per_km == 0.05
     assert (SHARED_CAR.variable_eur_per_km, SHARED_CAR.per_minute_eur) == (0.33, 0.05)

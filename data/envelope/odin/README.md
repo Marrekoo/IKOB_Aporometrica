@@ -37,7 +37,7 @@ occur:
 The envelope uses a cell's own discretionary tour rate only from 150
 respondents (`envelope.min_band_n`, otherwise the pooled rate) and a
 commuter rate only from 50 (`envelope.min_commuter_n`); the other rates
-enter at any cell size, as in the original R script.
+enter at any cell size.
 
 ## Tables
 

@@ -1,7 +1,7 @@
 """
-Car time and money for the threshold gate, after the legacy IKOB.
+Car time and money for the threshold gate, following the IKOB model.
 
-Legacy IKOB (ikob/utils.compute_car_gtt, single_weights, config
+IKOB (ikob/utils.compute_car_gtt, single_weights, config
 defaults) builds the car generalised time as
 
     gtt = drive time + parking search time
@@ -19,7 +19,7 @@ shared car (0.33 EUR/km + 0.05 EUR/min) or a taxi (2.40 EUR/km +
 terms of the paper's cost equation.
 
 The threshold gate needs time and money SEPARATELY, so this module
-returns both instead of one generalised time. Where the legacy adds
+returns both instead of one generalised time. Where IKOB adds
 `parking[i, arrival] + parking[j, departure]` (origin arrival, destination
 departure), this uses the physical reading: leaving origin i costs its
 departure search time, arriving at destination j its arrival search time.

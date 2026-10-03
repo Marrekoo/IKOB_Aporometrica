@@ -27,6 +27,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ikob2.params import DEFAULTS
+
 
 def segment_survival(low: float, high: float, atom: float,
                      grid: np.ndarray) -> np.ndarray:
@@ -75,7 +77,11 @@ def hazard(survival: np.ndarray, grid: np.ndarray, floor: float) -> np.ndarray:
 
 def money_gate(envelope: pd.DataFrame, populations: pd.DataFrame, *,
                c_max: float | None = None, step: float = 1.0,
-               floor: float = 0.05, ttt_band: float = 0.05
+               floor: float = DEFAULTS.diagnostics.floor,
+               ttt_band: float = DEFAULTS.diagnostics.ttt_band,
+               hazard_bands: tuple[float, float] = (
+                   DEFAULTS.diagnostics.hazard_increasing,
+                   DEFAULTS.diagnostics.hazard_decreasing)
                ) -> dict[str, pd.DataFrame]:
     """Aggregated money-gate curves per origin.
 
@@ -86,7 +92,10 @@ def money_gate(envelope: pd.DataFrame, populations: pd.DataFrame, *,
                   survival is above this share of S_bar(0+) (the bulk);
     ttt_band    : the shape class of the whole curve: the TTT area above
                   +band is increasing hazard (IFR), below -band decreasing
-                  (DFR), else near-exponential.
+                  (DFR), else near-exponential;
+    hazard_bands: (increasing, decreasing): the bulk counts as increasing
+                  hazard when at least the first share of its steps rise,
+                  as decreasing when at most the second.
     Returns `curves` (buurtcode, c, survival, hazard), `ttt` (buurtcode, u,
     phi at 101 points) and `summary` (one row per origin)."""
     env = envelope.copy()
@@ -123,8 +132,8 @@ def money_gate(envelope: pd.DataFrame, populations: pd.DataFrame, *,
             "buurtcode": code, "population": float(w.sum()),
             "atom": float(atom), "mean_threshold": mean, "cv": cv,
             "share_hazard_increasing": inc,
-            "hazard_class": ("increasing" if inc >= 0.8 else
-                             "decreasing" if inc <= 0.2 else "mixed"),
+            "hazard_class": ("increasing" if inc >= hazard_bands[0] else
+                             "decreasing" if inc <= hazard_bands[1] else "mixed"),
             "ttt_area": agg, "ttt_area_within": within,
             "ttt_class": ("IFR" if agg > ttt_band else
                           "DFR" if agg < -ttt_band else "near-exponential"),

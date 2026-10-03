@@ -1,12 +1,12 @@
 """
-ODiN -> aggregate tables for the envelope (X_M calc.R, sections 9, 12, 13).
+ODiN -> aggregate tables for the envelope.
 
 The only stage that reads microdata. It returns weighted means and person
 counts per cell and nothing else, so the aggregates can be inspected (and,
 where the ODiN licence allows, shared) without the microdata. Prices and the
 modelling rules (pooling thresholds, deflators, bounds) are applied in `xm`.
 
-Definitions follow X_M calc.R:
+Definitions:
 
   * persons: household type (HHSam), income class (HHGestInkG, 11 =
     unknown), age band, person weight FactorP, commuting mode and whether

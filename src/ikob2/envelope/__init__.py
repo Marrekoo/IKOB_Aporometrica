@@ -2,8 +2,7 @@
 The reference-budget envelope: from source tables to the per-journey money
 budgets of `reference_budgets.csv`.
 
-The method of the envelope script `X_M calc.R`, in stages that each take
-tables and return tables:
+The method in stages that each take tables and return tables:
 
   sources   the published inputs (Nibud basket, Warnaar anchors, CBS income
             percentiles, car costs), one CSV each with its source;
