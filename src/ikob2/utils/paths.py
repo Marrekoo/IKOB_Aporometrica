@@ -224,8 +224,8 @@ class DataLayout:
     def segments_gpkg(self) -> Path:
         return self.intermediate / "segments" / "nl_segments.gpkg"
 
-    def s2_hubs(self) -> Path:
-        return self.intermediate / "hubs" / "utrecht_hubs_s2.csv"
+    def s2_hubs(self, label: str = "s2") -> Path:
+        return self.intermediate / "hubs" / f"utrecht_hubs_{label}.csv"
 
     def skim_dir(self, study: str) -> Path:
         return self.intermediate / "skims" / study

@@ -5,10 +5,13 @@
 
 Ranks the origin buurten by low baseline accessibility and low bicycle
 ownership and places `siting.hub_density_factor - 1` times the existing number
-of hubs of kind `siting.kind` there (spacing `siting.min_spacing_m`). Writes
-`intermediate/hubs/utrecht_hubs_s2.csv`: hub, lat, lon, precision, source and
-the buurt, its accessibility, bicycle share and score. Build the S2 skims with
-the existing and the new hubs together (docs/scenarios.md).
+of hubs of kind `siting.kind` there (spacing `siting.min_spacing_m`). With
+`--within FILE` (`siting.within`) only the listed buurten are candidates and
+as many hubs as fit are placed (or `--n-new`). Writes
+`intermediate/hubs/utrecht_hubs_<label>.csv` (label `s2`, `--label`): hub, lat,
+lon, precision, source and the buurt, its accessibility, bicycle share and
+score. Build the S2 skims with the existing and the new hubs together
+(docs/scenarios.md).
 """
 
 from __future__ import annotations
@@ -27,7 +30,9 @@ from ikob2.utils.paths import DataLayout
 
 FLAGS = {"factor": "siting.hub_density_factor",
          "spacing": "siting.min_spacing_m",
-         "access_mode": "siting.access_mode"}
+         "access_mode": "siting.access_mode",
+         "within": "siting.within",
+         "n_new": "siting.n_new"}
 
 
 def cmd_propose(args) -> None:
@@ -72,24 +77,39 @@ def cmd_propose(args) -> None:
     hubs = hubs_mod.load_hubs(files, hubs_mod.search_dirs(root), kinds=kinds,
                               tariffs=prm.shared_bike.hub_tariffs)
     existing = hubs[hubs["kind"] == prm.siting.kind]
-    n_new = int(round(len(existing) * (prm.siting.hub_density_factor - 1.0)))
+    within = None
+    if prm.siting.within:
+        from ikob2.utils.paths import resolve_input
+        wpath = resolve_input(prm.siting.within, lay.inputs / "tariffs")
+        within = pd.read_csv(wpath, dtype={"buurtcode": str})["buurtcode"]
+    if prm.siting.n_new > 0:
+        n_new = int(prm.siting.n_new)
+    elif within is not None:
+        n_new = None                     # as many as fit in the area
+    else:
+        n_new = int(round(len(existing)
+                          * (prm.siting.hub_density_factor - 1.0)))
     chosen = propose_hubs(cand, hubs_mod.hub_xy(hubs), n_new,
                           min_spacing_m=prm.siting.min_spacing_m,
-                          access_weight=prm.siting.access_weight)
+                          access_weight=prm.siting.access_weight,
+                          within=within)
+    label = args.label
     lon, lat = Transformer.from_crs("EPSG:28992", "EPSG:4326",
                                     always_xy=True).transform(
         chosen["x"].to_numpy(), chosen["y"].to_numpy())
     out = pd.DataFrame({
-        "hub": [f"S2 hub {c}" for c in chosen["code"]],
+        "hub": [f"{label.upper()} hub {c}" for c in chosen["code"]],
         "lat": np.round(lat, 6), "lon": np.round(lon, 6),
         "precision": "buurt_centroid",
-        "source": f"S2 siting: low '{mode}' accessibility "
+        "source": f"{label.upper()} siting: low '{mode}' accessibility "
                   f"(weight {prm.siting.access_weight:g}) and low bicycle "
-                  f"ownership, spacing {prm.siting.min_spacing_m:g} m",
+                  f"ownership, spacing {prm.siting.min_spacing_m:g} m"
+                  + (f", within {Path(prm.siting.within).name}"
+                     if within is not None else ""),
         "buurtcode": chosen["code"], "access": chosen["access"].round(1),
         "bike_share": chosen["bike_share"].round(3),
         "score": chosen["score"].round(4)})
-    target = Path(args.out) if args.out else lay.s2_hubs()
+    target = Path(args.out) if args.out else lay.s2_hubs(label)
     target.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(target, index=False)
     print(f"{len(out)} new hubs (existing {len(existing)}) written to {target}")
@@ -115,6 +135,14 @@ def main(argv=None) -> None:
     s.add_argument("--factor", type=float, default=None)
     s.add_argument("--spacing", type=float, default=None)
     s.add_argument("--access-mode", default=None)
+    s.add_argument("--within", default=None, metavar="CSV",
+                   help="site only in these buurten (column buurtcode)")
+    s.add_argument("--n-new", type=int, default=None,
+                   help="number of new hubs (default: the density factor, "
+                        "or with --within as many as fit)")
+    s.add_argument("--label", default="s2",
+                   help="scenario label: hub names and the output file "
+                        "utrecht_hubs_<label>.csv")
     s.set_defaults(func=cmd_propose)
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level,

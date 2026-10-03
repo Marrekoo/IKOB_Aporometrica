@@ -193,6 +193,10 @@ min_spacing_m = 400.0      # no new hub closer than this to another hub
 access_mode = "pt"         # baseline accessibility that ranks the buurten (population weighted)
 access_weight = 0.5        # weight of low accessibility in the score; the rest is low bicycle ownership
 kind = "lime"              # tariff kind of the new hubs
+# buurten (column buurtcode) to site the hubs in, e.g. the price zone of S4; a
+# path, or a name under inputs/tariffs; "" = every origin buurt
+within = ""
+n_new = 0                  # number of new hubs; 0: (hub_density_factor - 1) x the existing hubs, or with `within` as many as fit
 
 [distance]                 # car route distances via Valhalla, detour calibration
 radius_km = 30.0

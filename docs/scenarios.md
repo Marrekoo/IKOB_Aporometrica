@@ -72,7 +72,7 @@ accessibility for bicycle owners. Every variant assumes unlimited supply
 |---|---|---|
 | S0 | baseline | Lime tiers, current hubs |
 | S1 | Lime prices halved | `--lime-scale 0.5` (blanket), or a price-scale table for targeted concessions |
-| S2 | extra Lime hubs | `cli.hubs propose`, S2 skim modes, and a parameter file with `[shared_bike] egress_suffix = {lime = "_s2"}` |
+| S2 | extra Lime hubs: citywide (S2c) or in the target buurten (S2t) | `cli.hubs propose` (`--within` for S2t), the S2 skim modes, and `--set 'shared_bike.egress_suffix={lime="_s2c"}'` (or `"_s2t"`) |
 | S3 | S1 and S2 together | both settings |
 | S4 | Lime prices halved for the residents of target buurten | `--price-scales lime_price_scales_all_50.csv --price-zones lime_price_zones_overvecht_kanaleneiland.csv` |
 
@@ -106,17 +106,30 @@ segments, weight `siting.access_weight`) and private-bicycle ownership. New
 hubs are placed at buurt centroids in that order, skipping buurten within
 `siting.min_spacing_m` (400 m) of any hub, until there are
 `(siting.hub_density_factor - 1)` times as many new hubs as existing hubs of
-`siting.kind`. The result goes to `intermediate/hubs/utrecht_hubs_s2.csv`
-(`--out` to change it). The S2 skims are built with the existing and the new
-Lime hubs, each hub file given with its tariff kind:
+`siting.kind`. With `--within FILE` (`siting.within`, a CSV with `buurtcode`,
+e.g. the S4 price zone) only those buurten are candidates, ranked among
+themselves, and as many hubs are placed as the spacing allows (or
+`--n-new`). The result goes to `intermediate/hubs/utrecht_hubs_<label>.csv`
+(`--label`, default `s2`; `--out` to change it):
+
+    python -m ikob2.cli.hubs propose --data-root <root> --label s2c \
+        --base-accessibility <root>/outputs/runs/s0/accessibility.csv
+    python -m ikob2.cli.hubs propose --data-root <root> --label s2t \
+        --within lime_price_zones_overvecht_kanaleneiland.csv \
+        --base-accessibility <root>/outputs/runs/s0/accessibility.csv
+
+S2c doubles the 27 municipal hubs citywide; S2t places 12 hubs in the 15
+target buurten (the other three have a hub within 400 m of their centroid).
+The S2 skims are built with the existing and the new Lime hubs, each hub file
+given with its tariff kind:
 
     python -m ikob2.cli.skims build-pt <store> --kwb <gpkg> --gtfs <zip> \
         --data-root <root> --egress bike --egress-hubs file \
         --hub-file hubs/utrecht_hubs.csv:lime \
-        --hub-file hubs/utrecht_hubs_s2.csv:lime \
-        --hub-kind lime --mode-name pt_wb_lime_s2
+        --hub-file hubs/utrecht_hubs_s2c.csv:lime \
+        --hub-kind lime --mode-name pt_wb_lime_s2c
 
-(and the same with `--access bike` for `pt_bb_lime_s2`). `--hub-file`
+(and the same with `--access bike` for `pt_bb_lime_s2c`, and for `s2t`). `--hub-file`
 replaces `pt.hub_files` and `pt.hub_kinds` together; relative paths are
 found under `<root>/inputs` or `<root>/intermediate` (`skims.md`).
 
