@@ -1,0 +1,11 @@
+{
+  "upload_type": "software",
+  "title": "IKOB Aporometrica (ikob2): a threshold-gate model of job accessibility",
+  "creators": [
+    {"name": "van Burgsteden, Marco", "affiliation": "CROW"}
+  ],
+  "description": "<p>Accessibility of jobs by household type and income decile when a trip is acceptable only if it passes both a time gate and a money gate, each the survival function of a traveller's maximum acceptable travel time and cost; with shared-bicycle chains and pricing and hub scenarios for Utrecht.</p>",
+  "access_right": "open",
+  "license": "mit",
+  "keywords": ["accessibility", "transport equity", "survival analysis", "shared bicycles"]
+}

@@ -33,6 +33,7 @@ hub scenarios.
 | [docs/pipeline.md](docs/pipeline.md) | the commands from raw data to accessibility tables, in order |
 | [docs/scenarios.md](docs/scenarios.md) | shared-bicycle variants, scenarios S0-S4, costs, R, the reachability gap, paper tables |
 | [docs/paper_runs.md](docs/paper_runs.md) | the set-up of the paper runs (`paper/runs.toml`, `cli.batch`) |
+| [docs/reproduce.md](docs/reproduce.md) | reproducing the paper runs: repository, data deposit, steps |
 | [docs/data_specification.md](docs/data_specification.md) | every input, intermediate and output file |
 | [docs/segments.md](docs/segments.md) | household x income segments, reference budgets, the engine bridge |
 | [docs/data_lineage.md](docs/data_lineage.md) | jobs: sources, imputation onto buurten, income and home-working split |
@@ -121,6 +122,8 @@ waiting and transfer penalties, competition for jobs in the paper runs
 
 The data folder is outside the repository (`--data-root` or
 `$IKOB_DATA_ROOT`); `cli.layout create` seeds it with the reference files of
-`data/`.
+`data/`. The inputs that cannot be downloaded again in the same version (GTFS,
+OpenStreetMap, KWB, LISA), the skims and the paper runs are in a data deposit
+on Zenodo (`python -m ikob2.cli.archive`; `docs/reproduce.md`).
 
 Cite as in [CITATION.cff](CITATION.cff). Licence of the software: MIT ([LICENSE](LICENSE)).

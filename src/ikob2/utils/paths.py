@@ -105,6 +105,10 @@ SEED = (
     ("tariffs", "inputs", "tariffs", "*.csv"),
     ("occupations", "inputs", "occupations", "*.csv"),
     ("jobs_education", "inputs", "jobs_education", "*.csv"),
+    ("hubs", "inputs", "hubs", "*.csv"),
+    ("ovfiets", "inputs", "ovfiets", "*.json"),
+    ("veh_owners", "inputs", "veh_owners", "*.csv"),
+    ("hubs_scenarios", "intermediate", "hubs", "*.csv"),
     ("statline", "cache", "statline", "*.csv"),
     ("calibration", "intermediate", "calibration", "*.json"),
 )

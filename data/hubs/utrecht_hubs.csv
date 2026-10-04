@@ -1,0 +1,28 @@
+hub,lat,lon,precision,source
+Hub Krachtstation,52.071807,5.094904,intersection,PDOK road geometries: Amerikalaan x Marco Pololaan (user description; gap 0 m)
+Hub station Vaartsche Rijn,52.078023,5.122392,station,OV-fiets UTVR001
+Hub Leidsekade,52.088602,5.097705,street_centroid,"PDOK weg Leidsekade, Utrecht"
+Hub Abel Tasmanstraat,52.089594,5.095729,street_centroid,"PDOK weg Abel Tasmanstraat, Utrecht"
+Hub Van 's-Gravesandestraat,52.099834,5.121754,street_centroid,"PDOK weg Van 's-Gravesandestraat, Utrecht"
+Hub Oldenburgerstraat,52.10397,5.146082,intersection,midpoint of Oldenburgerstraat x Lakenvelderstraat and x Zwartbontstraat (user description; PDOK road geometries)
+Hub Bataviastraat,52.093263,5.088068,street_centroid,"PDOK weg Bataviastraat, Utrecht"
+Hub Beukstraat / Bankstraat,52.087458,5.135475,street_centroid,"PDOK weg, midpoint of both streets"
+Hub Zandhofsestraat,52.098349,5.133067,street_centroid,"PDOK weg Zandhofsestraat, Utrecht"
+Hub Max Pax Lux,52.067107,5.107092,estimated,"estimated from the user description: Beneluxlaan x Europaplein junction (PDOK), 80 m west along the street bearing, 12 m to the north side; about +-50 m"
+Hub Aakplein,52.0987,5.081486,street_centroid,"PDOK weg Aakplein, Utrecht"
+Hub Herenweg,52.095986,5.108418,intersection,PDOK road geometries: Herenweg x Amsterdamsestraatweg (user description; gap 0 m)
+Hub Herderplein,52.090226,5.081545,street_centroid,"PDOK weg Herderplein, Utrecht"
+Hub Lepelenburg,52.088998,5.127985,street_centroid,"PDOK weg Lepelenburg, Utrecht"
+Hub Nicolaaskerkhof,52.083447,5.124976,street_centroid,"PDOK weg Nicolaaskerkhof, Utrecht"
+Hub Adriaen van Ostadelaan,52.082931,5.136694,estimated,"north-west corner of Notebomenlaan x Burgemeester Fockema Andreaelaan, 15 m NW of the junction (user description; PDOK road geometries); about +-20 m"
+Hub Aquamarijnlaan,52.072016,5.1237,street_centroid,"PDOK weg Aquamarijnlaan, Utrecht"
+Hub Heycopstraat,52.079898,5.111184,street_centroid,"PDOK weg Heycopstraat, Utrecht"
+Hub Vleutenseweg,52.093627,5.096697,intersection,PDOK road geometries: Vleutenseweg x Hasebroekstraat (user description; gap 12 m)
+Hub Westerdijk-Zijdebalen,52.09863,5.11161,intersection,PDOK road geometries: Westerdijk end at Oudenoord (user description; gap 0 m)
+Hub Van Asch van Wijckstraat,52.096142,5.1178,street_centroid,"PDOK weg Van Asch van Wijckstraat, Utrecht"
+Hub station Leidsche Rijn,52.09918,5.06476,station,OV-fiets utlr001
+Hub station Overvecht,52.109965,5.123593,station,OV-fiets uto002
+Hub station Lunetten,52.06604,5.143176,station,OV-fiets utl001
+Hub station Terwijde,52.100027,5.044109,station,OV-fiets utt001
+Hub station Vleuten,52.102677,5.007495,station,OV-fiets vtn001
+Hub station Zuilen,52.102943,5.089436,station,OV-fiets utzl001

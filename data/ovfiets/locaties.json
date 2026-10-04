@@ -1,0 +1,1807 @@
+{
+"locaties": {
+"488": {
+"city": "Rotterdam",
+"lat": 51.94156,
+"lng": 4.481287,
+"name": "RNO - OV-fiets - Rotterdam Noord Pop up"
+},
+"60": {
+"city": "Rotterdam",
+"lat": 51.94156,
+"lng": 4.481287,
+"name": "RNO - OV-fiets - Rotterdam Noord Pop up"
+},
+"Apg001": {
+"city": "Appingedam",
+"lat": 53.325703,
+"lng": 6.86249,
+"name": "APG - OV-fiets - Appingedam"
+},
+"Arn002": {
+"city": "Arnemuiden",
+"lat": 51.501444,
+"lng": 3.669552,
+"name": "ARN - OV-fiets - Arnemuiden"
+},
+"Bd003": {
+"city": "Breda",
+"lat": 51.59502,
+"lng": 4.779437,
+"name": "BD - OV-fiets - Breda Centrum"
+},
+"Bmr001": {
+"city": "Boxmeer",
+"lat": 51.645239,
+"lng": 5.938698,
+"name": "BMR - OV-fiets - Boxmeer"
+},
+"Btl003": {
+"city": "Veghel",
+"lat": 51.614573,
+"lng": 5.545731,
+"name": "BTL - OV-fiets - Veghel"
+},
+"Co002": {
+"city": "Coevorden",
+"lat": 52.663203,
+"lng": 6.736003,
+"name": "CO - OV-fiets - Coevorden"
+},
+"Cps003": {
+"city": "Capelle aan den IJssel",
+"lat": 51.954338,
+"lng": 4.584497,
+"name": "Cps - OV-fiets- Capelle Schollevaar"
+},
+"DRON001": {
+"city": "Dronten",
+"lat": 52.534775,
+"lng": 5.721272,
+"name": "DRON - OV-fiets - Dronten"
+},
+"Dz001": {
+"city": "Delfzijl",
+"lat": 53.333643,
+"lng": 6.923376,
+"name": "DZ - OV-fiets - Delfzijl"
+},
+"GR002 ": {
+"city": "",
+"lat": 51.80099,
+"lng": 4.930693,
+"name": "GR - OV-fiets - Sleeuwijk Tol West"
+},
+"Gnn001": {
+"city": "Groningen",
+"lat": 53.230122,
+"lng": 6.556761,
+"name": "GNN - OV-fiets - Groningen Noord"
+},
+"Gp001": {
+"city": "Geldrop",
+"lat": 51.420056,
+"lng": 5.550968,
+"name": "GP - OV-fiets - Geldrop "
+},
+"HRN002": {
+"city": "Haren",
+"lat": 53.175165,
+"lng": 6.617819,
+"name": "HRN - OV-fiets - Haren"
+},
+"Hde001": {
+"city": "'t Harde",
+"lat": 52.408791,
+"lng": 5.89185,
+"name": "HDE - OV-fiets - 't Harde"
+},
+"Hgz001": {
+"city": "Hoogezand",
+"lat": 53.159868,
+"lng": 6.770894,
+"name": "HGZ - OV-fiets - Hoogezand Sappemeer"
+},
+"Hto001": {
+"city": "'s-Hertogenbosch",
+"lat": 51.700711,
+"lng": 5.318865,
+"name": "HT - OV-fiets - 's-Hertogenbosch Oost"
+},
+"Kpnz002": {
+"city": "Kampen",
+"lat": 52.533439,
+"lng": 5.913045,
+"name": "KPNZ - OV-fiets -  Kampen Zuid"
+},
+"Mmlh002": {
+"city": "Mook-Molenhoek",
+"lat": 51.766328,
+"lng": 5.879019,
+"name": "Mmlh002 - OV-fiets - Mook Molenhoek"
+},
+"Mth002": {
+"city": "Martenshoek",
+"lat": 53.160543,
+"lng": 6.740036,
+"name": "MTH - OV-fiets - Martenshoek"
+},
+"Ns001": {
+"city": "Nunspeet",
+"lat": 52.37102,
+"lng": 5.784352,
+"name": "NS - OV-fiets - Nunspeet"
+},
+"Ot001": {
+"city": "Oisterwijk",
+"lat": 51.582096,
+"lng": 5.194357,
+"name": "OT - OV-fiets - Oisterwijk"
+},
+"Ow002": {
+"city": "Uden",
+"lat": 51.660336,
+"lng": 5.617622,
+"name": "O - OV-fiets - Uden"
+},
+"Rtd003": {
+"city": "Rotterdam",
+"lat": 51.907233,
+"lng": 4.490302,
+"name": "RTD - OV-fiets - Rotterdam Fietspunt Wilhelminakade Prinsendam"
+},
+"Rtd004": {
+"city": "Rotterdam",
+"lat": 51.913304,
+"lng": 4.432742,
+"name": "RTD - OV-fiets - Rotterdam Fietspunt Marconiplein"
+},
+"Rtn002": {
+"city": "Rotterdam Noord",
+"lat": 51.942494,
+"lng": 4.481715,
+"name": "RNO - OV-fiets - Rotterdam Noord"
+},
+"Rtn003": {
+"city": "Rotterdam",
+"lat": 51.94156,
+"lng": 4.481287,
+"name": "RNO - OV-fiets - Rotterdam Noord Pop up"
+},
+"Rvs001": {
+"city": "Ravenstein",
+"lat": 51.79464,
+"lng": 5.637462,
+"name": "RVS - OV fiets - Ravenstein"
+},
+"UTVR001": {
+"city": "Utrecht",
+"lat": 52.078023,
+"lng": 5.122392,
+"name": "UT-OV-fiets-Utrecht Vaartsche Rijn"
+},
+"Vdm001": {
+"city": "Veendam",
+"lat": 53.104346,
+"lng": 6.885426,
+"name": "VDM - OV-fiets - Veendam"
+},
+"Vg001": {
+"city": "Vught",
+"lat": 51.650022,
+"lng": 5.292163,
+"name": "VG - OV-fiets - Vught"
+},
+"Vss002": {
+"city": "Oost Souburg",
+"lat": 51.464953,
+"lng": 3.595486,
+"name": "VL - OV-fiets- Souburg"
+},
+"WM002": {
+"city": "Wormerveer",
+"lat": 52.489166,
+"lng": 4.793222,
+"name": "WM - OV-fiets - Wormerveer "
+},
+"Wsm001": {
+"city": "Winsum",
+"lat": 53.329479,
+"lng": 6.520013,
+"name": "WSM - OV-fiets - Winsum"
+},
+"ZD002": {
+"city": "Zaandam",
+"lat": 52.438795,
+"lng": 4.815877,
+"name": "ZD - OV-fiets - Zaandam"
+},
+"Zh001": {
+"city": "Zuidhorn",
+"lat": 53.248372,
+"lng": 6.406436,
+"name": "ZH - OV-fiets - Zuidhorn"
+},
+"Zlw001": {
+"city": "Zevenbergschen Hoek",
+"lat": 51.690151,
+"lng": 4.662549,
+"name": "ZLW - OV-fiets - Lage Zwaluwe"
+},
+"Zvb001": {
+"city": "Zevenbergen",
+"lat": 51.641542,
+"lng": 4.610095,
+"name": "ZVB - OV-fiets - Zevenbergen"
+},
+"ac002": {
+"lat": 52.278386,
+"lng": 4.97704,
+"name": "AC - OV-fiets - Abcoude"
+},
+"ah001": {
+"city": "Arnhem",
+"lat": 51.984,
+"lng": 5.9013,
+"name": "AH - OV-fiets - Arnhem Centrum"
+},
+"ah003": {
+"city": "Arnhem",
+"lat": 51.9834,
+"lng": 5.90139,
+"name": "AH - OV-ebike - Arnhem Centrum"
+},
+"alm001": {
+"city": "Almere",
+"lat": 52.37453,
+"lng": 5.22016,
+"name": "ALM - OV-fiets - Almere Centrum Landdrostdreef"
+},
+"amf001": {
+"city": "Amersfoort",
+"lat": 52.15293,
+"lng": 5.37481,
+"name": "AMF - OV-fiets - Amersfoort Centraal"
+},
+"amf002": {
+"city": "Amersfoort",
+"lat": 52.15446,
+"lng": 5.37339,
+"name": "AMF - OV-fiets - Amersfoort Mondriaanplein"
+},
+"amfs001": {
+"city": "Amersfoort",
+"lat": 52.1746,
+"lng": 5.40462,
+"name": "AMFS - OV-fiets - Amersfoort Schothorst"
+},
+"aml002": {
+"city": "Almelo",
+"lat": 52.35614,
+"lng": 6.65732,
+"name": "AML - OV-fiets - Almelo"
+},
+"amr001": {
+"city": "Alkmaar",
+"lat": 52.63753,
+"lng": 4.73985,
+"name": "AMR - OV-fiets - Alkmaar"
+},
+"amrn002": {
+"city": "Alkmaar",
+"lat": 52.64396,
+"lng": 4.76371,
+"name": "AMRN - OV-fiets - Alkmaar Noord"
+},
+"ana001": {
+"city": "Anna Paulowna",
+"lat": 52.867532,
+"lng": 4.81149,
+"name": "ANA - OV-fiets - Anna Paulowna"
+},
+"apd001": {
+"city": "Apeldoorn",
+"lat": 52.209578,
+"lng": 5.9692,
+"name": "APD - OV-fiets - Apeldoorn"
+},
+"apn001": {
+"city": "Alphen aan Den Rijn",
+"lat": 52.12492,
+"lng": 4.65789,
+"name": "APN - OV-fiets - Alphen aan den Rijn"
+},
+"asa001": {
+"city": "Amsterdam",
+"lat": 52.34701,
+"lng": 4.91875,
+"name": "ASA - OV-fiets - Amsterdam Amstel"
+},
+"asb002": {
+"city": "Amsterdam",
+"lat": 52.311914,
+"lng": 4.948114,
+"name": "ASB - OV-fiets - Amsterdam Bijlmer Arena"
+},
+"asd002": {
+"city": "Amsterdam",
+"lat": 52.37785,
+"lng": 4.902062,
+"name": "ASD - OV-fiets - Amsterdam Centraal Oost"
+},
+"asd008": {
+"city": "Amsterdam",
+"lat": 52.380095,
+"lng": 4.898784,
+"name": "ASD - OV-fiets - Amsterdam Centraal  IJzijde West"
+},
+"asd009": {
+"city": "Amsterdam",
+"lat": 52.402374,
+"lng": 4.931019,
+"name": "ASD - OV-fiets - Amsterdam Noord"
+},
+"asd010": {
+"lat": 52.378482,
+"lng": 4.897678,
+"name": "ASD - OV-fiets - Amsterdam Centraal Stationsplein"
+},
+"asdl001": {
+"city": "Amsterdam",
+"lat": 52.35864,
+"lng": 4.8339,
+"name": "ASDL - OV-fiets - Amsterdam Lelylaan"
+},
+"asdm001": {
+"city": "Amsterdam",
+"lat": 52.3604,
+"lng": 4.93093,
+"name": "ASDM - OV-fiets - Amsterdam Muiderpoort"
+},
+"asdz001": {
+"city": "Amsterdam",
+"lat": 52.340294,
+"lng": 4.873381,
+"name": "ASDZ - OV-fiets - Amsterdam Zuid Zuidplein"
+},
+"asdz003": {
+"city": "Amsterdam",
+"lat": 52.336448,
+"lng": 4.873438,
+"name": "ASDZ - OV-fiets - Amsterdam Zuid Mahlerplein"
+},
+"asn001": {
+"city": "Assen",
+"lat": 52.99185,
+"lng": 6.570329,
+"name": "ASN - OV-fiets - Assen"
+},
+"ass001": {
+"city": "Amsterdam",
+"lat": 52.38903,
+"lng": 4.83707,
+"name": "ASS - OV-fiets - Amsterdam Sloterdijk"
+},
+"atn001": {
+"city": "Aalten",
+"lat": 51.92161,
+"lng": 6.57929,
+"name": "ATN - OV-fiets - Aalten"
+},
+"avat001": {
+"city": "Hooglanderveen",
+"lat": 52.19183,
+"lng": 5.43284,
+"name": "AVAT - OV-fiets - Amersfoort Vathorst"
+},
+"bd002": {
+"city": "Breda",
+"lat": 51.596338,
+"lng": 4.77892,
+"name": "BD - OV-fiets - Breda Belcrum"
+},
+"bdg001": {
+"lat": 52.08154,
+"lng": 4.746583,
+"name": "BDG - OV-fiets - Bodegraven"
+},
+"bdpb001": {
+"city": "Breda",
+"lat": 51.605909,
+"lng": 4.721607,
+"name": "BDPB - OV-fiets - Breda Prinsenbeek"
+},
+"bet001": {
+"city": "Best",
+"lat": 51.50841,
+"lng": 5.38957,
+"name": "BET - OV-fiets - Best"
+},
+"bgn002": {
+"city": "Bergen op Zoom",
+"lat": 51.49517,
+"lng": 4.29575,
+"name": "BGN - OV-fiets - Bergen op Zoom"
+},
+"bhv002": {
+"city": "Bilthoven",
+"lat": 52.12949,
+"lng": 5.20514,
+"name": "BHV - OV-fiets - Bilthoven"
+},
+"bkg001": {
+"city": "Bovenkarspel",
+"lat": 52.695217,
+"lng": 5.235676,
+"name": "BKG - OV-fiets - Bovenkarspel-Grootebroek"
+},
+"bkl001": {
+"city": "Breukelen",
+"lat": 52.170482,
+"lng": 4.991444,
+"name": "BKL - OV-fiets - Breukelen"
+},
+"bl001": {
+"city": "Beilen",
+"lat": 52.854626,
+"lng": 6.520572,
+"name": "BL - OV-fiets - Beilen"
+},
+"bll001": {
+"city": "Bloemendaal",
+"lat": 52.40441,
+"lng": 4.6273,
+"name": "BLL - OV-fiets - Bloemendaal"
+},
+"bmn001": {
+"city": "Brummen",
+"lat": 52.090938,
+"lng": 6.147173,
+"name": "BMN - OV-fiets - Brummen"
+},
+"bn001": {
+"city": "Borne",
+"lat": 52.298523,
+"lng": 6.747655,
+"name": "BN - OV-fiets - Borne"
+},
+"bnc001": {
+"city": "Barneveld",
+"lat": 52.140099,
+"lng": 5.589972,
+"name": "BNC - OV-fiets - Barneveld Centrum"
+},
+"bnk001": {
+"city": "Bunnik",
+"lat": 52.063375,
+"lng": 5.195902,
+"name": "BNK - OV-fiets - Bunnik"
+},
+"bnn001": {
+"city": "Barneveld",
+"lat": 52.1615,
+"lng": 5.598161,
+"name": "BNN - OV-fiets - Barneveld Noord"
+},
+"brd002": {
+"city": "Barendrecht",
+"lat": 51.853419,
+"lng": 4.554166,
+"name": "BRD - OV-fiets - Barendrecht"
+},
+"brn002": {
+"city": "Baarn",
+"lat": 52.20787,
+"lng": 5.28219,
+"name": "BRN - OV-fiets - Baarn"
+},
+"bsd001": {
+"city": "Beesd",
+"lat": 51.899378,
+"lng": 5.195893,
+"name": "BSD - OV-fiets - Beesd"
+},
+"bsk001": {
+"city": "Boskoop",
+"lat": 52.076348,
+"lng": 4.646671,
+"name": "OV-fiets Boskoop"
+},
+"bsmz001": {
+"city": "Bussum",
+"lat": 52.265823,
+"lng": 5.163116,
+"name": "BSMZ - OV-fiets - Bussum Zuid"
+},
+"btl001": {
+"city": "Boxtel",
+"lat": 51.58515,
+"lng": 5.318988,
+"name": "BTL - OV-fiets - Boxtel"
+},
+"btl004": {
+"city": "Boxtel",
+"lat": 51.584637,
+"lng": 5.319527,
+"name": "BTL - OV-fiets - Boxtel - Kluis"
+},
+"bv002": {
+"city": "Beverwijk",
+"lat": 52.47875,
+"lng": 4.65448,
+"name": "BV - OV-fiets - Beverwijk"
+},
+"cas002": {
+"city": "Castricum",
+"lat": 52.54554,
+"lng": 4.65954,
+"name": "CAS - OV-fiets - Castricum"
+},
+"ck001": {
+"city": "Cuijk",
+"lat": 51.72659,
+"lng": 5.87423,
+"name": "CK - OV-fiets - Cuijk"
+},
+"cl003": {
+"city": "Culemborg",
+"lat": 51.94704,
+"lng": 5.22713,
+"name": "CL - OV-fiets - Culemborg"
+},
+"db001": {
+"city": "Driebergen-Zeist",
+"lat": 52.065057,
+"lng": 5.259785,
+"name": "DB - OV-fiets - Driebergen-Zeist"
+},
+"db002": {
+"city": "Zeist",
+"lat": 52.08909,
+"lng": 5.24928,
+"name": "DB - OV-fiets - Zeist"
+},
+"db003": {
+"city": "Driebergen-Zeist",
+"lat": 52.065057,
+"lng": 5.2599,
+"name": "DB - OV-ebike - Driebergen-Zeist"
+},
+"ddn001": {
+"city": "Delden",
+"lat": 52.26013,
+"lng": 6.714307,
+"name": "DDN - OV-fiets - Delden"
+},
+"ddr001": {
+"city": "Dordrecht",
+"lat": 51.80781,
+"lng": 4.66785,
+"name": "DDR - OV-fiets - Dordrecht"
+},
+"did001": {
+"city": "Didam",
+"lat": 51.93345,
+"lng": 6.132408,
+"name": "DID - OV-fiets - Didam"
+},
+"dl001": {
+"city": "Dalfsen",
+"lat": 52.498276,
+"lng": 6.259923,
+"name": "DL - OV-fiets - Dalfsen"
+},
+"dld001": {
+"city": "Den Dolder",
+"lat": 52.14002,
+"lng": 5.24177,
+"name": "DLD - OV-fiets - Den Dolder"
+},
+"dmn001": {
+"city": "Diemen",
+"lat": 52.344851,
+"lng": 4.967989,
+"name": "DMN - OV-fiets - Diemen"
+},
+"dmnz001": {
+"city": "Diemen",
+"lat": 52.33042,
+"lng": 4.95566,
+"name": "DMNZ - OV-fiets - Diemen Zuid"
+},
+"dn001": {
+"city": "Deurne",
+"lat": 51.45666,
+"lng": 5.78722,
+"name": "DN - OV-fiets - Deurne"
+},
+"dr001": {
+"city": "Dieren",
+"lat": 52.044821,
+"lng": 6.10249,
+"name": "DR - OV-fiets - Dieren"
+},
+"drh001": {
+"city": "Driehuis ",
+"lat": 52.44301,
+"lng": 4.63908,
+"name": "DRH - OV-fiets - Driehuis"
+},
+"dt002": {
+"city": "Delft",
+"lat": 52.006473,
+"lng": 4.35744,
+"name": "DT - OV-fiets - Delft, Fietsenstalling"
+},
+"dtc001": {
+"city": "Doetinchem",
+"lat": 51.958253,
+"lng": 6.296645,
+"name": "DTC - OV-fiets - Doetinchem"
+},
+"dtch001": {
+"city": "Doetinchem",
+"lat": 51.95929,
+"lng": 6.25961,
+"name": "DTCH - OV-fiets - Doetinchem de Huet"
+},
+"dtz001": {
+"city": "Delft",
+"lat": 51.99038,
+"lng": 4.36439,
+"name": "DTZ - OV-fiets - Delft Zuid"
+},
+"dv001": {
+"city": "Deventer",
+"lat": 52.25645,
+"lng": 6.160837,
+"name": "DV - OV-fiets - Deventer"
+},
+"dv003": {
+"city": "Deventer",
+"lat": 52.2685,
+"lng": 6.175444,
+"name": "DV - OV-fiets - Deventer Boerhavelaan"
+},
+"dvc001": {
+"city": "Deventer",
+"lat": 52.25051,
+"lng": 6.21552,
+"name": "DVC - OV-fiets - Deventer Colmschate"
+},
+"dvd001": {
+"city": "Duivendrecht",
+"lat": 52.32369,
+"lng": 4.93629,
+"name": "DVD - OV-fiets - Duivendrecht"
+},
+"dvn001": {
+"city": "Duiven",
+"lat": 51.94356,
+"lng": 6.01459,
+"name": "DVN- OV-fiets -Duiven"
+},
+"dvnk001": {
+"city": "Leiden",
+"lat": 52.14708,
+"lng": 4.45593,
+"name": "DVNK - OV-fiets - Leiden de Vink"
+},
+"ec001": {
+"city": "Echt",
+"lat": 51.099873,
+"lng": 5.878368,
+"name": "EC - OV-fiets - Echt"
+},
+"ed004": {
+"city": "Eindhoven",
+"lat": 52.026909,
+"lng": 5.671663,
+"name": "ED - OV-fiets - Ede-Wageningen Zuidzijde"
+},
+"ed901": {
+"city": "Otterlo",
+"lat": 52.103597,
+"lng": 5.770395,
+"name": "ED - OV-fiets - Otterlo"
+},
+"ehs001": {
+"city": "Eindhoven",
+"lat": 51.450113,
+"lng": 5.456891,
+"name": "EHS - OV-fiets - Eindhoven Strijp-S"
+},
+"ehv002": {
+"city": "Eindhoven",
+"lat": 51.442199,
+"lng": 5.480273,
+"name": "EHV - OV-fiets - Eindhoven Centraal zuid (centrum)"
+},
+"ehv003": {
+"city": "Eindhoven",
+"lat": 51.443676,
+"lng": 5.480101,
+"name": "EHV - OV-fiets - Eindhoven Centraal noord (bussen)"
+},
+"ehv004": {
+"city": "Eindhoven",
+"lat": 51.443672,
+"lng": 5.480109,
+"name": "EHV- OV-fiets Pop Up Stationshal"
+},
+"ekz001": {
+"city": "Enkhuizen",
+"lat": 52.69996,
+"lng": 5.28904,
+"name": "EKZ - OV-fiets - Enkhuizen"
+},
+"eml001": {
+"city": "Ermelo",
+"lat": 52.300583,
+"lng": 5.614362,
+"name": "EML - OV-fiets - Ermelo"
+},
+"emn001": {
+"city": "Emmen",
+"lat": 52.78953,
+"lng": 6.89916,
+"name": "EMN - OV-fiets - Emmen"
+},
+"es003": {
+"city": "Enschede",
+"lat": 52.22169,
+"lng": 6.88984,
+"name": "ES - OV-fiets - Enschede"
+},
+"est001": {
+"city": "Elst",
+"lat": 51.917073,
+"lng": 5.855326,
+"name": "EST - OV-fiets - Elst"
+},
+"etn001": {
+"city": "Etten-Leur",
+"lat": 51.574939,
+"lng": 4.636251,
+"name": "ETN - OV-fiets - Etten-Leur"
+},
+"gd001": {
+"city": "Gouda",
+"lat": 52.01803,
+"lng": 4.705,
+"name": "GD - OV-fiets - Gouda"
+},
+"gdg001": {
+"city": "Gouda",
+"lat": 52.014613,
+"lng": 4.742138,
+"name": "GDG - OV-fiets - Gouda Goverwelle"
+},
+"gdm001": {
+"city": "Gelderrmalsen",
+"lat": 51.881767,
+"lng": 5.270973,
+"name": "GDM - OV-fiets - Geldermalsen"
+},
+"gerp002": {
+"city": "Groningen",
+"lat": 53.20479,
+"lng": 6.58617,
+"name": "GERP - OV-fiets - Openbare fietsenstalling gemeente Groningen : Fietsenstalling Europapark"
+},
+"gn001": {
+"city": "Groningen",
+"lat": 53.21155,
+"lng": 6.5665,
+"name": "GN - OV-fiets - Groningen"
+},
+"gn004": {
+"city": "Groningen",
+"lat": 53.21155,
+"lng": 6.5666,
+"name": "GN - OV-ebike - Groningen"
+},
+"go001": {
+"city": "Goor",
+"lat": 52.23042,
+"lng": 6.583929,
+"name": "GO - OV-fiets - Goor"
+},
+"gr001": {
+"city": "Gorinchem",
+"lat": 51.833437,
+"lng": 4.966969,
+"name": "GR - OV-fiets - Gorinchem"
+},
+"gs003": {
+"city": "Goes",
+"lat": 51.49874,
+"lng": 3.88823,
+"name": "GS - OV-fiets - Goes"
+},
+"gv001": {
+"city": "'s-Gravenhage ",
+"lat": 52.069582,
+"lng": 4.320696,
+"name": "GV - OV-fiets - Den Haag HS"
+},
+"gvc021": {
+"city": "Den Haag",
+"lat": 52.08129,
+"lng": 4.323001,
+"name": "GVC - OV-fiets - Den Haag Centraal KJ Plein"
+},
+"gvc901": {
+"city": "Nootdorp",
+"lat": 52.04758,
+"lng": 4.415059,
+"name": "GVC - OV-fiets - Nootdorp"
+},
+"gvm001": {
+"city": "'s-Gravenhage ",
+"lat": 52.090284,
+"lng": 4.3694,
+"name": "GVM - OV-fiets - Den Haag Mariahoeve"
+},
+"gz001": {
+"city": "Rijen",
+"lat": 51.584055,
+"lng": 4.924392,
+"name": "GZ - OV-fiets - Gilze Rijen"
+},
+"had003": {
+"city": "Heemstede",
+"lat": 52.35899,
+"lng": 4.60547,
+"name": "HAD - OV-fiets - Heemstede-Aerdenhout"
+},
+"hd001": {
+"city": "Harderwijk",
+"lat": 52.3377,
+"lng": 5.619034,
+"name": "HD - OV-fiets - Harderwijk"
+},
+"hdb001": {
+"city": "Hardenberg",
+"lat": 52.57583,
+"lng": 6.621944,
+"name": "HDB - OV-fiets - Hardenberg"
+},
+"hdr002": {
+"city": "Den Helder",
+"lat": 52.95674,
+"lng": 4.76071,
+"name": "HDR - OV-fiets - Den Helder"
+},
+"hdrz001": {
+"city": "Den Helder",
+"lat": 52.932506,
+"lng": 4.764533,
+"name": "HDRZ - OV-fiets - Den Helder Zuid"
+},
+"hfd002": {
+"city": "Hoofddorp",
+"lat": 52.2933,
+"lng": 4.69816,
+"name": "HFD - OV-fiets - Hoofddorp"
+},
+"hgl002": {
+"city": "Hengelo",
+"lat": 52.26239,
+"lng": 6.7936,
+"name": "HGL - OV-fiets - Hengelo"
+},
+"hglg001": {
+"city": "Hengelo",
+"lat": 52.261809,
+"lng": 6.768326,
+"name": "HGLG - OV-fiets - Hengelo Gezondheidspark"
+},
+"hgv003": {
+"city": "Hoogeveen",
+"lat": 52.73309,
+"lng": 6.47358,
+"name": "HGV - OV-fiets - Hoogeveen"
+},
+"hil001": {
+"city": "Hillegom",
+"lat": 52.302857,
+"lng": 4.566106,
+"name": "HIL - OV-fiets - Hillegom"
+},
+"hk001": {
+"city": "Heemskerk",
+"lat": 52.494358,
+"lng": 4.685522,
+"name": "HK - OV-fiets - Heemskerk"
+},
+"hks001": {
+"city": "Hoogkarspel",
+"lat": 52.690376,
+"lng": 5.182278,
+"name": "HKS - OV-fiets - Hoogkarspel"
+},
+"hlm002": {
+"city": "Haarlem",
+"lat": 52.38763,
+"lng": 4.63832,
+"name": "HLM - OV-fiets - Haarlem"
+},
+"hlms001": {
+"city": "Haarlem",
+"lat": 52.38213,
+"lng": 4.670836,
+"name": "HLMS - OV-fiets - Haarlem Spaarnwoude"
+},
+"hlo001": {
+"city": "Heiloo",
+"lat": 52.600105,
+"lng": 4.700795,
+"name": "HLO - OV-fiets - Heiloo"
+},
+"hm001": {
+"city": "Helmond",
+"lat": 51.4761,
+"lng": 5.661,
+"name": "HM - OV-fiets - Helmond"
+},
+"hmbh001": {
+"city": "Helmond",
+"lat": 51.47072,
+"lng": 5.701876,
+"name": "HMBH - OV-fiets - Helmond Brouwhuis"
+},
+"hmbv001": {
+"city": "Helmond",
+"lat": 51.46274,
+"lng": 5.60881,
+"name": "HMBV - OV-fiets - Helmond Brandevoort"
+},
+"hmh001": {
+"city": "Helmond",
+"lat": 51.468092,
+"lng": 5.630949,
+"name": "HMH - OV-fiets - Helmond 't Hout"
+},
+"hn001": {
+"city": "Hoorn",
+"lat": 52.64469,
+"lng": 5.05501,
+"name": "HN - OV-fiets - Hoorn"
+},
+"hnk001": {
+"city": "Hoorn",
+"lat": 52.653593,
+"lng": 5.085789,
+"name": "HNK - OV-fiets - Hoorn Kersenboogerd"
+},
+"hon001": {
+"city": "Holten",
+"lat": 52.283957,
+"lng": 6.420916,
+"name": "HON - OV-fiets - Holten"
+},
+"hor001": {
+"city": "Hollandsche Rading",
+"lat": 52.17815,
+"lng": 5.17915,
+"name": "HOR - OV-fiets - Hollandse Rading OV-fiets Carrousel"
+},
+"hr002": {
+"city": "Heerenveen",
+"lat": 52.96098,
+"lng": 5.91617,
+"name": "HR - OV-fiets - Heerenveen"
+},
+"hrl002": {
+"city": "Heerlen",
+"lat": 50.890641,
+"lng": 5.973457,
+"name": "HRL - OV-fiets - Heerlen"
+},
+"hrt001": {
+"city": "Sevenum",
+"lat": 51.4276,
+"lng": 6.0408,
+"name": "HRT - OV-fiets - Horst Sevenum"
+},
+"ht001": {
+"city": "'s-Hertogenbosch",
+"lat": 51.690526,
+"lng": 5.295283,
+"name": "HT - OV-fiets - s-Hertogenbosch"
+},
+"ht002": {
+"city": "Waalwijk",
+"lat": 51.686951,
+"lng": 5.071715,
+"name": "HT - OV-fiets - Waalwijk"
+},
+"htn001": {
+"city": "Houten",
+"lat": 52.03487,
+"lng": 5.16663,
+"name": "HTN - OV-fiets - Houten"
+},
+"htnc001": {
+"city": "Houten",
+"lat": 52.01759,
+"lng": 5.18015,
+"name": "HTNC - OV-fiets - Houten Castellum"
+},
+"hvs001": {
+"city": "Hilversum",
+"lat": 52.22626,
+"lng": 5.18076,
+"name": "HVS - OV-fiets - Hilversum"
+},
+"hvsp001": {
+"city": "Hilversum",
+"lat": 52.21633,
+"lng": 5.18768,
+"name": "HVSP - OV-fiets - Hilversum Sportpark"
+},
+"hwd003": {
+"city": "Heerhugowaard",
+"lat": 52.66929,
+"lng": 4.82352,
+"name": "HWD - OV-fiets - Heerhugowaard"
+},
+"hwzb001": {
+"city": "Halfweg",
+"lat": 52.386119,
+"lng": 4.745359,
+"name": "HWZB - OV-fiets - Halfweg Zwanenburg"
+},
+"hze001": {
+"city": "Heeze-Leende",
+"lat": 51.385103,
+"lng": 5.569811,
+"name": "HZE - OV-fiets - Heeze-Leende"
+},
+"klp001": {
+"city": "",
+"lat": 52.045557,
+"lng": 5.573761,
+"name": "KLP - OV-fiets - Veenendaal-De klomp"
+},
+"kma001": {
+"city": "Assendelft",
+"lat": 52.494988,
+"lng": 4.755957,
+"name": "KMA - OV-fiets - Krommenie-Assendelft"
+},
+"kpn003": {
+"city": "Kampen",
+"lat": 52.56016,
+"lng": 5.92167,
+"name": "KPN - OV-fiets - Kampen"
+},
+"krd001": {
+"city": "Kerkrade",
+"lat": 50.860941,
+"lng": 6.057447,
+"name": "KRD - OV-fiets - Kerkrade Centrum"
+},
+"ktr001": {
+"city": "Kesteren",
+"lat": 51.931591,
+"lng": 5.583727,
+"name": "KTR - OV-fiets Kesteren"
+},
+"laa001": {
+"city": "Den Haag",
+"lat": 52.07847,
+"lng": 4.34398,
+"name": "LAA - OV-fiets - Den Haag Laan van NOI"
+},
+"lc001": {
+"city": "Lochem",
+"lat": 52.16652,
+"lng": 6.42582,
+"name": "LC - OV-fiets - Lochem"
+},
+"ledn001": {
+"city": "Leiden",
+"lat": 52.165578,
+"lng": 4.48155,
+"name": "LEDN - OV-fiets - Leiden Centraal,Uitgang LUMC"
+},
+"ledn002": {
+"city": "Leiden",
+"lat": 52.16557,
+"lng": 4.48259,
+"name": "LEDN - OV-fiets - Leiden Centraal, Centrumzijde"
+},
+"lg001": {
+"city": "Landgraaf",
+"lat": 50.896264,
+"lng": 6.019981,
+"name": "LG - OV-fiets - Landgraaf"
+},
+"lls003": {
+"city": "Lelystad",
+"lat": 52.50801,
+"lng": 5.47328,
+"name": "LLS - OV-fiets - Lelystad Centrum ZSF"
+},
+"lw001": {
+"city": "Leeuwarden",
+"lat": 53.19678,
+"lng": 5.79636,
+"name": "LW - OV-fiets - Leeuwarden"
+},
+"mas003": {
+"city": "Maarssen",
+"lat": 52.135651,
+"lng": 5.03139,
+"name": "MAS - OV-fiets - Maarssen"
+},
+"mdb002": {
+"city": "Middelburg",
+"lat": 51.49517,
+"lng": 3.61768,
+"name": "MDB - OV-fiets - Middelburg"
+},
+"mes001": {
+"city": "Meerssen",
+"lat": 50.882753,
+"lng": 5.750357,
+"name": "MES - OV-fiets - Meerssen"
+},
+"mp002": {
+"city": "Meppel",
+"lat": 52.69232,
+"lng": 6.19411,
+"name": "MP - OV-fiets - Meppel"
+},
+"mss001": {
+"city": "Maassluis",
+"lat": 51.9168,
+"lng": 4.2534,
+"name": "MSS - OV-fiets - Maassluis"
+},
+"mt001": {
+"city": "Maastricht",
+"lat": 50.8497,
+"lng": 5.7046,
+"name": "MT - OV-fiets - Maastricht"
+},
+"mt003": {
+"city": "Maastricht",
+"lat": 50.8497,
+"lng": 5.7045,
+"name": "MT - OV-ebike - Maastricht"
+},
+"mtn001": {
+"city": "Maastricht",
+"lat": 50.871155,
+"lng": 5.717754,
+"name": "MTN - OV-fiets - Maastricht Noord"
+},
+"mtr001": {
+"city": "Maastricht",
+"lat": 50.837552,
+"lng": 5.718918,
+"name": "MTR - OV-fiets - Maastricht Randwyck"
+},
+"mz001": {
+"city": "Maarheeze",
+"lat": 51.303797,
+"lng": 5.630193,
+"name": "MZ - OV-fiets - Maarheeze"
+},
+"ndb003": {
+"city": "Bussum",
+"lat": 52.28132,
+"lng": 5.15793,
+"name": "NDB - OV-fiets - Naarden-Bussum"
+},
+"nkk001": {
+"city": "Nijkerk",
+"lat": 52.22233,
+"lng": 5.4934,
+"name": "NKK - OV-fiets - Nijkerk"
+},
+"nm001": {
+"city": "Nijmegen",
+"lat": 51.842825,
+"lng": 5.853375,
+"name": "NM - OV-fiets - Nijmegen"
+},
+"nmgo001": {
+"city": "Nijmegen",
+"lat": 51.827584,
+"lng": 5.822425,
+"name": "NMGO - OV-fiets - Nijmegen Goffert"
+},
+"nmh001": {
+"city": "Nijmegen",
+"lat": 51.826458,
+"lng": 5.868115,
+"name": "NMH - OV-fiets - Nijmegen Heyendaal"
+},
+"nvd001": {
+"city": "Hellendoorn",
+"lat": 52.36599,
+"lng": 6.469563,
+"name": "NVD - OV-fiets - Hellendoorn/Nijverdal OV-fiets Carrousel"
+},
+"o002": {
+"city": "Oss",
+"lat": 51.76537,
+"lng": 5.53079,
+"name": "O - OV-fiets - Oss"
+},
+"obd001": {
+"city": "Obdam",
+"lat": 52.677967,
+"lng": 4.909418,
+"name": "OBD - OV-fiets - Obdam"
+},
+"odb001": {
+"city": "Oudenbosch",
+"lat": 51.588055,
+"lng": 4.533494,
+"name": "ODB - OV-fiets - Oudenbosch"
+},
+"odz001": {
+"city": "Oldenzaal",
+"lat": 52.306438,
+"lng": 6.934339,
+"name": "ODZ - OV-fiets - Oldenzaal"
+},
+"omn001": {
+"city": "Ommen",
+"lat": 52.509885,
+"lng": 6.417791,
+"name": "OMN - OV-fiets - Ommen"
+},
+"ost001": {
+"city": "Olst",
+"lat": 52.335821,
+"lng": 6.113231,
+"name": "OST - OV-fiets - Olst"
+},
+"ovn001": {
+"city": "Overveen",
+"lat": 52.390924,
+"lng": 4.608202,
+"name": "OVN - OV-fiets - Overveen"
+},
+"ow001": {
+"city": "Oss",
+"lat": 51.758646,
+"lng": 5.507076,
+"name": "OW - OV-fiets - Oss West"
+},
+"pmo001": {
+"city": "Purmerend",
+"lat": 52.51107,
+"lng": 4.967149,
+"name": "PMO - OV-fiets - Purmerend Overwhere"
+},
+"pmr001": {
+"city": "Purmerend",
+"lat": 52.503751,
+"lng": 4.954667,
+"name": "PMR - OV-fiets - Purmerend"
+},
+"pt001": {
+"city": "Putten",
+"lat": 52.265094,
+"lng": 5.576082,
+"name": "PT - OV-fiets - Putten"
+},
+"rai001": {
+"city": "Amsterdam",
+"lat": 52.33725,
+"lng": 4.89075,
+"name": "RAI - OV-fiets - Amsterdam RAI"
+},
+"rat001": {
+"city": "Raalte",
+"lat": 52.39069,
+"lng": 6.27817,
+"name": "RAT - OV-fiets - Raalte"
+},
+"rh001": {
+"city": "Rheden",
+"lat": 52.009869,
+"lng": 6.030578,
+"name": "RH - OV-fiets - Rheden"
+},
+"rhn001": {
+"city": "Rhenen",
+"lat": 51.957599,
+"lng": 5.578209,
+"name": "RHN - OV-fiets - Rhenen"
+},
+"rlb001": {
+"city": "Rotterdam",
+"lat": 51.88073,
+"lng": 4.531314,
+"name": "RLB - OV-fiets - Rotterdam Lombardijen"
+},
+"rm001": {
+"city": "Roermond",
+"lat": 51.192425,
+"lng": 5.99353,
+"name": "RM - OV-fiets - Roermond"
+},
+"rs001": {
+"city": "Rosmalen",
+"lat": 51.715439,
+"lng": 5.369477,
+"name": "RS - OV-fiets - Rosmalen"
+},
+"rsd002": {
+"city": "Roosendaal",
+"lat": 51.54078,
+"lng": 4.46115,
+"name": "RSD - OV-fiets - Roosendaal"
+},
+"rsn001": {
+"city": "Rijssen",
+"lat": 52.311246,
+"lng": 6.519122,
+"name": "RS - OV-fiets - Rijssen"
+},
+"rsw002": {
+"city": "Rijswijk",
+"lat": 52.03988,
+"lng": 4.31965,
+"name": "RSW - OV-fiets - Rijswijk"
+},
+"rta001": {
+"city": "Rotterdam",
+"lat": 51.951985,
+"lng": 4.552063,
+"name": "RTA - OV-fiets - Rotterdam Alexander"
+},
+"rtb001": {
+"city": "Rotterdam",
+"lat": 51.920017,
+"lng": 4.488638,
+"name": "RTB - OV-fiets - Rotterdam Blaak"
+},
+"rtd001": {
+"city": "Rotterdam",
+"lat": 51.923421,
+"lng": 4.469738,
+"name": "RTD - OV-fiets - Rotterdam Centraal"
+},
+"rtd906": {
+"city": "Pijnacker",
+"lat": 52.019488,
+"lng": 4.437386,
+"name": "RTD - OV-fiets - Pijnacker"
+},
+"rtd907": {
+"city": "Pijnacker",
+"lat": 52.00517,
+"lng": 4.446053,
+"name": "RTD - OV-fiets - Pijnacker Zuid"
+},
+"rv001": {
+"city": "Reuver",
+"lat": 51.283199,
+"lng": 6.079383,
+"name": "RV - OV-fiets - Reuver"
+},
+"sd001": {
+"city": "Soest",
+"lat": 52.183744,
+"lng": 5.299849,
+"name": "SD - OV-fiets - Soestdijk"
+},
+"sdm002": {
+"city": "Schiedam",
+"lat": 51.921491,
+"lng": 4.40774,
+"name": "SDM - OV-fiets - Schiedam"
+},
+"sdt001": {
+"city": "Sliedrecht",
+"lat": 51.829686,
+"lng": 4.777269,
+"name": "SDT - OV-fiets - Sliedrecht"
+},
+"sgn001": {
+"city": "Schagen",
+"lat": 52.78558,
+"lng": 4.80506,
+"name": "SGN - OV-fiets - Schagen"
+},
+"shl001": {
+"city": "Luchthaven Schiphol",
+"lat": 52.309265,
+"lng": 4.759774,
+"name": "SHL - OV-fiets - Schiphol"
+},
+"sk001": {
+"city": "Sneek",
+"lat": 53.032708,
+"lng": 5.652365,
+"name": "SK - OV-fiets - Sneek"
+},
+"sptn001": {
+"city": "Santpoort-Noord",
+"lat": 52.433767,
+"lng": 4.633007,
+"name": "SPTN - OV-fiets - Santpoort Noord"
+},
+"sptz001": {
+"city": "Santpoort-Zuid",
+"lat": 52.419138,
+"lng": 4.631457,
+"name": "SPTZ - OV-fiets - Santpoort Zuid"
+},
+"std002": {
+"city": "Sittard",
+"lat": 51.00126,
+"lng": 5.85969,
+"name": "STD - OV-fiets - Sittard"
+},
+"stz001": {
+"city": "Soest",
+"lat": 52.16506,
+"lng": 5.303182,
+"name": "STZ - OV-fiets - Soest Zuid"
+},
+"swk002": {
+"city": "Steenwijk",
+"lat": 52.79051,
+"lng": 6.11712,
+"name": "SWK - OV-fiets - Steenwijk"
+},
+"tb002": {
+"city": "Tilburg",
+"lat": 51.56099,
+"lng": 5.086718,
+"name": "TB-OV-fiets - Tilburg Noord"
+},
+"tb003": {
+"city": "Tilburg",
+"lat": 51.5602,
+"lng": 5.086418,
+"name": "TB-OV-fiets - Tilburg Zuid"
+},
+"tbg001": {
+"city": "Terborg",
+"lat": 51.922847,
+"lng": 6.363685,
+"name": "TBG - OV-fiets - Terborg"
+},
+"tbr001": {
+"city": "Tilburg",
+"lat": 51.573442,
+"lng": 4.993904,
+"name": "TB - OV-fiets - Tilburg Reeshof"
+},
+"tbu001": {
+"city": "Tilburg",
+"lat": 51.56519,
+"lng": 5.052541,
+"name": "TBU - OV-fiets - Tilburg West Universiteit"
+},
+"tl003": {
+"city": "Tiel",
+"lat": 51.88973,
+"lng": 5.42399,
+"name": "TL - OV-fiets - Tiel"
+},
+"ut007": {
+"city": "Utrecht",
+"lat": 52.05745,
+"lng": 5.10406,
+"name": "UT - OV-fiets - Utrecht P+R Westraven"
+},
+"ut016": {
+"city": "Utrecht",
+"lat": 52.08895,
+"lng": 5.10756,
+"name": "UT - OV-fiets - Utrecht Centraal Jaarbeursplein"
+},
+"ut020": {
+"city": "Utrecht",
+"lat": 52.090746,
+"lng": 5.110702,
+"name": "UT - OV -fiets - Utrecht Centraal Stationsplein"
+},
+"ut021": {
+"city": "Utrecht",
+"lat": 52.087374,
+"lng": 5.109469,
+"name": "UT - OV-fiets - Utrecht Centraal Knoop"
+},
+"ut901": {
+"city": "IJsselstein",
+"lat": 52.01661,
+"lng": 5.03918,
+"name": "UT - OV-fiets - IJsselstijn UT"
+},
+"ut903": {
+"city": "Utrecht",
+"lat": 52.092506,
+"lng": 5.152792,
+"name": "UT - OV-fiets - Utrecht Rijnsweerd"
+},
+"ut904": {
+"city": "Utrecht",
+"lat": 52.07164,
+"lng": 5.07869,
+"name": "UT - OV-fiets - Utrecht P+R Papendorp"
+},
+"ut905": {
+"city": "Vianen",
+"lat": 51.9891,
+"lng": 5.08497,
+"name": "UT - OV-fiets - Vianen A2"
+},
+"ut906": {
+"city": "Utrecht",
+"lat": 52.08481,
+"lng": 5.17314,
+"name": "UT- OV-fiets - Utrecht P+R Science Park (De Uithof)"
+},
+"utg001": {
+"city": "Uitgeest",
+"lat": 52.521939,
+"lng": 4.702788,
+"name": "UTG - OV-fiets - Uitgeest"
+},
+"utl001": {
+"city": "Utrecht",
+"lat": 52.06604,
+"lng": 5.143176,
+"name": "UTLN - OV-fiets - Utrecht Lunetten"
+},
+"utlr001": {
+"city": "Utrecht",
+"lat": 52.09918,
+"lng": 5.06476,
+"name": "UTLR - OV-fiets - Utrecht Leidsche Rijn"
+},
+"uto002": {
+"city": "Utrecht",
+"lat": 52.109965,
+"lng": 5.123593,
+"name": "UTO - OV-fiets - Utrecht Overvecht"
+},
+"utt001": {
+"city": "Vleuten",
+"lat": 52.100027,
+"lng": 5.044109,
+"name": "UTT - OV-fiets - Utrecht Terwijde"
+},
+"utzl001": {
+"city": "Utrecht",
+"lat": 52.102943,
+"lng": 5.089436,
+"name": "UTZL - OV-fiets - Utrecht Zuilen"
+},
+"vb002": {
+"city": "Voorburg",
+"lat": 52.06676,
+"lng": 4.35956,
+"name": "VB - OV-fiets - Voorburg"
+},
+"vh001": {
+"city": "Voorhout",
+"lat": 52.2237,
+"lng": 4.4842,
+"name": "VH - OV-fiets - Voorhout"
+},
+"vhp001": {
+"city": "Vroomshoop",
+"lat": 52.457294,
+"lng": 6.569981,
+"name": "VHP - OV-fiets - Vroomshoop"
+},
+"vk001": {
+"city": "Valkenburg",
+"lat": 50.868919,
+"lng": 5.833232,
+"name": "VK - OV-fiets - Valkenburg"
+},
+"vl001": {
+"city": "Venlo",
+"lat": 51.365024,
+"lng": 6.171608,
+"name": "VL - OV fiets - Venlo"
+},
+"vlb001": {
+"city": "Vierlingsbeek",
+"lat": 51.592165,
+"lng": 5.99734,
+"name": "VLB - OV-fiets - Vierlingsbeek"
+},
+"vndc002": {
+"city": "Veenendaal",
+"lat": 52.019787,
+"lng": 5.549334,
+"name": "VNDC - OV-fiets - Veenendaal Centrum"
+},
+"vndw001": {
+"city": "Veenendaal west",
+"lat": 52.028414,
+"lng": 5.531225,
+"name": "VNDW - OV-fiets - Veenendaal West"
+},
+"vp001": {
+"city": "Velp",
+"lat": 51.995078,
+"lng": 5.980713,
+"name": "VP - OV-fiets - Velp"
+},
+"vry001": {
+"city": "Venray",
+"lat": 51.52736,
+"lng": 6.01351,
+"name": "VRY - OV-fiets - Venray"
+},
+"vs001": {
+"city": "Vlissingen",
+"lat": 51.44385,
+"lng": 3.59536,
+"name": "VS - OV-fiets - Vlissingen"
+},
+"vst001": {
+"city": "Voorschoten",
+"lat": 52.126074,
+"lng": 4.434178,
+"name": "VST - OV-fiets - Voorschoten"
+},
+"vsv001": {
+"city": "Varsseveld",
+"lat": 51.937305,
+"lng": 6.458526,
+"name": "VSV - OV-fiets - Varsseveld"
+},
+"vtn001": {
+"city": "Vleuten",
+"lat": 52.102677,
+"lng": 5.007495,
+"name": "VTN - OV-fiets - Vleuten"
+},
+"vz001": {
+"city": "Vriezenveen",
+"lat": 52.40276,
+"lng": 6.60034,
+"name": "VZ - OV-fiets - Vriezenveen"
+},
+"wc001": {
+"city": "Wijchen",
+"lat": 51.811556,
+"lng": 5.729842,
+"name": "WC - OV-fiets - Wijchen"
+},
+"wd001": {
+"city": "Woerden",
+"lat": 52.08536,
+"lng": 4.89283,
+"name": "WD - OV-fiets - Woerden"
+},
+"wf001": {
+"city": "Wolfheze",
+"lat": 52.005491,
+"lng": 5.792359,
+"name": "WF - OV-fiets - Wolfheze"
+},
+"wh001": {
+"city": "Wijhe",
+"lat": 52.391352,
+"lng": 6.141081,
+"name": "WH - OV-fiets - Wijhe"
+},
+"wm002": {
+"city": "Wormerveer",
+"lat": 52.489166,
+"lng": 4.792222,
+"name": "WM - OV-fiets - Wormerveer "
+},
+"wp001": {
+"city": "Weesp",
+"lat": 52.31266,
+"lng": 5.04215,
+"name": "WP - OV-fiets - Weesp"
+},
+"wp901": {
+"city": "Muiden",
+"lat": 52.32876,
+"lng": 5.05091,
+"name": "WP - OV-fiets - Muiden P&R"
+},
+"ws001": {
+"city": "Winschoten",
+"lat": 53.139314,
+"lng": 7.035409,
+"name": "WS - OV-fiets - Winschoten"
+},
+"wt003": {
+"city": "Weert",
+"lat": 51.2493,
+"lng": 5.70558,
+"name": "WT - OV-fiets - Weert"
+},
+"wtv001": {
+"city": "Westervoort",
+"lat": 51.962695,
+"lng": 5.969124,
+"name": "WTV - OV-fiets - Westervoort"
+},
+"ww001": {
+"city": "Winterswijk",
+"lat": 51.968415,
+"lng": 6.714602,
+"name": "WW - OV-fiets - Winterswijk"
+},
+"ypb001": {
+"city": "Den Haag Ypenburg",
+"lat": 52.055471,
+"lng": 4.389355,
+"name": "YPB - OV-fiets Den Haag Ypenburg"
+},
+"zbm002": {
+"city": "Zaltbommel",
+"lat": 51.80812,
+"lng": 5.26288,
+"name": "ZBM - OV-fiets - Zaltbommel"
+},
+"zl003": {
+"city": "Zwolle",
+"lat": 52.503322,
+"lng": 6.089361,
+"name": "ZL - OV-fiets - Zwolle Hanzeland"
+},
+"zl004": {
+"city": "Zwolle",
+"lat": 52.505809,
+"lng": 6.090895,
+"name": "ZL - OV-fiets - Zwolle Stationsplein"
+},
+"zp001": {
+"city": "Zutphen",
+"lat": 52.14475,
+"lng": 6.19585,
+"name": "ZP - OV-fiets - Zutphen"
+},
+"ztm002": {
+"city": "Zoetermeer",
+"lat": 52.06024,
+"lng": 4.48739,
+"name": "ZTM - OV-fiets - Zoetermeer Centrum West"
+},
+"ztm003": {
+"city": "Zoetermeer",
+"lat": 52.04909,
+"lng": 4.47663,
+"name": "ZTM - OV-fiets - Zoetermeer Driemanspolder"
+},
+"ztmo001": {
+"city": "Zoetermeer",
+"lat": 52.04661,
+"lng": 4.49133,
+"name": "ZTMO - OV-fiets - Zoetermeer Oost"
+},
+"zv001": {
+"city": "Zevenaar",
+"lat": 51.923197,
+"lng": 6.072686,
+"name": "ZV - OV-fiets - Zevenaar"
+},
+"zvt001": {
+"city": "Zandvoort",
+"lat": 52.375859,
+"lng": 4.531626,
+"name": "ZVT - OV-fiets - Zandvoort"
+},
+"zwd003": {
+"city": "Zwijndrecht",
+"lat": 51.81608,
+"lng": 4.64041,
+"name": "ZWD - OV-fiets - Zwijndrecht"
+}
+}
+}

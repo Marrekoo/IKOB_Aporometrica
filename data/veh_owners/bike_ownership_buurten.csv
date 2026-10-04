@@ -1,0 +1,112 @@
+buurtcode,buurtnaam,wijkcode,wijknaam,aantal_inwoners,buurtteam,pct_with_bicycle,mapping_confidence
+BU03440111,"Welgelegen, Den Hommel",WK034401,Wijk 01 West,1855,West,91,high
+BU03440112,Oog in Al,WK034401,Wijk 01 West,4220,West,91,high
+BU03440113,Halve Maan-Zuid,WK034401,Wijk 01 West,1430,West,91,high
+BU03440114,Halve Maan-Noord,WK034401,Wijk 01 West,1740,West,91,high
+BU03440121,Lombok-Oost,WK034401,Wijk 01 West,2190,West,91,high
+BU03440122,Leidseweg en omgeving,WK034401,Wijk 01 West,1165,West,91,high
+BU03440123,Lombok-West,WK034401,Wijk 01 West,4795,West,91,high
+BU03440124,"Laan van Nieuw-Guinea, Spinozaweg e.o.",WK034401,Wijk 01 West,4125,West,91,high
+BU03440131,"Nieuw Engeland, Th. a. Kempisplantsoen en omgeving",WK034401,Wijk 01 West,5860,West,91,high
+BU03440132,"Schepenbuurt, Cartesiusweg e.o.",WK034401,Wijk 01 West,1285,West,91,high
+BU03440133,Bedrijventerrein Lageweide,WK034401,Wijk 01 West,160,West,91,medium
+BU03440211,Pijlsweerd-Zuid,WK034402,Wijk 02 Noordwest,4745,Ondiep Pijlsweerd,91,high
+BU03440212,Pijlsweerd-Noord,WK034402,Wijk 02 Noordwest,2140,Ondiep Pijlsweerd,91,high
+BU03440221,"Nijenoord, Hoogstraat en omgeving",WK034402,Wijk 02 Noordwest,2170,Ondiep Pijlsweerd,91,medium
+BU03440222,Ondiep,WK034402,Wijk 02 Noordwest,5080,Ondiep Pijlsweerd,91,high
+BU03440223,2e Daalsebuurt en omgeving,WK034402,Wijk 02 Noordwest,3690,Ondiep Pijlsweerd,91,medium
+BU03440224,"Egelantierstraat, Mariëndaalstraat e.o.",WK034402,Wijk 02 Noordwest,2855,Ondiep Pijlsweerd,91,medium
+BU03440231,Julianapark en omgeving,WK034402,Wijk 02 Noordwest,2795,Zuilen,87,medium
+BU03440232,Elinkwijk en omgeving,WK034402,Wijk 02 Noordwest,4240,Zuilen,87,medium
+BU03440233,Prins Bernhardplein en omgeving,WK034402,Wijk 02 Noordwest,3445,Zuilen,87,high
+BU03440241,Geuzenwijk,WK034402,Wijk 02 Noordwest,3950,Zuilen,87,high
+BU03440242,Schaakbuurt en omgeving,WK034402,Wijk 02 Noordwest,4535,Zuilen,87,high
+BU03440243,Queeckhovenplein en omgeving,WK034402,Wijk 02 Noordwest,1145,Zuilen,87,high
+BU03440244,Zuilen-Noord,WK034402,Wijk 02 Noordwest,3765,Zuilen,87,high
+BU03440311,Taag- en Rubicondreef en omgeving,WK034403,Wijk 03 Overvecht,4285,Overvecht - Spoorzoom,75,high
+BU03440312,Wolga- en Donaudreef en omgeving,WK034403,Wijk 03 Overvecht,4845,Overvecht - Spoorzoom,75,high
+BU03440321,Zamenhofdreef en omgeving,WK034403,Wijk 03 Overvecht,3715,Overvecht - Centrum,82,high
+BU03440322,Neckardreef en omgeving,WK034403,Wijk 03 Overvecht,4270,Overvecht - Centrum,82,high
+BU03440331,Vechtzoom-zuid,WK034403,Wijk 03 Overvecht,5230,Overvecht - Vechtzoom,85,high
+BU03440332,"Vechtzoom-noord, Klopvaart",WK034403,Wijk 03 Overvecht,3270,Overvecht - Vechtzoom,85,high
+BU03440333,Bedrijventerrein en omgeving,WK034403,Wijk 03 Overvecht,95,Overvecht - Vechtzoom,85,low
+BU03440341,Zambesidreef en omgeving,WK034403,Wijk 03 Overvecht,4200,Overvecht - De Gagel,72,medium
+BU03440342,Tigrisdreef en omgeving,WK034403,Wijk 03 Overvecht,4395,Overvecht - De Gagel,72,high
+BU03440343,Poldergebied Overvecht,WK034403,Wijk 03 Overvecht,250,Overvecht - De Gagel,72,low
+BU03440411,Vogelenbuurt,WK034404,Wijk 04 Noordoost,4025,Noordoost,96,high
+BU03440412,Lauwerecht,WK034404,Wijk 04 Noordoost,2745,Noordoost,96,high
+BU03440413,Staatsliedenbuurt,WK034404,Wijk 04 Noordoost,1680,Noordoost,96,high
+BU03440414,Tuinwijk-West,WK034404,Wijk 04 Noordoost,2345,Noordoost,96,high
+BU03440415,Tuinwijk-Oost,WK034404,Wijk 04 Noordoost,2830,Noordoost,96,high
+BU03440421,Tuindorp en Van Lieflandlaan-West,WK034404,Wijk 04 Noordoost,6840,Noordoost,96,high
+BU03440422,Tuindorp-Oost,WK034404,Wijk 04 Noordoost,3215,Noordoost,96,high
+BU03440423,Voordorp en Voorveldsepolder,WK034404,Wijk 04 Noordoost,5085,Noordoost,96,high
+BU03440431,"Huizingalaan, K. Doormanlaan en omgeving",WK034404,Wijk 04 Noordoost,1225,Noordoost,96,high
+BU03440432,"Zeeheldenbuurt, Hengeveldstraat en omgeving",WK034404,Wijk 04 Noordoost,3290,Noordoost,96,high
+BU03440433,Wittevrouwen,WK034404,Wijk 04 Noordoost,6570,Noordoost,96,high
+BU03440511,Buiten Wittevrouwen,WK034405,Wijk 05 Oost,4685,Oost,96,high
+BU03440512,Oudwijk,WK034405,Wijk 05 Oost,4930,Oost,96,high
+BU03440521,"Abstede, Tolsteegsingel e.o.",WK034405,Wijk 05 Oost,2115,Oost,96,high
+BU03440522,Sterrenwijk,WK034405,Wijk 05 Oost,885,Oost,96,high
+BU03440523,Rubenslaan en omgeving,WK034405,Wijk 05 Oost,3120,Oost,96,high
+BU03440524,Watervogelbuurt,WK034405,Wijk 05 Oost,2285,Oost,96,high
+BU03440525,L. Napoleonplantsoen en omgeving,WK034405,Wijk 05 Oost,985,Oost,96,high
+BU03440526,Maarschalkerweerd en Mereveld,WK034405,Wijk 05 Oost,205,Oost,96,high
+BU03440531,Schildersbuurt,WK034405,Wijk 05 Oost,3520,Oost,96,high
+BU03440532,Wilhelminapark en omgeving,WK034405,Wijk 05 Oost,2635,Oost,96,high
+BU03440533,Utrecht Science Park,WK034405,Wijk 05 Oost,3090,Oost,96,medium
+BU03440534,Rijnsweerd,WK034405,Wijk 05 Oost,2655,Oost,96,medium
+BU03440535,Galgenwaard en omgeving,WK034405,Wijk 05 Oost,920,Oost,96,medium
+BU03440611,"Domplein, Neude, Janskerkhof",WK034406,Wijk 06 Binnenstad,2375,Binnenstad,92,high
+BU03440612,"Lange Elisabethstraat, Mariaplaats en omgeving",WK034406,Wijk 06 Binnenstad,1620,Binnenstad,92,high
+BU03440613,Hoog-Catharijne NS en Jaarbeurs,WK034406,Wijk 06 Binnenstad,2060,Binnenstad,92,high
+BU03440621,Wijk C,WK034406,Wijk 06 Binnenstad,1325,Binnenstad,92,high
+BU03440622,Breedstraat en Plompetorengracht en omgeving,WK034406,Wijk 06 Binnenstad,2640,Binnenstad,92,high
+BU03440623,Nobelstraat en omgeving,WK034406,Wijk 06 Binnenstad,970,Binnenstad,92,high
+BU03440624,Springweg en omgeving Geertebuurt,WK034406,Wijk 06 Binnenstad,1970,Binnenstad,92,high
+BU03440625,Lange Nieuwstraat en omgeving,WK034406,Wijk 06 Binnenstad,2475,Binnenstad,92,high
+BU03440626,Nieuwegracht-Oost,WK034406,Wijk 06 Binnenstad,1110,Binnenstad,92,high
+BU03440627,Bleekstraat en omgeving,WK034406,Wijk 06 Binnenstad,505,Binnenstad,92,high
+BU03440628,Hooch Boulandt,WK034406,Wijk 06 Binnenstad,2015,Binnenstad,92,high
+BU03440711,Lunetten-Noord,WK034407,Wijk 07 Zuid,4295,Lunetten,92,high
+BU03440712,Lunetten-Zuid,WK034407,Wijk 07 Zuid,6980,Lunetten,92,high
+BU03440721,Tolsteeg en Rotsoord,WK034407,Wijk 07 Zuid,4060,Hoograven/Tolsteeg,92,high
+BU03440722,Oud Hoograven-Noord,WK034407,Wijk 07 Zuid,3130,Hoograven/Tolsteeg,92,high
+BU03440723,Oud Hoograven-Zuid,WK034407,Wijk 07 Zuid,2395,Hoograven/Tolsteeg,92,high
+BU03440731,Bokkenbuurt,WK034407,Wijk 07 Zuid,755,Hoograven/Tolsteeg,92,high
+BU03440732,Nieuw Hoograven-Noord,WK034407,Wijk 07 Zuid,2230,Hoograven/Tolsteeg,92,high
+BU03440733,Nieuw Hoograven-Zuid,WK034407,Wijk 07 Zuid,3670,Hoograven/Tolsteeg,92,high
+BU03440811,Dichterswijk,WK034408,Wijk 08 Zuidwest,5220,Dichters- en Rivierenwijk,93,high
+BU03440812,Rivierenwijk,WK034408,Wijk 08 Zuidwest,8995,Dichters- en Rivierenwijk,93,high
+BU03440821,Bedrijvengebied Kanaleneiland,WK034408,Wijk 08 Zuidwest,465,Kanaleneiland - Noord,81,low
+BU03440822,Transwijk-Zuid,WK034408,Wijk 08 Zuidwest,2935,Kanaleneiland - Zuid,79,low
+BU03440823,Transwijk-Noord,WK034408,Wijk 08 Zuidwest,4365,Kanaleneiland - Noord,81,high
+BU03440831,Kanaleneiland-Zuid,WK034408,Wijk 08 Zuidwest,8965,Kanaleneiland - Zuid,79,high
+BU03440832,Kanaleneiland-Noord,WK034408,Wijk 08 Zuidwest,8585,Kanaleneiland - Noord,81,high
+BU03440911,Bedrijventerrein De Wetering,WK034409,Wijk 09 Leidsche Rijn,0,Leidsche Rijn,90,medium
+BU03440912,Terwijde-West,WK034409,Wijk 09 Leidsche Rijn,5275,Leidsche Rijn,90,high
+BU03440913,Terwijde-Oost,WK034409,Wijk 09 Leidsche Rijn,5850,Leidsche Rijn,90,high
+BU03440921,Het Zand-West,WK034409,Wijk 09 Leidsche Rijn,6340,Leidsche Rijn,90,high
+BU03440922,Het Zand-Oost,WK034409,Wijk 09 Leidsche Rijn,4595,Leidsche Rijn,90,high
+BU03440931,Leidsche Rijn-Centrum,WK034409,Wijk 09 Leidsche Rijn,2300,Leidsche Rijn,90,high
+BU03440932,Grauwaart,WK034409,Wijk 09 Leidsche Rijn,1750,Leidsche Rijn,90,high
+BU03440933,Hoge Weide,WK034409,Wijk 09 Leidsche Rijn,3630,Leidsche Rijn,90,high
+BU03440934,Leeuwesteyn,WK034409,Wijk 09 Leidsche Rijn,1680,Leidsche Rijn,90,high
+BU03440941,Parkwijk-Noord,WK034409,Wijk 09 Leidsche Rijn,3370,Leidsche Rijn,90,high
+BU03440942,Parkwijk-Zuid,WK034409,Wijk 09 Leidsche Rijn,3735,Leidsche Rijn,90,high
+BU03440943,Langerak,WK034409,Wijk 09 Leidsche Rijn,4445,Leidsche Rijn,90,high
+BU03440951,Rijnvliet,WK034409,Wijk 09 Leidsche Rijn,1655,Leidsche Rijn,90,high
+BU03440952,Bedrijvengebied Strijkviertel,WK034409,Wijk 09 Leidsche Rijn,0,Leidsche Rijn,90,medium
+BU03440953,Bedrijvengebied Papendorp,WK034409,Wijk 09 Leidsche Rijn,20,Leidsche Rijn,90,medium
+BU03441011,Haarrijn,WK034410,Wijk 10 Vleuten-De Meern,50,Vleuten,91,low
+BU03441012,Haarzuilens en omgeving,WK034410,Wijk 10 Vleuten-De Meern,540,Vleuten,91,medium
+BU03441013,Vleuten,WK034410,Wijk 10 Vleuten-De Meern,8590,Vleuten,91,high
+BU03441014,Máximapark,WK034410,Wijk 10 Vleuten-De Meern,995,Vleuten,91,medium
+BU03441021,Vleuterweide-West,WK034410,Wijk 10 Vleuten-De Meern,6070,Vleuten,91,high
+BU03441022,Vleuterweide-Noord/Oost/Centrum,WK034410,Wijk 10 Vleuten-De Meern,7595,Vleuten,91,high
+BU03441023,Vleuterweide-Zuid,WK034410,Wijk 10 Vleuten-De Meern,5040,Vleuten,91,high
+BU03441024,Veldhuizen,WK034410,Wijk 10 Vleuten-De Meern,9210,Vleuten,91,high
+BU03441031,De Meern-Noord,WK034410,Wijk 10 Vleuten-De Meern,5835,De Meern,92,high
+BU03441032,De Meern-Zuid,WK034410,Wijk 10 Vleuten-De Meern,6520,De Meern,92,high
+BU03441033,Bedrijvengebied Oudenrijn,WK034410,Wijk 10 Vleuten-De Meern,260,De Meern,92,medium
+BU03441041,Rijnenburg,WK034410,Wijk 10 Vleuten-De Meern,250,De Meern,92,low

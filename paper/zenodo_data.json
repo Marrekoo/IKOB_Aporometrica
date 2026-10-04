@@ -1,0 +1,15 @@
+{
+  "upload_type": "dataset",
+  "title": "IKOB Aporometrica: data of the Utrecht paper runs (inputs, skims, runs and tables)",
+  "creators": [
+    {"name": "van Burgsteden, Marco", "affiliation": "CROW"}
+  ],
+  "description": "<p>The inputs, travel-time skims, model runs and paper tables behind the paper \"Either you can reach it or you cannot\" (threshold-gate accessibility, Utrecht shared bicycles), computed with IKOB Aporometrica (https://github.com/Marrekoo/IKOB_Aporometrica). The archives unpack into a data folder of the software: the GTFS NL feed and OpenStreetMap extracts used for the skims, the CBS neighbourhood GeoPackage and the LISA municipal job table; the skim stores of the study area and the imputed jobs per buurt and sector; the run folders of the run plans paper/runs.toml and paper/perturbation.toml and the paper tables. MANIFEST.sha256 lists the SHA-256 of every file, the same hashes each run records in its run.json. README.md gives the steps.</p>",
+  "access_right": "open",
+  "license": "odbl-1.0",
+  "keywords": ["accessibility", "transport equity", "shared bicycles", "Utrecht", "GTFS", "OpenStreetMap", "replication data"],
+  "related_identifiers": [
+    {"identifier": "https://github.com/Marrekoo/IKOB_Aporometrica", "relation": "isSupplementTo", "resource_type": "software"}
+  ],
+  "notes": "OpenStreetMap data and the skims derived from them: ODbL 1.0, (c) OpenStreetMap contributors. GTFS NL: OVapi. CBS Kerncijfers wijken en buurten: CC BY 4.0. LISA municipal data: LISA (https://www.lisa.nl/gratis-data/). Model outputs: CC BY 4.0. ODiN microdata are not included (DANS)."
+}

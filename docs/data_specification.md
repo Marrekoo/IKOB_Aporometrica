@@ -43,8 +43,9 @@ File names inside `inputs/` that the commands look for by default are
 
 `data/` holds the reference files that `cli.layout create` copies into a new
 data folder (it never overwrites): `envelope/`, `margins/`, `tariffs/`,
-`statline/` and `calibration/`. The runs read the copies in the data folder,
-not these.
+`occupations/`, `jobs_education/`, `hubs/`, `ovfiets/`, `veh_owners/`,
+`statline/`, `calibration/` and, into `intermediate/hubs/`, `hubs_scenarios/`.
+The runs read the copies in the data folder, not these.
 
 | File | Content |
 |---|---|
@@ -53,6 +54,10 @@ not these.
 | `data/tariffs/*.csv` | price and fare scale tables (see `inputs/tariffs/`) |
 | `data/occupations/*.csv` | occupation tables of the job matching (see `inputs/occupations/`; README with sources and licences) |
 | `data/jobs_education/*.csv` | jobs per buurt by education level, 2016 (see `inputs/jobs_education/`; README with source and licence) |
+| `data/hubs/utrecht_hubs.csv` | the municipal shared-bicycle hubs (see `inputs/hubs/`) |
+| `data/ovfiets/locaties.json` | OV-fiets locations, 2026-09-20 (see `inputs/ovfiets/`) |
+| `data/veh_owners/bike_ownership_buurten.csv` | bicycle ownership per Utrecht buurt (see `inputs/veh_owners/`) |
+| `data/hubs_scenarios/*.csv` | the extra hubs of S2c and S2t (seeded into `intermediate/hubs/`) |
 | `data/statline/*.csv` | StatLine snapshots: 86161NED (households by type and income decile, 2022), 71487ned (households with children), 85318NED (KWB establishments per buurt in 8 SBI groups) |
 | `data/calibration/car_detour.json` | detour factor (route / crow-fly distance) by distance band |
 | `src/ikob2/skims/ns_2026_2e_klas.csv` | NS single fare, second class, full tariff, from 1 January 2026: `te` (tariff units) -> `eur` |
