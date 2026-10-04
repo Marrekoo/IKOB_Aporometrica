@@ -9,9 +9,9 @@ their income class and job type (`segments.occupations`).
 | Source | Content | Role |
 |---|---|---|
 | LISA municipal data (`LISA_Gemeenten_2025.xlsx`) | jobs per municipality in 15 LISA sectors, peildatum 1 April, rounded to tens, 2016-2025 on 2025 municipal boundaries, municipalities identified by name | the only observed job counts; column margins of the imputation |
-| IKOB job table (`Alle_Zones_2030_2040.xlsx`) | jobs per 2022 buurt, derived from NRM zone totals assigned to buurten by centroid (2018 values used) | buurt job totals |
+| IKOB job table (`Alle_Zones_2030_2040.xlsx`, Stichting CROW, ikob-scripts) | jobs per 2022 buurt, derived from NRM zone totals assigned to buurten by centroid (2018 values used) | buurt job totals |
 | KWB establishments (StatLine 85318NED, 2022) | establishments per buurt in 8 SBI groups | where each sector's establishments are |
-| LISA 2016 jobs by education (Amsterdam file) | jobs per 2016 buurt by education level | covariate of the sector model |
+| Jobs by education level per buurt, 2016 (`data/jobs_education`, Municipality of Amsterdam) | jobs per 2016 buurt by education level | covariate of the sector model |
 | KWB 2022 | urbanisation class, mean house value | covariates of the sector model |
 | Eurostat LFS `lfsa_eisn2` (NL, 2022) | employed persons by NACE section x ISCO-08 major group | occupations within a sector |
 | Eurostat SES 2022 `earn_ses22_47` (NL) | mean hourly earnings by NACE section x ISCO-08 major group | wage of a sector x occupation cell |
@@ -21,10 +21,7 @@ their income class and job type (`segments.occupations`).
 | Eurostat LFS `lfsa_egai2d` (NL, 2022) | employed persons by ISCO-08 2-digit group | weights of the teleworkability |
 
 The tables are in `data/occupations` (README there: sources, licences,
-retrieval) and are seeded into `inputs/occupations`. The sector method
-(`jobs.matching = "sector"`) uses CBS 81431NED (mean hourly wage per SBI
-section) and CBS 85718NED with 82072NED (home working by education, education
-mix per section) instead.
+retrieval) and are seeded into `inputs/occupations`.
 
 The year is a parameter (`accessibility.jobs_year`, `--year`); 2022 matches
 the KWB 2022 segment populations.
@@ -109,7 +106,7 @@ and is not validated.
 * LISA rows absent for a municipality x sector are 0.
 * One buurt ('Buitenland') has no municipality and gets no jobs.
 
-## Income class and job type (`segments.occupations`, `jobs.matching`)
+## Income class and job type (`segments.occupations`)
 
 **Cells.** Each LISA sector (`lisa.SECTOR_TO_NACE`, the sections of
 `lisa.SECTOR_TO_SBI`) is split into the nine ISCO-08 major groups (armed
@@ -152,9 +149,9 @@ a sector and the wage spread are national; the LFS counts all employed
 persons, the SES employees; teleworkability is a European estimate of what is
 technically possible, not of practice.
 
-**Sector method** (`jobs.matching = "sector"`, `jobs.sector_income_weights`,
-`segments.wfh`): every job of a sector at the sector's mean hourly wage
-(81431NED), sectors laid along the income-rank axis in proportion to their
-jobs, and a home-working share per sector from home working by education
-(85718NED, 2024) and the education mix per SBI section (82072NED, 2010). Each
-decile then draws on one to three sectors.
+Why cells and a spread: a sector's jobs cover a wide range of wages (in
+manufacturing the mean hourly wage runs from EUR 13.50 for elementary
+occupations to EUR 42.50 for managers), so placing every job of a sector at
+one wage would give each decile one to three sectors and pools that jump from
+decile to decile with the sectors' sizes. Within-cell spread lets every cell
+straddle several deciles.

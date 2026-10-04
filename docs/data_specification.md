@@ -23,8 +23,8 @@ File names inside `inputs/` that the commands look for by default are
 |---|---|---|---|
 | `kwb/wijkenbuurten_<year>_v3.gpkg` | CBS Kerncijfers wijken en buurten: buurt polygons and attributes, RD New (EPSG:28992); 2022 is the model year | CBS/PDOK | `data.geopackage.load_cbs_buurten`, `segments.kwb` |
 | `lisa/LISA_Gemeenten_2025.xlsx` | jobs per municipality and LISA sector (15 sectors), 2016-2025 on 2025 boundaries | LISA | `segments.lisa` |
-| `ikob/Alle_Zones_2030_2040.xlsx` | IKOB job table: jobs per 2022 buurt by income group and year (sheet `buurten-arbeidsplaatsen`), derived from NRM zone totals | IKOB model | `segments.jobs.parse_ikob_jobs` (buurt job totals) |
-| `ikob/Ralph_Sahar_CBS_buurten_met_banen_naar_opleidingsniveau.xlsx` | LISA 2016 jobs per buurt by education level | Municipality of Amsterdam | `segments.jobs_impute.parse_education_shares` |
+| `ikob/Alle_Zones_2030_2040.xlsx` | IKOB job table: jobs per 2022 buurt by income group and year (sheet `buurten-arbeidsplaatsen`), derived from NRM zone totals (Rijkswaterstaat) | Stichting CROW, https://github.com/Stichting-CROW/ikob-scripts, `segs/Databronnen SEGS compleet/`, commit f90ac72 | `segments.jobs.parse_ikob_jobs` (buurt job totals) |
+| `jobs_education/jobs_by_education_buurt_2016.csv` | jobs per 2016 buurt by education level | Municipality of Amsterdam, via Stichting CROW (seed: `data/jobs_education/`, README there) | `segments.jobs_impute.parse_education_shares` |
 | `osm/*.osm.pbf` | OpenStreetMap: national extract (`paths.osm_national`) and province extracts (`paths.osm_regions`) | Geofabrik | R5, Valhalla, OTP, `skims.peak`, `skims.osm_walk` |
 | `gtfs/gtfs-nl.zip` | national GTFS feed | OVapi / NDOV | `skims.gtfs_pt`, OTP |
 | `survey/S_T_work.csv` | Weibull time margins per mode and job type: `wfh` (No home working / Home working), `mode`, `eta` (minutes), `k`, `median`, `class` | survey fit (seed: `data/margins/`) | `segments.time_margins` |
@@ -52,7 +52,8 @@ not these.
 | `data/margins/S_T_work.csv` | Weibull time margins (see `inputs/survey/`) |
 | `data/tariffs/*.csv` | price and fare scale tables (see `inputs/tariffs/`) |
 | `data/occupations/*.csv` | occupation tables of the job matching (see `inputs/occupations/`; README with sources and licences) |
-| `data/statline/*.csv` | StatLine snapshots: 86161NED (households by type and income decile, 2022), 71487ned (households with children), 81431ned (jobs and hourly wage by sector, 2022), 85318NED (KWB establishments per buurt in 8 SBI groups), 85718NED (working from home by education, 2024), 82072NED (education of employee jobs by sector, 2010) |
+| `data/jobs_education/*.csv` | jobs per buurt by education level, 2016 (see `inputs/jobs_education/`; README with source and licence) |
+| `data/statline/*.csv` | StatLine snapshots: 86161NED (households by type and income decile, 2022), 71487ned (households with children), 85318NED (KWB establishments per buurt in 8 SBI groups) |
 | `data/calibration/car_detour.json` | detour factor (route / crow-fly distance) by distance band |
 | `src/ikob2/skims/ns_2026_2e_klas.csv` | NS single fare, second class, full tariff, from 1 January 2026: `te` (tariff units) -> `eur` |
 | `src/ikob2/defaults.toml` | all parameters |

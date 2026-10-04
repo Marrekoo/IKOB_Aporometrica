@@ -261,24 +261,6 @@ def occupation_job_weights(cells: pd.DataFrame, sigma: float,
     return JobMatching(by_type, meta)
 
 
-def sector_job_weights(sector_wage: pd.Series, sector_jobs_total: pd.Series,
-                       wfh_share: pd.Series, wfh_types: Sequence[str],
-                       income_classes: Sequence[str] = INCOME_CLASSES
-                       ) -> JobMatching:
-    """The sector method in the same form: every job of a sector at the
-    sector's mean wage (`jobs.sector_income_weights`), a home-working share
-    per sector."""
-    from ikob2.segments.jobs import sector_income_weights
-
-    share = wfh_share.reindex(sector_wage.index)
-    if share.isna().any() or ((share < 0) | (share > 1)).any():
-        raise ValueError("wfh_share must cover every sector, in [0, 1].")
-    W = sector_income_weights(sector_wage, sector_jobs_total, income_classes)
-    no_wfh, wfh = wfh_types
-    return JobMatching({no_wfh: W * (1.0 - share), wfh: W * share},
-                       {"matching": "sector"})
-
-
 # ── fetching (network) ───────────────────────────────────────────────
 
 def jsonstat_frame(payload: dict) -> pd.DataFrame:

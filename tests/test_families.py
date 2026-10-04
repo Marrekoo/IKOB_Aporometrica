@@ -92,7 +92,7 @@ def test_family_nesting():
     assert e[0] == pytest.approx(-1.5)
 
 
-# ── hazard shapes (paper Table 1 and S2) ─────────────────────────────
+# ── hazard shapes ────────────────────────────────────────────────────
 
 def test_hazard_shapes():
     z = np.linspace(1, 200, 400)
@@ -125,7 +125,7 @@ def test_power_law_elasticity_is_constant_beyond_threshold():
         fam.elasticity("exponential", (0.1,), z), -0.1 * z)
 
 
-# ── implied VOT (Fixed-VOT Trap) ─────────────────────────────────────
+# ── implied value of time ────────────────────────────────────────────
 
 def test_implied_vot_constant_only_for_exponential_margins():
     t = np.array([10.0, 30.0, 60.0])

@@ -1,5 +1,5 @@
 """
-LISA jobs by municipality and sector, and the sector -> wage link.
+LISA jobs by municipality and sector.
 
 LISA (BIJ12, peildatum 1 April) publishes jobs ('banen') per
 municipality in 15 LISA sectors, rounded to tens, for 2016-2025. Every
@@ -7,12 +7,12 @@ year is classified on the 2025 municipal boundaries and municipalities
 are identified by NAME only. Municipal data does not come in a finer
 SBI split than these 15 sectors.
 
-The sector -> wage link uses CBS 81431NED (employee jobs and mean hourly
-wage per SBI2008 section): each LISA sector is a set of SBI sections,
-its wage the job-weighted mean of theirs. The correspondence below is
-an ASSUMPTION about the LISA sector definitions (the file does not
-spell it out); verify it against LISA's documentation. The L10 entry
-(M+N, without real estate) follows from comparing establishment counts.
+Each LISA sector is a set of SBI2008 / NACE Rev. 2 sections
+(`SECTOR_TO_NACE`), the link to the Eurostat occupation tables
+(segments.occupations). The correspondence is an ASSUMPTION about the
+LISA sector definitions (the file does not spell it out); L10 is M+N
+without real estate, which follows from comparing establishment counts
+(below).
 """
 
 from __future__ import annotations
@@ -26,36 +26,26 @@ from ikob2.params import DEFAULTS
 
 logger = logging.getLogger(__name__)
 
-# LISA sector code (prefix of the sector label) -> SBI2008 section keys
-# of 81431NED. Order = LISA order.
-SECTOR_TO_SBI: dict[str, tuple[str, ...]] = {
-    "L01": ("301000",),               # A  Landbouw, bosbouw en visserij
-    "L02": ("305700", "307500"),      # B+C Delfstoffen, industrie
-    "L03": ("346600", "348000"),      # D+E Energie, water en afval
-    "L04": ("350000",),               # F  Bouw
-    "L05": ("354200",),               # G  Handel
-    "L06": ("383100",),               # H  Vervoer en opslag
-    "L07": ("389100",),               # I  Horeca
-    "L08": ("391600",),               # J  Informatie en communicatie
-    "L09": ("396300",),               # K  Financiele dienstverlening
-    "L10": ("403300", "410200"),      # M+N Zakelijke diensten (see below)
-    "L11": ("417400",),               # O  Openbaar bestuur
-    "L12": ("419000",),               # P  Onderwijs
-    "L13": ("422400",),               # Q  Zorg
-    "L14": ("428100",),               # R  Cultuur, sport, recreatie
-    "L15": ("435500",),               # S  Overige diensten
-}
-SECTORS = tuple(SECTOR_TO_SBI)
-
-# LISA sector -> NACE Rev. 2 sections (= SBI2008 sections) of the Eurostat
-# occupation tables (segments.occupations); the same correspondence as
-# SECTOR_TO_SBI.
+# LISA sector code (prefix of the sector label) -> NACE Rev. 2 sections
+# (= SBI2008 sections). Order = LISA order.
 SECTOR_TO_NACE: dict[str, tuple[str, ...]] = {
-    "L01": ("A",), "L02": ("B", "C"), "L03": ("D", "E"), "L04": ("F",),
-    "L05": ("G",), "L06": ("H",), "L07": ("I",), "L08": ("J",),
-    "L09": ("K",), "L10": ("M", "N"), "L11": ("O",), "L12": ("P",),
-    "L13": ("Q",), "L14": ("R",), "L15": ("S",),
+    "L01": ("A",),         # Landbouw, bosbouw en visserij
+    "L02": ("B", "C"),     # Delfstoffen, industrie
+    "L03": ("D", "E"),     # Energie, water en afval
+    "L04": ("F",),         # Bouw
+    "L05": ("G",),         # Handel
+    "L06": ("H",),         # Vervoer en opslag
+    "L07": ("I",),         # Horeca
+    "L08": ("J",),         # Informatie en communicatie
+    "L09": ("K",),         # Financiele dienstverlening
+    "L10": ("M", "N"),     # Zakelijke diensten (see below)
+    "L11": ("O",),         # Openbaar bestuur
+    "L12": ("P",),         # Onderwijs
+    "L13": ("Q",),         # Zorg
+    "L14": ("R",),         # Cultuur, sport, recreatie
+    "L15": ("S",),         # Overige diensten
 }
+SECTORS = tuple(SECTOR_TO_NACE)
 
 # LISA sector -> KWB establishment group (CBS Kerncijfers wijken en
 # buurten reports establishments in these SBI groups). Cross-checked
@@ -156,23 +146,3 @@ def lisa_gemeente_of_buurten(kwb: pd.DataFrame,
                        len(lost), dict(lost.value_counts().head(5)))
     return out
 
-
-def sector_wages(raw: pd.DataFrame) -> pd.Series:
-    """Mean hourly wage (EUR) per LISA sector, from the 81431NED
-    snapshot: the job-weighted mean over the sector's SBI sections."""
-    df = raw.copy()
-    df["key"] = df["BedrijfstakkenBranchesSBI2008"].astype(str).str.strip()
-    df = df.set_index("key")
-    out = {}
-    for sector, sbi in SECTOR_TO_SBI.items():
-        missing = [k for k in sbi if k not in df.index]
-        if missing:
-            raise KeyError(f"Wage table lacks SBI section(s) {missing} "
-                           f"for LISA sector {sector}.")
-        part = df.loc[list(sbi)]
-        jobs = pd.to_numeric(part["Banen_1"], errors="coerce")
-        wage = pd.to_numeric(part["Uurloon_3"], errors="coerce")
-        if wage.isna().any() or jobs.isna().any() or jobs.sum() <= 0:
-            raise ValueError(f"Missing wage/job values for {sector}.")
-        out[sector] = float((wage * jobs).sum() / jobs.sum())
-    return pd.Series(out, name="hourly_wage")

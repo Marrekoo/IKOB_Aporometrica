@@ -1,8 +1,7 @@
 """
 Compare two accessibility runs.
 
-    python -m ikob2.cli.compare --data-root <root> \
-        elgeneidy_step45 elgeneidy_exp45
+    python -m ikob2.cli.compare --data-root <root> <run a> <run b>
 """
 
 from __future__ import annotations

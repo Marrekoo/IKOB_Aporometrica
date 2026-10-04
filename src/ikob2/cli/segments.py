@@ -32,8 +32,6 @@ from ikob2.utils.paths import DataLayout
 FLAGS = {
     "income_period": "segments.income_period",
     "children_period": "segments.children_period",
-    "wage_period": "accessibility.wage_period",
-    "wfh_period": "accessibility.wfh_period",
     "kwb_table": "jobs.kwb_establishments_table",
     "kwb_year": "accessibility.kwb_year",
     "year": "accessibility.jobs_year",
@@ -101,8 +99,8 @@ def _cfg(args) -> SegmentConfig:
 
 def cmd_fetch(args) -> None:
     """Download the StatLine snapshots (households by type and income,
-    households with children, sector wages, KWB establishments, home
-    working, education by sector) into the StatLine folder."""
+    households with children, KWB establishments) into the StatLine
+    folder."""
     prm = resolve(args)
     cfg = _cfg(args)
     out = Path(args.out) if args.out else statline_dir(layout(args, prm))
@@ -120,25 +118,12 @@ def cmd_fetch(args) -> None:
     p2 = statline.snapshot_path(out, statline.CHILDREN_SNAPSHOT,
                                 statline.CHILDREN_TABLE, cfg.children_period)
     children.to_csv(p2, index=False)
-    wages = statline.fetch_sector_wages(args.wage_period)
-    p3 = statline.snapshot_path(out, statline.WAGE_SNAPSHOT,
-                                statline.WAGE_TABLE, args.wage_period)
-    wages.to_csv(p3, index=False)
     est = statline.fetch_kwb_establishments(args.kwb_table)
     p4 = statline.snapshot_path(out, statline.KWB_ESTABLISHMENTS_SNAPSHOT,
                                 args.kwb_table, "")
     est.to_csv(p4, index=False)
-    hw = statline.fetch_home_working_by_education(args.wfh_period)
-    p5 = statline.snapshot_path(out, statline.HOME_WORK_SNAPSHOT,
-                                statline.HOME_WORK_TABLE, args.wfh_period)
-    hw.to_csv(p5, index=False)
-    se = statline.fetch_sector_education_jobs()
-    p6 = statline.snapshot_path(out, statline.SECTOR_EDUCATION_SNAPSHOT,
-                                statline.SECTOR_EDUCATION_TABLE, "2010JJ00")
-    se.to_csv(p6, index=False)
-    print(f"Wrote {p1} ({len(income)} rows), {p2} ({len(children)} rows), "
-          f"{p3} ({len(wages)} rows), {p4} ({len(est)} rows), "
-          f"{p5} ({len(hw)} rows) and {p6} ({len(se)} rows).")
+    print(f"Wrote {p1} ({len(income)} rows), {p2} ({len(children)} rows) "
+          f"and {p4} ({len(est)} rows).")
 
 
 def cmd_run(args) -> None:
@@ -229,7 +214,8 @@ def cmd_jobs(args) -> None:
     table = pd.read_excel(args.ikob_jobs, sheet_name="buurten-arbeidsplaatsen",
                           header=2)
     jobs = parse_ikob_jobs(table, args.ikob_jobs_year).sum(axis=1)
-    edu = ji.parse_education_shares(pd.read_excel(args.education))
+    edu = ji.parse_education_shares(
+        pd.read_csv(args.education, float_precision="round_trip"))
     cov = ji.buurt_covariates(kwb, edu)
     model = ji.fit_sector_model(
         train, ji.municipal_covariates(cov, jobs, gem))
@@ -281,9 +267,6 @@ def main(argv=None) -> None:
     f = sub.add_parser("fetch", help="download StatLine snapshots")
     f.add_argument("--out", default=None,
                    help="snapshot folder (default: <root>/cache/statline)")
-    f.add_argument("--wage-period", default=None)
-    f.add_argument("--wfh-period", default=None,
-                   help="period of the home-working table (85718NED)")
     f.add_argument("--kwb-table", default=None,
                    help="StatLine KWB table with establishments by SBI "
                         "group (85318NED = 2022)")
@@ -317,7 +300,7 @@ def main(argv=None) -> None:
                         "job totals")
     j.add_argument("--education", default=None,
                    help="LISA 2016 jobs per buurt by education level "
-                        "(Ralph_Sahar_...xlsx)")
+                        "(data/jobs_education)")
     j.add_argument("--establishments", default=None,
                    help="KWB establishment snapshot ('' to ignore; default: "
                         "the snapshot of jobs.kwb_establishments_table)")

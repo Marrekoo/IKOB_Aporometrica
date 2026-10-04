@@ -16,9 +16,9 @@ from ikob2.segments.jobs import (
     JOB_GROUPS,
     load_ikob_jobs,
     parse_ikob_jobs,
-    sector_income_weights,
     sector_pools,
 )
+from tests.job_weights import rank_weights
 
 CLASSES = list(INCOME_CLASSES)
 
@@ -65,7 +65,7 @@ def test_pools_drive_hansen_with_income_matched_jobs():
         {"cheap": [10., 0., 5.], "mid": [0., 10., 5.], "rich": [5., 5., 20.]},
         index=codes)
     wage = pd.Series({"cheap": 10.0, "mid": 20.0, "rich": 30.0})
-    W = sector_income_weights(wage, sectors.sum())
+    W = rank_weights(wage, sectors.sum())
     pools = sector_pools(sectors, codes, W)
     state = ModelState.create(
         generalized_cost=time, population=np.ones(n),

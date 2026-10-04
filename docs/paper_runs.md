@@ -11,7 +11,7 @@ microfoundations for accessibility" (Utrecht shared bicycles). The plan is
 |---|---|---|
 | Origins | the 111 buurten of the municipality of Utrecht (skim store `utrecht_nl`, `paths.study`) | CBS Kerncijfers wijken en buurten 2022 |
 | Destinations | every Dutch buurt with jobs (14,318) | idem |
-| Jobs | LISA municipal jobs 2022 imputed onto buurten (`cli.segments jobs`); matched to income deciles and job types through sector x occupation cells (`jobs.matching = "occupation"`, `data/occupations`) | `data_lineage.md` |
+| Jobs | LISA municipal jobs 2022 imputed onto buurten (`cli.segments jobs`); matched to income deciles and job types through sector x occupation cells (`data/occupations`) | `data_lineage.md` |
 | Segments | 4 household types x 10 income deciles per buurt | `segments.md` |
 | Time margins | Weibull per mode and job type (`data/margins/S_T_work.csv`) | `families.md` |
 | Cost margins | reference budgets per priced one-way journey, 2022 euros (`data/envelope/reference_budgets.csv`; `[envelope]`) | `envelope/README.md` |
@@ -106,21 +106,3 @@ made from these outputs by the R analysis pipeline.
 140 runs (20 draws x 7 scenarios, M2) with the jobs and population drawn within
 the rounding of their sources; the result is the number of significant digits
 per statistic (`docs/scenarios.md`, precision).
-
-## Notes for the paper
-
-* **Alternative journeys and scenario hubs (Appendix A.5).** The union over
-  options is taken over the chains the skims provide, and a skim holds the
-  fastest journey of a chain per pair. Extra hubs can make a faster journey
-  with a dearer fare the fastest one (another stop, a rail leg), so a chain
-  built with the extra hubs alone would hide the cheaper journey of the
-  existing hubs, and adding hubs could lower accessibility for segments
-  whose budget only the cheaper journey meets. The scenario chains are
-  therefore options next to the baseline chains: the option set of S2
-  contains that of S0, and by Corollary A.2 accessibility cannot fall. The
-  same frontier argument holds within any chain: the efficient set of
-  Lemma A.3 is the efficient set of the journeys the skims supply.
-* **M0u and price cuts.** The single cost cut-off of M0u (EUR 37.84 per
-  journey, the median of the population's cost thresholds) lies above every
-  fare in the model, so no price scenario changes M0u accessibility.
-

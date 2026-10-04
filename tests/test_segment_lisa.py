@@ -1,11 +1,11 @@
-"""LISA sector jobs, the buurt imputation, and sector -> income pools."""
+"""LISA sector jobs, the buurt imputation, and income pools."""
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from ikob2.segments.config import INCOME_CLASSES
-from ikob2.segments.jobs import sector_income_weights, sector_pools
+from ikob2.segments.jobs import sector_pools
 from ikob2.segments.jobs_impute import (
     COVARIATES,
     SectorModel,
@@ -16,12 +16,11 @@ from ikob2.segments.jobs_impute import (
     parse_education_shares,
 )
 from ikob2.segments.lisa import (
-    SECTOR_TO_SBI,
     SECTORS,
     lisa_gemeente_of_buurten,
     parse_lisa_sectors,
-    sector_wages,
 )
+from tests.job_weights import rank_weights
 
 
 # ── LISA table ───────────────────────────────────────────────────────
@@ -76,34 +75,6 @@ def test_lisa_gemeente_mapping_exact_alias_and_unmapped():
     assert out["BU1"] == "Utrecht" and out["BU2"] == "Hengelo (O.)"
     assert out["BU3"] == "Voorne aan Zee" and out["BU5"] == "Amsterdam"
     assert pd.isna(out["BU4"])
-
-
-# ── Wages ────────────────────────────────────────────────────────────
-
-def _wage_raw(overrides=None):
-    rows = []
-    for sbi in SECTOR_TO_SBI.values():
-        for j, k in enumerate(sbi):
-            rows.append({"BedrijfstakkenBranchesSBI2008": k + " ",
-                         "Banen_1": 100.0 * (j + 1), "Uurloon_3": 20.0 + j})
-    df = pd.DataFrame(rows)
-    return df
-
-
-def test_sector_wages_are_job_weighted_over_sbi_sections():
-    w = sector_wages(_wage_raw())
-    assert list(w.index) == list(SECTORS)
-    # L10 = M,N (real estate is not part of LISA's sector) with jobs
-    # 100/200 and wages 20/21
-    assert w["L10"] == pytest.approx((100 * 20 + 200 * 21) / 300)
-    assert w["L01"] == 20.0
-
-
-def test_sector_wages_missing_section_errors():
-    raw = _wage_raw()
-    raw = raw[~raw["BedrijfstakkenBranchesSBI2008"].str.startswith("389100")]
-    with pytest.raises(KeyError, match="389100"):
-        sector_wages(raw)
 
 
 # ── Covariates ───────────────────────────────────────────────────────
@@ -278,44 +249,12 @@ def test_missing_covariates_fall_back_to_municipal_mean():
     assert not np.allclose(res.jobs.to_numpy(), own.jobs.to_numpy())
 
 
-# ── Sector -> income weights and pools ───────────────────────────────
-
-def test_income_weights_hand_example():
-    wage = pd.Series({"s1": 10.0, "s2": 20.0, "s3": 30.0})
-    jobs = pd.Series({"s1": 20.0, "s2": 50.0, "s3": 30.0})
-    W = sector_income_weights(wage, jobs)
-    # s1 covers rank [0, .2]: D1, D2 half each; s2 [.2, .7]: D3..D7 0.2 each
-    assert W.loc["D1", "s1"] == pytest.approx(0.5)
-    assert W.loc["D2", "s1"] == pytest.approx(0.5)
-    for k in range(3, 8):
-        assert W.loc[f"D{k}", "s2"] == pytest.approx(0.2)
-    assert W.loc["D8", "s3"] == pytest.approx(1 / 3)
-    assert (W.loc["onbekend"] == 1.0).all()
-    ranked = W.drop(index="onbekend")
-    np.testing.assert_allclose(ranked.sum(axis=0), 1.0)      # partition
-
-
-def test_income_weights_order_follows_wage_not_input_order():
-    wage = pd.Series({"a": 30.0, "b": 10.0})
-    jobs = pd.Series({"a": 50.0, "b": 50.0})
-    W = sector_income_weights(wage, jobs)
-    assert W.loc["D1", "b"] == pytest.approx(0.2) and W.loc["D1", "a"] == 0
-    assert W.loc["D10", "a"] == pytest.approx(0.2)
-
-
-def test_income_weights_validation():
-    wage = pd.Series({"a": 1.0, "b": 2.0})
-    with pytest.raises(ValueError, match="sum to a positive"):
-        sector_income_weights(wage, pd.Series({"a": 0.0, "b": 0.0}))
-    with pytest.raises(ValueError, match="wages are incomplete"):
-        sector_income_weights(pd.Series({"a": 1.0, "b": np.nan}),
-                              pd.Series({"a": 1.0, "b": 1.0}))
-
+# ── Income pools ─────────────────────────────────────────────────────
 
 def test_sector_pools_partition_the_jobs_and_align_zones():
     wage = pd.Series({"a": 1.0, "b": 2.0, "c": 3.0})
     national = pd.Series({"a": 30.0, "b": 30.0, "c": 40.0})
-    W = sector_income_weights(wage, national)
+    W = rank_weights(wage, national)
     J = pd.DataFrame({"a": [10.0, 5.0], "b": [0.0, 20.0], "c": [3.0, 7.0]},
                      index=["Z1", "Z2"])
     pools = sector_pools(J, ["Z2", "Z9", "Z1"], W)

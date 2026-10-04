@@ -77,9 +77,10 @@ class SectorJobs:
 # ── Covariates ───────────────────────────────────────────────────────
 
 def parse_education_shares(edu: pd.DataFrame) -> pd.DataFrame:
-    """Buurt education mix of jobs (2016 LISA, Amsterdam file), indexed
-    by BU_CODE: shares Praktisch / Middelbaar / Hoger and the job count
-    behind them."""
+    """Buurt education mix of jobs (2016, data/jobs_education), indexed by
+    BU_CODE: shares Praktisch / Middelbaar / Hoger and the job count behind
+    them. A code that appears more than once keeps its first record
+    (data/jobs_education/README.md: the choice does not move the results)."""
     need = ["BU_CODE", "Praktisch", "Middelbaar", "Hoger",
             "Aantal_Middelbaar", "Aantal_Onbekend", "Aantal_Praktisch",
             "Aantal_Theoretisch"]

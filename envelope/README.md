@@ -98,28 +98,6 @@ but taking 2022 incomes would compare 2022 incomes with the 2023 social
 minimum, which rose about 10% in real terms in January 2023, and would push
 single parents in D2 below the social-assistance anchor.)
 
-**Sensitivity** to each choice: the alternative of one switch at a time
-against the defaults, as the model reads the budgets (EUR per journey; a
-table per tour divided by `legs_per_tour` = 2.2); median ratio over the
-cells (`envelope/switches.py`; per cell `results/switch_effects.csv`):
-
-| Variant | low D2-D4 | central D2-D4 | high D2-D4 | low D2-D10 | central D2-D10 | high D2-D10 |
-|---|---|---|---|---|---|---|
-| defaults | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
-| unit: per tour | 0.94 | 0.94 | 0.94 | 0.94 | 0.94 | 0.94 |
-| n_lower: fixed 8 tours | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
-| income_bridge: none | 0.58 | 0.68 | 0.74 | 0.88 | 0.88 | 0.90 |
-| aggregates: ODiN 2023 | 0.98 | 0.99 | 0.99 | 0.98 | 0.98 | 0.98 |
-| car_all_tariffs: false | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
-| price_base: published | 1.17 | 1.08 | 1.03 | 1.04 | 1.04 | 1.03 |
-| spread: all assumptions | 0.72 | 1.00 | 1.22 | 0.93 | 1.00 | 1.30 |
-| gamma_anchor: 0 | 1.36 | 1.13 | 1.00 | 1.00 | 1.00 | 1.00 |
-
-The residuals of D2-D4 are small differences between large amounts (income
-minus rent minus basket), so a few per cent on an input moves them by much
-more: the 2022 price level (inputs 1.5-3.7% lower than at their own
-dates) lowers their low end by 15%.
-
 **Income and rent between anchors.** The deciles are ordered by CBS
 disposable income, which includes the allowances actually received, so the
 loss of allowances as gross income rises (the poverty trap) compresses the
@@ -137,10 +115,8 @@ not modelled: the Nibud basket charges full local taxes at every income.
 
 | Script | What it shows |
 |---|---|
-| `switches.py` | the sensitivity to every switch (`results/switch_effects.csv`, `results/switch_summary.csv`) |
-| `journeys_per_tour.py` | one-way journeys per home-based tour in ODiN: the divisor for a table per tour (`accessibility.legs_per_tour` = 2.2) |
+| `journeys_per_tour.py` | one-way journeys per priced home-based tour in ODiN: the divisor for a table per tour (`accessibility.legs_per_tour` = 2.2) |
 
-    python envelope/switches.py
     python envelope/journeys_per_tour.py <ODiN csv> [...]
 
 Journeys per home-based tour: 2.19 (2.17 weighted) on ODiN 2022-23 and on

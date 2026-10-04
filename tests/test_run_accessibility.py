@@ -12,11 +12,10 @@ from ikob2.run.accessibility import (
     run_accessibility,
 )
 from ikob2.segments.bridge import envelope_segment_names, load_reference_budgets
-from ikob2.segments.jobs import sector_income_weights, sector_pools
+from ikob2.segments.jobs import sector_pools
 from ikob2.segments.lisa import SECTORS
-from ikob2.segments.occupations import sector_job_weights
 from ikob2.segments.time_margins import load_time_margins
-from ikob2.segments.wfh import split_jobs_by_wfh
+from tests.job_weights import by_type, rank_weights, split_by_share
 
 ENV = load_reference_budgets("data/envelope/reference_budgets.csv")
 MARGINS = load_time_margins("data/margins/S_T_work.csv")
@@ -41,10 +40,10 @@ def world(seed=0):
 
 
 def weights(jobs, wfh, wage):
-    """Job weights of the sector method (one wage and home-working share per
-    sector): the hand computations below use `sector_income_weights` and
-    `split_jobs_by_wfh`, the same arithmetic."""
-    return sector_job_weights(wage, jobs.sum(), wfh, WFH_TYPES).by_type
+    """Job weights with one wage and home-working share per sector
+    (tests/job_weights.py): the hand computations below use the same
+    arithmetic."""
+    return by_type(wage, jobs.sum(), wfh, WFH_TYPES)
 
 
 def run(pop, jobs, wfh, wage, matrices, **kw):
@@ -72,8 +71,8 @@ def test_table_shape_and_columns():
 def test_bike_matches_a_hand_computation():
     pop, jobs, wfh, wage, time, _ = world()
     res = run(pop, jobs, wfh, wage, {"bike": ModeMatrices(time)})
-    W = sector_income_weights(wage, jobs.sum())
-    no, yes = split_jobs_by_wfh(jobs, wfh)
+    W = rank_weights(wage, jobs.sum())
+    no, yes = split_by_share(jobs, wfh)
     expected = np.zeros(3)
     for wtype, j in (("no_wfh", no), ("wfh_possible", yes)):
         pool = sector_pools(j, DESTS, W)["D5"].astype(float)
@@ -122,7 +121,7 @@ def test_identical_wfh_curves_reduce_to_a_single_job_pool():
         sector_jobs=jobs, job_weights=weights(jobs, wfh, wage), envelope=ENV,
         time_margins=same, matrices={"bike": ModeMatrices(time)},
         epsilon=None)
-    W = sector_income_weights(wage, jobs.sum())
+    W = rank_weights(wage, jobs.sum())
     pool = sector_pools(jobs, DESTS, W)["D7"].astype(float)
     exp = fam.survival("weibull", (2.5, 30.0), time.astype(float)) @ pool
     got = res.table[res.table.segment == "single_D7"].sort_values(
@@ -360,8 +359,8 @@ def test_m0_is_a_step_in_generalised_time_at_the_median_acceptable_time():
     med = {w: median_time(MARGINS[("car", w)]) for w in WFH_TYPES}
     assert med["no_wfh"] > 0
     g = time.astype(float) + cost.astype(float) * 60.0 / vot["car"]
-    W = sector_income_weights(wage, jobs.sum())
-    no, yes = split_jobs_by_wfh(jobs, wfh)
+    W = rank_weights(wage, jobs.sum())
+    no, yes = split_by_share(jobs, wfh)
     expected = np.zeros(3)
     for wtype, j in (("no_wfh", no), ("wfh_possible", yes)):
         pool = sector_pools(j, DESTS, W)["D5"].astype(float)
@@ -419,8 +418,8 @@ def _dual_cutoff_by_hand(time_cost_pairs, seg, c_star, jobs, wfh, wage):
     (time, cost) option is within the median acceptable time and the cost
     cut-off `c_star`."""
     from ikob2.segments.specs import median_time
-    W = sector_income_weights(wage, jobs.sum())
-    no, yes = split_jobs_by_wfh(jobs, wfh)
+    W = rank_weights(wage, jobs.sum())
+    no, yes = split_by_share(jobs, wfh)
     expected = np.zeros(3)
     for wtype, j in (("no_wfh", no), ("wfh_possible", yes)):
         t_star = median_time(MARGINS[("car", wtype)])
@@ -506,8 +505,8 @@ def test_dual_cutoff_union_and_generalised_time_differ_by_hand():
     vot = 1.5 * c_star * 60.0 / (0.3 * t_star)
     gc = _segment(run(pop, jobs, wfh, wage, {"u": opts}, spec="m0",
                       vot={"car": vot}), "u", seg)["accessibility"].to_numpy()
-    W = sector_income_weights(wage, jobs.sum())
+    W = rank_weights(wage, jobs.sum())
     all_jobs = sum(sector_pools(j, DESTS, W)["D3"].sum()
-                   for j in split_jobs_by_wfh(jobs, wfh))
+                   for j in split_by_share(jobs, wfh))
     np.testing.assert_allclose(gc, all_jobs, rtol=1e-4)
     assert (dual < gc - 1.0).all()

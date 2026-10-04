@@ -1,8 +1,8 @@
 """
 Compare two accessibility runs (the impedance-shape test).
 
-The question of the El-Geneidy-style comparison: do two impedance
-specifications, calibrated to the same cut-off, give the same picture?
+Do two impedance specifications, calibrated to the same cut-off, give the
+same picture (Santana Palacios and El-Geneidy, 2022)?
 Two things can differ: the RANKING (which origins and segments come out
 better off) and the LEVELS and their distribution across groups.
 `compare_runs` reports both from the long tables of two runs.

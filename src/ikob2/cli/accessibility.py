@@ -30,19 +30,11 @@ import pandas as pd
 from ikob2 import params as params_mod
 from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec, CurveSpec
 from ikob2.run.accessibility import ModeMatrices, run_accessibility
-from ikob2.segments import statline
 from ikob2.segments.bridge import envelope_segment_names, load_reference_budgets
 from ikob2.segments.config import SegmentConfig
-from ikob2.segments.lisa import sector_wages
 from ikob2.segments.specs import SPECS
 from ikob2.segments.pipeline import run_pipeline
 from ikob2.segments.time_margins import load_time_margins
-from ikob2.segments.wfh import (
-    lisa_sector_wfh_share,
-    sbi_wfh_share,
-    sector_education_mix,
-    wfh_incidence_by_education,
-)
 from ikob2.skims.car import (
     CarCostModel,
     DetourModel,
@@ -67,8 +59,6 @@ FLAGS = {
     "population_basis": "accessibility.population_basis",
     "copula": "accessibility.copula", "theta": "accessibility.theta",
     "spec": "accessibility.spec", "epsilon": "accessibility.epsilon",
-    "wage_period": "accessibility.wage_period",
-    "wfh_period": "accessibility.wfh_period",
     "ownership": "accessibility.ownership",
     "common_jobs": "accessibility.common_jobs",
     "shared_bike": "accessibility.shared_bike",
@@ -95,27 +85,6 @@ FLAGS = {
     "pt_regional_km": "pt_fare.regional_eur_per_km",
     "pt_boardings": "pt_fare.boardings",
 }
-
-
-def _sector_tables(statline_dir: Path, wage_period: str, wfh_period: str):
-    wage_raw = pd.read_csv(
-        statline.snapshot_path(statline_dir, statline.WAGE_SNAPSHOT,
-                               statline.WAGE_TABLE, wage_period),
-        dtype={"BedrijfstakkenBranchesSBI2008": str})
-    hw = pd.read_csv(statline.snapshot_path(
-        statline_dir, statline.HOME_WORK_SNAPSHOT, statline.HOME_WORK_TABLE,
-        wfh_period), dtype=str)
-    hw["WerkzameBeroepsbevolking_1"] = pd.to_numeric(
-        hw["WerkzameBeroepsbevolking_1"])
-    se = pd.read_csv(statline.snapshot_path(
-        statline_dir, statline.SECTOR_EDUCATION_SNAPSHOT,
-        statline.SECTOR_EDUCATION_TABLE, "2010JJ00"),
-        dtype={"Onderwijsniveau": str, "BedrijfstakkenSBI2008": str})
-    sbi = sbi_wfh_share(wfh_incidence_by_education(hw),
-                        sector_education_mix(se))
-    jobs = wage_raw.assign(k=wage_raw["BedrijfstakkenBranchesSBI2008"]
-                           .str.strip()).set_index("k")["Banen_1"]
-    return sector_wages(wage_raw), lisa_sector_wfh_share(sbi, jobs)
 
 
 def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
@@ -401,22 +370,13 @@ def resolve_paths(args, prm) -> None:
 
 
 def job_matching(prm, args, sector_jobs: pd.DataFrame):
-    """How jobs are placed in the income-matched pools, per job type
-    (`jobs.matching`): sector x occupation cells (segments.occupations) or
-    every sector at its mean wage."""
+    """How jobs are placed in the income-matched pools, per job type: sector x
+    occupation cells (segments.occupations)."""
     from ikob2.segments import occupations as occ
     from ikob2.segments.lisa import SECTOR_TO_NACE
 
     types = tuple(prm.accessibility.wfh_types)
     total = sector_jobs.sum()
-    if prm.jobs.matching == "sector":
-        wage, wfh = _sector_tables(Path(args.statline), args.wage_period,
-                                   args.wfh_period)
-        return occ.sector_job_weights(wage, total.reindex(wage.index), wfh,
-                                      types)
-    if prm.jobs.matching != "occupation":
-        raise SystemExit(f"Unknown jobs.matching {prm.jobs.matching!r}; "
-                         f"use 'occupation' or 'sector'.")
     if not args.occupations:
         raise SystemExit("Give --occupations or --data-root.")
     t = occ.load_tables(args.occupations)
@@ -783,8 +743,8 @@ def main(argv=None) -> None:
     p.add_argument("--out", default=None)
     p.add_argument("--statline", default=None)
     p.add_argument("--occupations", default=None,
-                   help="folder with the occupation tables (jobs.matching = "
-                        "'occupation'; default inputs/occupations)")
+                   help="folder with the occupation tables (default "
+                        "inputs/occupations)")
     p.add_argument("--budgets", default=None)
     p.add_argument("--margins", default=None)
     p.add_argument("--modes", nargs="+", default=None)
@@ -912,8 +872,6 @@ def main(argv=None) -> None:
                         "boarding")
     p.add_argument("--detour", default=None,
                    help="calibrated DetourModel JSON (default: 1.3)")
-    p.add_argument("--wage-period", default=None)
-    p.add_argument("--wfh-period", default=None)
     p.add_argument("--epsilon", type=float, default=None)
     p.add_argument("--perturb", type=int, default=None, metavar="SEED",
                    help="draw the jobs and population within the rounding of "

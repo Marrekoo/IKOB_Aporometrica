@@ -86,11 +86,11 @@ def test_time_only_variants_run_without_an_envelope_and_differ():
     # cost matrices are ignored without an envelope
     assert (step["atom"] == 0).all()
     # hard cut-off: integer-valued combination of pooled jobs within 45 min
-    from ikob2.segments.jobs import sector_income_weights, sector_pools
-    from ikob2.segments.wfh import split_jobs_by_wfh
-    W = sector_income_weights(wage, jobs.sum())
+    from ikob2.segments.jobs import sector_pools
+    from tests.job_weights import rank_weights, split_by_share
+    W = rank_weights(wage, jobs.sum())
     exp = np.zeros(3)
-    for j in split_jobs_by_wfh(jobs, wfh):
+    for j in split_by_share(jobs, wfh):
         pool = sector_pools(j, DESTS, W)["D5"].astype(float)
         exp += (time <= 45).astype(float) @ pool
     got = step[step.segment == "couple_D5"].sort_values("buurtcode")[

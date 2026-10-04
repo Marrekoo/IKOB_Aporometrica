@@ -33,7 +33,7 @@ survey_margins = "S_T_work.csv"                       # under inputs/survey: Wei
 bike_ownership = "bike_ownership_buurten.csv"         # under inputs/veh_owners
 lisa = "LISA_Gemeenten_2025.xlsx"                     # under inputs/lisa
 ikob_jobs = "Alle_Zones_2030_2040.xlsx"               # under inputs/ikob: buurt job totals
-education_jobs = "Ralph_Sahar_CBS_buurten_met_banen_naar_opleidingsniveau.xlsx"   # under inputs/ikob
+education_jobs = "jobs_by_education_buurt_2016.csv"  # under inputs/jobs_education (data/jobs_education)
 odin = "ODIN_22_23_clean.csv"                         # under inputs/odin
 
 [vot]                      # EUR per hour (LMS/NRM), used by M1
@@ -58,8 +58,6 @@ censored = "atom"          # atom, drop
 population_basis = "population_scaled"
 kwb_year = 2022
 jobs_year = 2022
-wage_period = "2022JJ00"
-wfh_period = "2024JJ00"
 wfh_types = ["no_wfh", "wfh_possible"]
 modes = ["car", "bike"]
 cost_gate = true           # false: time-only accessibility
@@ -258,11 +256,9 @@ single_parent = 0.06
 couple_children = 0.24
 
 [jobs]
-# placing jobs in the income-decile pools: "occupation" = sector x ISCO major
-# group cells with a lognormal wage spread and home working by occupation
-# (segments/occupations.py, data/occupations); "sector" = every job of a
-# sector at the sector's mean wage, home working by the sector's education mix
-matching = "occupation"
+# jobs in the income-decile pools: sector x ISCO major group cells with a
+# lognormal wage spread and home working by occupation (segments/occupations.py,
+# data/occupations)
 occupation_year = "2022"   # year of the LFS, SES and 85517NED occupation tables (cli.segments occupations)
 establishment_weight = 0.25   # weight of the establishment seed (jobs imputation)
 train_year = 2016             # LISA year matching the education shares
@@ -306,7 +302,7 @@ sp_donor_point = "couple_children"
 income_measure = "gest"    # CBS percentiles: gest (standardised) or disp
 income_year = 2023         # CBS incomes: the year of the Nibud minima (2023); price_base sets the price level
 top_decile_rule = "pareto_p95"   # pareto_p95 or boundary_p90
-# ---- the method's choices (envelope/README.md; sensitivity: envelope/switches.py)
+# ---- the method's choices (envelope/README.md)
 aggregates = "2022_2023"        # ODiN aggregates under inputs/envelope/odin/: 2023 or 2022_2023
 unit = "journey"           # budget per priced home-based tour, or per priced one-way "journey"
 n_lower = "lowest_decile"  # lower bound on tours per month: fixed (n_min_fixed) or lowest_decile of the household type

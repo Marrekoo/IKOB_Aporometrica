@@ -62,8 +62,7 @@ factor (`tanner`).
 
 ## Hazard diagnostics
 
-`core.families` provides the tools behind the diagnostics of a margin
-(paper: "The Fixed-VOT Trap in Generalised Cost Models"):
+`core.families` provides diagnostics of a margin:
 
 * `survival`, `cumulative_hazard` (Lambda = -log f), `hazard`,
   `elasticity` (eta = -z h(z)) for every family;
@@ -71,16 +70,16 @@ factor (`tanner`).
 * `implied_vot(time_family, cost_family, t, c)` = h_T(t) / h_M(c), the
   local value of time of a separable surface. It is constant only for
   exponential margins (h_T / h_M) and equals (delta/gamma)(c/t) for
-  power-law margins; it varies for every other shape. That is the paper's
-  point: a fixed-VOT generalised cost is consistent with separable
-  margins only under exponential decay;
+  power-law margins; it varies for every other shape, so a generalised
+  cost with one value of time is consistent with separable margins only
+  under exponential decay;
 * `ttt_transform`: the scaled total-time-on-test transform. Exponential
   is the diagonal, increasing hazard (Weibull shape > 1) concave,
   decreasing hazard (Lomax) convex. It needs a finite mean;
 * `mean_threshold` (E[X], infinite for heavy tails) and
   `moment_matched_scale`, which rescales a family to a common mean so
-  shapes can be compared on dispersion alone (the paper's Figure 2:
-  common mean 30 minutes, Weibull shape 2.5, Lomax alpha 2.2).
+  shapes can be compared on dispersion alone (e.g. a common mean of 30
+  minutes for a Weibull with shape 2.5 and a Lomax with alpha 2.2).
 
 Example:
 

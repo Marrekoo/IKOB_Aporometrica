@@ -1,4 +1,4 @@
-# local projects of the removed IKOB-file workflow
+# local project folders
 examples/advanced_project/
 examples/minimal_project/
 examples/test/
@@ -19,3 +19,6 @@ build/
 # PyCharm HTML exports (local)
 exportToHTML/
 .coverage
+
+# working notes for AI assistants (local)
+CLAUDE.md

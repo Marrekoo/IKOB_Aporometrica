@@ -39,14 +39,13 @@ hub scenarios.
 | [docs/families.md](docs/families.md) | survival families, hazard diagnostics, time margins |
 | [docs/skims.md](docs/skims.md) | skim store, car/bike/walk/PT times, car cost, peak load, PT fares, bicycle legs |
 | [docs/servers.md](docs/servers.md) | local Valhalla and OpenTripPlanner servers, validation of the PT router |
-| [CLAUDE.md](CLAUDE.md) | working rules for contributors and AI assistants: tests, data licences, fixed modelling decisions |
 
 ## Install and test
 
     python -m venv .venv && . .venv/bin/activate
     pip install -r requirements-lock.txt      # the exact tested environment (Python 3.13)
     pip install -e . --no-deps
-    pytest                                    # ~550 tests, ~25 s
+    pytest                                    # about a minute
     ruff check src tests examples validation
 
 `requirements-lock.txt` pins every package; R5 and OpenTripPlanner also need
@@ -79,8 +78,8 @@ output is in `examples/tiny/expected/` and is checked by the tests
         --study utrecht_nl --run s0 --modes car bike pt --ownership
     python -m ikob2.cli.compare --data-root "<root>" s0 s1
 
-Inputs are open data (CBS, LISA, OpenStreetMap, GTFS, the NS price list,
-ODiN); `docs/data_specification.md` lists them. Everything under
+`docs/data_specification.md` lists every input and its source (licences
+below). Everything under
 `intermediate/` and `outputs/` is recomputed from `inputs/`; every run writes
 `run.json` with its resolved parameters.
 
@@ -107,4 +106,21 @@ measured congestion (peak load is a road-class factor), timetable-based PT
 waiting and transfer penalties, competition for jobs in the paper runs
 (Shen is available for square runs only), supply limits of shared bicycles.
 
-Cite as in [CITATION.cff](CITATION.cff). Licence: MIT ([LICENSE](LICENSE)). The data have their own licences (see [CLAUDE.md](CLAUDE.md), *Data*).
+## Data and licences
+
+| Data | Licence |
+|---|---|
+| CBS (Kerncijfers wijken en buurten, StatLine) | CC BY 4.0 |
+| LISA municipal data (https://www.lisa.nl/gratis-data/, table 'gemeenten') | open, free of charge |
+| Eurostat (LFS, SES) | Eurostat copyright policy: reuse with acknowledgement |
+| Sostero et al. (2020) teleworkability indices | CC BY 4.0 |
+| OpenStreetMap | ODbL |
+| GTFS NL (OVapi) | open |
+| IKOB job table and jobs by education level (Stichting CROW, ikob-scripts) | CC BY 4.0; the NRM-derived job table with the permission of Rijkswaterstaat |
+| ODiN microdata (CBS / Rijkswaterstaat) | via DANS, with permission; not in this repository. The aggregates in `data/envelope/odin/` are published (README there) |
+
+The data folder is outside the repository (`--data-root` or
+`$IKOB_DATA_ROOT`); `cli.layout create` seeds it with the reference files of
+`data/`.
+
+Cite as in [CITATION.cff](CITATION.cff). Licence of the software: MIT ([LICENSE](LICENSE)).

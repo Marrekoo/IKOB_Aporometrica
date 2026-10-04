@@ -2,12 +2,11 @@
 Job supply per income-matched pool.
 
 The paper measures opportunities D_{j,s}: jobs matched to a segment's
-income. Jobs come per buurt and LISA sector (see jobs_impute); each
-sector is placed on the income-rank axis by its mean wage, and the
-income-decile pools PARTITION the jobs (`sector_income_weights`,
-`sector_pools`). This module also reads the IKOB job table
-(four income groups per buurt), whose buurt totals are the row marginal
-of the sector imputation. See docs/data_lineage.md.
+income. Jobs come per buurt and LISA sector (see jobs_impute); the share
+of each sector's jobs in each income class (segments.occupations) turns
+them into income-decile pools (`sector_pools`). This module also reads
+the IKOB job table, whose buurt totals are the row marginal of the
+sector imputation. See docs/data_lineage.md.
 """
 
 from __future__ import annotations
@@ -19,7 +18,6 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
-from ikob2.segments.config import INCOME_CLASSES
 
 logger = logging.getLogger(__name__)
 
@@ -69,53 +67,6 @@ def load_ikob_jobs(path: str | Path, year: str = "2018",
 
 
 # ── Sector jobs -> income pools (wage-ranked partition) ──────────────
-
-def sector_income_weights(
-    sector_wage: pd.Series,
-    sector_jobs: pd.Series,
-    income_classes: Sequence[str] = INCOME_CLASSES,
-) -> pd.DataFrame:
-    """Share of each sector's jobs that falls in each income class.
-
-    Sectors are ranked by mean wage (lowest first) and laid along the
-    income-rank axis [0, 1] in proportion to their national jobs; income
-    decile Dk covers [(k-1)/10, k/10]. Sector s's jobs are spread over
-    the deciles it overlaps, in proportion to the overlap:
-
-        W[k, s] = |decile k ∩ sector s| / |sector s|      (columns sum to 1)
-
-    so the decile pools PARTITION the jobs: pool_k = sum_s W[k, s] * J_s
-    and sum_k pool_k = J. This is the D_{j,s} of the paper (jobs matched
-    to an income level). 'onbekend' has no rank and sees all jobs
-    (all-ones row). Within-sector wage dispersion is ignored: every job
-    of a sector sits at that sector's mean-wage rank.
-
-    """
-    wage = sector_wage.astype(float)
-    jobs = sector_jobs.reindex(wage.index).astype(float)
-    if jobs.isna().any() or (jobs < 0).any() or jobs.sum() <= 0:
-        raise ValueError("Sector jobs must be non-negative, complete and "
-                         "sum to a positive number.")
-    if wage.isna().any():
-        raise ValueError("Sector wages are incomplete.")
-    order = wage.sort_values(kind="stable").index
-    edges = np.concatenate([[0.0], np.cumsum(jobs[order]) / jobs.sum()])
-
-    ranked = [c for c in income_classes if c != "onbekend"]
-    n = len(ranked)
-    W = pd.DataFrame(0.0, index=list(income_classes), columns=wage.index)
-    for k, cls in enumerate(ranked):
-        lo, hi = k / n, (k + 1) / n
-        for i, s in enumerate(order):
-            length = edges[i + 1] - edges[i]
-            if length <= 0:
-                continue
-            overlap = max(0.0, min(hi, edges[i + 1]) - max(lo, edges[i]))
-            W.loc[cls, s] = overlap / length
-    if "onbekend" in income_classes:
-        W.loc["onbekend"] = 1.0
-    return W
-
 
 def sector_pools(
     sector_jobs: pd.DataFrame,

@@ -41,11 +41,11 @@ they are.
     python -m ikob2.cli.segments --data-root <root> fetch
 
 The only network step for the segments. It stores CSV snapshots of CBS
-86161NED, 71487ned, 81431ned, 85318NED, 85718NED and 82072NED in
+86161NED, 71487ned and 85318NED in
 `<root>/cache/statline` (or `--out`). `layout create` already copies the
 snapshots of the repository's `data/statline/` there, so this step is only
-needed for other periods (`--income-period`, `--wage-period`,
-`--wfh-period`, `--kwb-table`, or the matching parameters).
+needed for other periods (`--income-period`, `--children-period`,
+`--kwb-table`).
 
 The occupation tables of the job matching (Eurostat LFS and SES, CBS
 85517NED and the ISCO-BRC correspondence, the teleworkability indices) are
@@ -170,8 +170,8 @@ What a run does:
 
 1. computes the 44 segments per buurt from KWB and the StatLine snapshots and
    keeps the 40 with a budget (`--censored atom|drop` for decile 1);
-2. matches the sector jobs to income deciles and job types (`jobs.matching`:
-   sector x occupation cells from `inputs/occupations`, `--occupations`; see
+2. matches the sector jobs to income deciles and job types (sector x
+   occupation cells from `inputs/occupations`, `--occupations`; see
    `data_lineage.md`), or gives every segment all jobs (`--common-jobs`);
 3. loads the Weibull margins and the reference budgets;
 4. builds the mode matrices: car time plus parking search time and car cost

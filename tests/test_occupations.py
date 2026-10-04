@@ -8,8 +8,8 @@ import pytest
 from scipy import stats
 
 from ikob2.segments import occupations as occ
-from ikob2.segments.jobs import sector_income_weights
 from ikob2.segments.lisa import SECTOR_TO_NACE, SECTORS
+from tests.job_weights import rank_weights
 
 TYPES = ("no_wfh", "wfh_possible")
 DATA = Path(__file__).resolve().parents[1] / "data" / "occupations"
@@ -112,28 +112,26 @@ def test_weights_partition_the_jobs_and_split_home_working_by_occupation():
             == pytest.approx(k / 10, abs=1e-4)   # edges rounded
 
 
-def test_one_occupation_per_sector_and_no_spread_is_the_sector_method():
-    wage = pd.Series({"S1": 15.0, "S2": 22.0, "S3": 31.0})
-    total = pd.Series({"S1": 250.0, "S2": 450.0, "S3": 300.0})
+def test_one_occupation_per_sector_and_no_spread_is_the_rank_partition():
+    # three sectors at one wage each, 20 / 50 / 30% of the jobs: on the
+    # income-rank axis S1 covers [0, .2], S2 [.2, .7], S3 [.7, 1]
+    wage = pd.Series({"S1": 10.0, "S2": 20.0, "S3": 30.0})
+    total = pd.Series({"S1": 200.0, "S2": 500.0, "S3": 300.0})
     cells = pd.DataFrame({"sector": list(wage.index), "isco08": "OC2",
                           "employment": 1.0, "mean_wage": wage.values})
     m = occ.occupation_job_weights(cells, 1e-6, pd.Series({"OC2": 0.0}),
                                    total, TYPES)
-    W0 = sector_income_weights(wage, total)
-    np.testing.assert_allclose(m.by_type["no_wfh"].loc[W0.index, W0.columns],
-                               W0, atol=1e-6)
-
-
-def test_sector_job_weights_equal_the_sector_split():
-    wage = pd.Series({"S1": 15.0, "S2": 22.0})
-    total = pd.Series({"S1": 250.0, "S2": 750.0})
-    share = pd.Series({"S1": 0.2, "S2": 0.6})
-    m = occ.sector_job_weights(wage, total, share, TYPES)
-    W0 = sector_income_weights(wage, total)
-    pd.testing.assert_frame_equal(m.by_type["wfh_possible"], W0 * share)
-    pd.testing.assert_frame_equal(m.by_type["no_wfh"] + m.by_type["wfh_possible"], W0)
-    with pytest.raises(ValueError):
-        occ.sector_job_weights(wage, total, share.drop("S2"), TYPES)
+    W = m.by_type["no_wfh"]
+    assert W.loc["D1", "S1"] == pytest.approx(0.5, abs=1e-6)
+    assert W.loc["D2", "S1"] == pytest.approx(0.5, abs=1e-6)
+    for k in range(3, 8):
+        assert W.loc[f"D{k}", "S2"] == pytest.approx(0.2, abs=1e-6)
+    for k in range(8, 11):
+        assert W.loc[f"D{k}", "S3"] == pytest.approx(1 / 3, abs=1e-6)
+    assert (m.by_type["wfh_possible"].drop(index="onbekend") == 0).all().all()
+    # the closed form the other tests compute by hand (tests/job_weights.py)
+    W0 = rank_weights(wage, total)
+    np.testing.assert_allclose(W.loc[W0.index, W0.columns], W0, atol=1e-6)
 
 
 def test_jsonstat_frame():

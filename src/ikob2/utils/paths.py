@@ -7,7 +7,8 @@ $IKOB_DATA_ROOT or `paths.data_root` (ikob2.params.data_root).
       inputs/                    source data, read only
         kwb/                     CBS wijken en buurten GeoPackages (per year)
         lisa/                    LISA jobs per municipality and sector
-        ikob/                    IKOB job table per buurt; LISA 2016 jobs by education
+        ikob/                    IKOB job table per buurt (CROW ikob-scripts)
+        jobs_education/          jobs per buurt by education level, 2016 (data/jobs_education)
         osm/                     OpenStreetMap extracts (.pbf)
         gtfs/                    GTFS feeds
         survey/                  fitted time margins (S_T_*.csv)
@@ -103,6 +104,7 @@ SEED = (
     ("margins", "inputs", "survey", "*.csv"),
     ("tariffs", "inputs", "tariffs", "*.csv"),
     ("occupations", "inputs", "occupations", "*.csv"),
+    ("jobs_education", "inputs", "jobs_education", "*.csv"),
     ("statline", "cache", "statline", "*.csv"),
     ("calibration", "intermediate", "calibration", "*.json"),
 )
@@ -216,7 +218,7 @@ class DataLayout:
         return self.inputs / "ikob" / DEFAULTS.paths.ikob_jobs
 
     def education_jobs(self) -> Path:
-        return self.inputs / "ikob" / DEFAULTS.paths.education_jobs
+        return self.inputs / "jobs_education" / DEFAULTS.paths.education_jobs
 
     def odin(self) -> Path:
         return self.inputs / "odin" / DEFAULTS.paths.odin

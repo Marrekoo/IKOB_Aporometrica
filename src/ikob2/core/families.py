@@ -3,9 +3,8 @@ Survival-function families for threshold marginals, and their hazard
 tools.
 
 A decay function normalised to 1 at zero impedance is the survival
-function f(z) = Pr(X >= z) of a non-negative threshold X (see the paper
-"Either you can reach it or you cannot"; "The Fixed-VOT Trap in
-Generalised Cost Models"). Its log-derivative, the hazard
+function f(z) = Pr(X >= z) of a non-negative threshold X
+(docs/model_theory.md). Its log-derivative, the hazard
 h(z) = -d log f / dz, is the acceptance lost per extra unit of
 impedance, the elasticity is eta = -z h(z), and separability of time and
 cost is additivity of log f. Every family below is a proper survival
@@ -573,7 +572,7 @@ def hazard_shape(name: str, params) -> str:
     return fam.shape(*[float(p) for p in params])
 
 
-# ── Paper diagnostics ────────────────────────────────────────────────
+# ── Diagnostics of a margin ──────────────────────────────────────────
 
 def implied_vot(time_family: tuple, cost_family: tuple, t, c) -> np.ndarray:
     """Local value of time of a separable surface f = S_T(t) S_M(c):
@@ -617,7 +616,7 @@ def moment_matched_scale(name: str, shape_params, target_mean: float,
                          *, scale_index: int = -1) -> tuple:
     """Parameters with the given mean by rescaling one parameter (the
     last by default): families become comparable on their first moment,
-    so that differences are dispersion alone (the paper's Figure 2).
+    so that differences are dispersion alone.
     Mean is proportional to the scale for the scale families; for tanner
     or pareto pass the appropriate `scale_index`."""
     if target_mean <= 0:
