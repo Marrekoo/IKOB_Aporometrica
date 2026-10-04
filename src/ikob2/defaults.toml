@@ -351,6 +351,9 @@ hazard_decreasing = 0.2    # share at or below which it counts as decreasing
 tags = ["m0", "m0u", "m0s", "m1", "m1p", "m2", "m3t1.25", "m3t1.5", "m3t2", "m3t4", "m3tinf"]
 scenarios = ["s1", "s1a", "s2c", "s2t", "s3c", "s3t", "s4", "s4a"]
 pairs = ["s1:s2c", "s4:s2t"]   # R = gain(A) / gain(B)
+# R of a pair over some origins only (buurtcode list under inputs/tariffs): S4 reaches
+# the residents of the 15 buurten only, so elsewhere its R is 0 by design
+pair_zones = {"s4:s2t" = "lime_price_zones_overvecht_kanaleneiland.csv"}
 gap_scenarios = ["s1", "s1a", "s4", "s4a"]   # price scenarios after which the reachability gap is reported
 targeting = ["S1=scen_s1", "S1a=scen_s1a", "S4=scen_s4", "S4a=scen_s4a", "S2c=scen_s2c", "S2t=scen_s2t"]   # label=run of the targeting tables
 base_run = "scen_s0"       # baseline run of the targeting tables

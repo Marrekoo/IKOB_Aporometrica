@@ -14,7 +14,9 @@ outputs/comparisons/specs/:
                            specification and income class;
   incidence_by_spec.csv    gain of each scenario by income class and household
                            type, per specification;
-  interchange_by_spec.csv  R = gain(A) / gain(B) for each pair of --pairs
+  interchange_by_spec.csv  R = gain(A) / gain(B) for each pair of --pairs,
+                           over the origins of paper.pair_zones for that pair
+                           (column origins_used)
                            (default s1:s2c, the citywide price cut over the
                            citywide hubs, and s4:s2t, both in the target
                            buurten): pooled dispersion (CV, interquantile
@@ -104,13 +106,17 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
            controlled_prefix: str = "spc", timeonly_prefix: str = "spt",
            scenarios=("s1", "s2c", "s2t", "s3c", "s3t", "s4"),
            pairs=(("s1", "s2c"), ("s4", "s2t")),
-           gap_scenarios=("s1", "s4")) -> dict[str, pd.DataFrame]:
+           gap_scenarios=("s1", "s4"),
+           pair_origins: dict | None = None) -> dict[str, pd.DataFrame]:
     """The paper tables for the specification `tags` from the runs
     <prefix>_<tag>_<s0|scenario> (income-matched jobs), <controlled_prefix>_...
     (common jobs) and <timeonly_prefix>_<tag>_s0 (time only, for the gap),
     for `mode`. Returns name -> table: baseline_by_spec, incidence_by_spec,
     interchange_by_spec, gap_by_spec and correlation_by_spec. Missing runs
-    are skipped with a warning."""
+    are skipped with a warning. `pair_origins` maps a pair "A:B" to the
+    origins over which its R is computed (a scenario that only reaches some
+    origins, such as a price cut by address, has R = 0 elsewhere by design);
+    other pairs use every origin."""
     base, inc, rat, gap, rat_cls = [], [], [], [], []
     runs = {}
     for tag in tags:
@@ -153,12 +159,20 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
                               for s in ("s0", a_scen, b_scen))
                 if any(x is None for x in (c0, ca, cb)):
                     continue
+                only = (pair_origins or {}).get(f"{a_scen}:{b_scen}")
+                if only is not None:
+                    keep = set(only)
+                    c0, ca, cb = (x[x["buurtcode"].astype(str).isin(keep)]
+                                  for x in (c0, ca, cb))
                 res = interchange_ratio(c0, ca, cb, mode)
                 r = res["summary"].iloc[0]
+                origins = "all" if only is None else f"{len(set(only))} origins"
                 rat.append({"spec": tag, "pair": f"{a_scen}/{b_scen}",
-                            "comparison": label, **r.to_dict()})
+                            "comparison": label, "origins_used": origins,
+                            **r.to_dict()})
                 rat_cls.append(res["by_class"].assign(
-                    spec=tag, pair=f"{a_scen}/{b_scen}", comparison=label))
+                    spec=tag, pair=f"{a_scen}/{b_scen}", comparison=label,
+                    origins_used=origins))
         # gap: time-only runs are per time margin, so M3 shares M2's, the
         # dual cut-offs M0's and M1c M1's
         t_tag = TIME_ONLY_TAG.get(tag, "m2" if tag.startswith("m3") else tag)
@@ -264,9 +278,15 @@ def main(argv=None) -> None:
     args.base_run, args.zone = paper.base_run, paper.zone
     args.target_classes = paper.target_classes
     lay = DataLayout(params_mod.data_root(args.data_root, prm))
+    from ikob2.utils.paths import resolve_input
+    pair_origins = {
+        pair: pd.read_csv(resolve_input(f, lay.inputs / "tariffs"),
+                          dtype={"buurtcode": str})["buurtcode"].tolist()
+        for pair, f in prm.paper.pair_zones.to_dict().items()}
     res = tables(lay, args.tags, args.mode, scenarios=tuple(args.scenarios),
                  pairs=tuple(tuple(x.split(":", 1)) for x in args.pairs),
-                 gap_scenarios=tuple(args.gap_scenarios))
+                 gap_scenarios=tuple(args.gap_scenarios),
+                 pair_origins=pair_origins)
     out = lay.comparison_dir() / "specs"
     out.mkdir(parents=True, exist_ok=True)
     pd.set_option("display.width", 200)

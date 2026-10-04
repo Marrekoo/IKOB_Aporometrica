@@ -236,7 +236,7 @@ time-only run, M0u and M0s that of M0, M1c that of M1) of the run plan
 |---|---|
 | `baseline_by_spec.csv` | accessibility, raw and normalised, and atom, per specification and income class |
 | `incidence_by_spec.csv` | gains of each scenario by income class and household type, per specification |
-| `interchange_by_spec.csv` | R per pair (`paper.pairs`: `s1:s2c`, the citywide price cut over the citywide hubs, and `s4:s2t`, both in the target buurten): pooled dispersion, median, undefined pairs, full and controlled |
+| `interchange_by_spec.csv` | R per pair (`paper.pairs`: `s1:s2c`, the citywide price cut over the citywide hubs, and `s4:s2t`, both in the target buurten): pooled dispersion, median, undefined pairs, full and controlled. `paper.pair_zones` restricts a pair to some origins: S4 reaches only the residents of the 15 buurten, so `s4:s2t` is computed over those (column `origins_used`) |
 | `interchange_by_class.csv` | R per income class: the shares of segments where B adds nothing (R undefined) and where A adds nothing (R = 0), the median R, and the median R where both add something. R is bimodal across segments, so these describe it better than one pooled median |
 | `gap_by_spec.csv` | the reachability gap at S0 and after the price scenarios of `paper.gap_scenarios`, and the atom |
 | `correlation_by_spec.csv` | Pearson and Spearman correlations between specifications of levels and of the gains of each scenario |

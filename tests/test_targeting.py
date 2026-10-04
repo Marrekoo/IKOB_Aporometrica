@@ -93,6 +93,13 @@ def test_paper_tables_read_the_scenarios_and_pairs(tmp_path):
     assert np.allclose(g0["gap"], 50.0)      # time-only minus gated
     assert res["correlation_by_spec"].empty   # one specification: nothing to correlate
     json.dumps(res["interchange_by_spec"].to_dict())   # plain values
+    # restricted to two origins: R and its pairs come from those origins only
+    sub = tables(lay, ["m0s"], "pt_v2", scenarios=("s4", "s2t"),
+                 pairs=(("s4", "s2t"),), gap_scenarios=(),
+                 pair_origins={"s4:s2t": ["O0", "O1"]})["interchange_by_spec"].iloc[0]
+    assert sub["pairs"] == 2 * len(segs) and sub["origins"] == 2
+    assert sub["origins_used"] == "2 origins"
+    assert res["interchange_by_spec"]["origins_used"].iloc[0] == "all"
 
 
 def test_hub_cost_is_added_and_not_attributed():
