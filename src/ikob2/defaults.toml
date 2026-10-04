@@ -352,7 +352,7 @@ tags = ["m0", "m0u", "m0s", "m1", "m1p", "m2", "m3t1.25", "m3t1.5", "m3t2", "m3t
 scenarios = ["s1", "s1a", "s2c", "s2t", "s3c", "s3t", "s4", "s4a"]
 pairs = ["s1:s2c", "s4:s2t"]   # R = gain(A) / gain(B)
 gap_scenarios = ["s1", "s1a", "s4", "s4a"]   # price scenarios after which the reachability gap is reported
-targeting = ["S1=scen_s1", "S1a=scen_s1a", "S4=scen_s4", "S4a=scen_s4a"]   # label=run of the targeting tables
+targeting = ["S1=scen_s1", "S1a=scen_s1a", "S4=scen_s4", "S4a=scen_s4a", "S2c=scen_s2c", "S2t=scen_s2t"]   # label=run of the targeting tables
 base_run = "scen_s0"       # baseline run of the targeting tables
 target_classes = ["D2", "D3", "D4"]
 zone = "lime_price_zones_overvecht_kanaleneiland.csv"   # under inputs/tariffs

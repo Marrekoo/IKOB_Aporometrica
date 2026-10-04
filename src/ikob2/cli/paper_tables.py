@@ -20,6 +20,10 @@ outputs/comparisons/specs/:
                            buurten): pooled dispersion (CV, interquantile
                            ratio, spread), median, undefined pairs, full and
                            controlled;
+  interchange_by_class.csv R per income class: the shares of segments where B
+                           adds nothing (R undefined) and where A adds nothing
+                           (R = 0), the median R, and the median R where both
+                           add something;
   gap_by_spec.csv          the reachability gap at s0 and after the price
                            scenarios of --gap-scenarios (default s1 s4), and
                            the atom;
@@ -107,7 +111,7 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
     for `mode`. Returns name -> table: baseline_by_spec, incidence_by_spec,
     interchange_by_spec, gap_by_spec and correlation_by_spec. Missing runs
     are skipped with a warning."""
-    base, inc, rat, gap = [], [], [], []
+    base, inc, rat, gap, rat_cls = [], [], [], [], []
     runs = {}
     for tag in tags:
         s0 = _read(lay, f"{prefix}_{tag}_s0")
@@ -149,9 +153,12 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
                               for s in ("s0", a_scen, b_scen))
                 if any(x is None for x in (c0, ca, cb)):
                     continue
-                r = interchange_ratio(c0, ca, cb, mode)["summary"].iloc[0]
+                res = interchange_ratio(c0, ca, cb, mode)
+                r = res["summary"].iloc[0]
                 rat.append({"spec": tag, "pair": f"{a_scen}/{b_scen}",
                             "comparison": label, **r.to_dict()})
+                rat_cls.append(res["by_class"].assign(
+                    spec=tag, pair=f"{a_scen}/{b_scen}", comparison=label))
         # gap: time-only runs are per time margin, so M3 shares M2's, the
         # dual cut-offs M0's and M1c M1's
         t_tag = TIME_ONLY_TAG.get(tag, "m2" if tag.startswith("m3") else tag)
@@ -169,14 +176,20 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
                        ("gap_by_spec", gap)):
         out[name] = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
     out["interchange_by_spec"] = pd.DataFrame(rat)
+    out["interchange_by_class"] = (pd.concat(rat_cls, ignore_index=True)
+                                   if rat_cls else pd.DataFrame())
     out["correlation_by_spec"] = correlations(runs, mode)
     return out
 
 
 def targeting_tables(lay: DataLayout, base_run: str, runs: dict, zone_file,
-                     mode: str, target_classes) -> dict[str, pd.DataFrame]:
+                     mode: str, target_classes, costs=None) -> dict[str, pd.DataFrame]:
     """run.targeting for the runs `runs` (label -> run name) against
-    `base_run`, with the zone of `zone_file` (column buurtcode)."""
+    `base_run`, with the zone of `zone_file` (column buurtcode). A run with
+    extra hubs (`shared_bike.egress_suffix`) gets their yearly public cost
+    (`run.costs.hub_annual_cost`, the hubs of its hub file) as
+    `hub_cost_eur_year`."""
+    from ikob2.run.costs import hub_annual_cost
     import json
 
     from ikob2.run.targeting import targeting
@@ -191,6 +204,18 @@ def targeting_tables(lay: DataLayout, base_run: str, runs: dict, zone_file,
             logger.warning("no run %s", name)
             continue
         meta = json.loads((lay.run_dir(name) / "run.json").read_text())
+        suffix = (meta.get("parameters", {}).get("shared_bike", {})
+                  .get("egress_suffix") or {})
+        n_hubs = 0
+        for s in suffix.values():
+            f = lay.s2_hubs(s.lstrip("_"))
+            if f.exists():
+                n_hubs += len(pd.read_csv(f))
+            else:
+                logger.warning("no hub file %s for run %s", f, name)
+        if n_hubs and costs is not None:
+            meta["hub_cost_eur_year"] = hub_annual_cost(costs, n_hubs)["public"]
+            meta["hubs"] = n_hubs
         loaded[label] = (t, meta)
     zone = pd.read_csv(zone_file, dtype={"buurtcode": str})["buurtcode"]
     return targeting(base, loaded, zone, mode, target_classes)
@@ -258,7 +283,7 @@ def main(argv=None) -> None:
         zone = resolve_input(args.zone, lay.inputs / "tariffs")
         tt = targeting_tables(lay, args.base_run,
                               dict(x.split("=", 1) for x in args.targeting),
-                              zone, args.mode, args.target_classes)
+                              zone, args.mode, args.target_classes, prm.costs)
         tdir = lay.comparison_dir() / "targeting"
         tdir.mkdir(parents=True, exist_ok=True)
         for name, df in tt.items():

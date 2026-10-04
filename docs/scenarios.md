@@ -237,6 +237,7 @@ time-only run, M0u and M0s that of M0, M1c that of M1) of the run plan
 | `baseline_by_spec.csv` | accessibility, raw and normalised, and atom, per specification and income class |
 | `incidence_by_spec.csv` | gains of each scenario by income class and household type, per specification |
 | `interchange_by_spec.csv` | R per pair (`paper.pairs`: `s1:s2c`, the citywide price cut over the citywide hubs, and `s4:s2t`, both in the target buurten): pooled dispersion, median, undefined pairs, full and controlled |
+| `interchange_by_class.csv` | R per income class: the shares of segments where B adds nothing (R undefined) and where A adds nothing (R = 0), the median R, and the median R where both add something. R is bimodal across segments, so these describe it better than one pooled median |
 | `gap_by_spec.csv` | the reachability gap at S0 and after the price scenarios of `paper.gap_scenarios`, and the atom |
 | `correlation_by_spec.csv` | Pearson and Spearman correlations between specifications of levels and of the gains of each scenario |
 
@@ -244,9 +245,12 @@ time-only run, M0u and M0s that of M0, M1c that of M1) of the run plan
 
 The targeting tables compare price cuts granted by income (S1a: deciles
 D2-D4, citywide), by address (S4: everyone in the 15 target buurten) and by
-both (S4a: D2-D4 in the target buurten) with the blanket cut (S1), from the
-runs of `paper.targeting` against `paper.base_run`. The runs need
-`--report-usage` for their cost. The target group is `paper.target_classes`
+both (S4a: D2-D4 in the target buurten) with the blanket cut (S1) and with the
+extra hubs (S2c citywide, S2t in the target buurten), from the runs of
+`paper.targeting` against `paper.base_run`. The runs need `--report-usage` for
+the cost of a price cut; the hubs of a run (its `egress_suffix` and hub file)
+cost `run.costs.hub_annual_cost` each. Hub costs are not attributed to
+segments or places. The target group is `paper.target_classes`
 (D2 D3 D4) and the zone `paper.zone`. Written to
 `outputs/comparisons/targeting/`:
 

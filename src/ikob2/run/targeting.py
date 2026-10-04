@@ -10,9 +10,11 @@ reports
     with a lower price at their address (coverage; one minus the exclusion
     error) and the share of the eligible residents outside the target group
     (the inclusion error), both in persons (Cornia and Stewart, 1993);
-  * cost: the public cost per year (the revenue foregone at baseline volume,
-    `scenario.cost` of run.json) and its shares spent on the target group
-    and in the zone;
+  * cost: the public cost per year: the revenue foregone at baseline volume
+    of a price cut (`scenario.cost` of run.json) and the yearly cost of extra
+    hubs (`hub_cost_eur_year`, set by the caller), and the shares of the
+    price cost spent on the target group and in the zone (not defined when
+    hubs are part of the cost);
   * gain: acceptable job-persons, per euro, and the shares going to the
     target group and to the zone's residents;
   * cells: population and gain by income class and place (zone or rest),
@@ -62,22 +64,27 @@ def targeting(base: pd.DataFrame, runs: Mapping[str, tuple[pd.DataFrame, dict]],
                         for s in d.index.get_level_values("segment")])
         eligible = cut & at_zone
         cost = (meta.get("scenario") or {}).get("cost") or {}
-        total = cost.get("compensation_eur_year", np.nan)
+        price = cost.get("compensation_eur_year", 0.0)
+        hubs = meta.get("hub_cost_eur_year", 0.0)
+        total = price + hubs if (cost or hubs) else np.nan
         by_seg = cost.get("by_segment_eur_year") or {}
         by_org = cost.get("by_origin_eur_year") or {}
         c_target = sum(v for k, v in by_seg.items() if k.rsplit("_", 1)[1] in target)
         c_zone = sum(v for k, v in by_org.items() if str(k) in zone)
         g = gain.sum()
+        # the cost of hubs cannot be attributed to segments or places
+        attributable = not hubs
         summary.append({
-            "scenario": label,
+            "scenario": label, "hubs": meta.get("hubs", 0),
+            "price_cost_eur_year": price, "hub_cost_eur_year": hubs,
             "target_eligible_share": pop[eligible & in_target].sum() / pop[in_target].sum(),
             "eligible_outside_target_share": (pop[eligible & ~in_target].sum()
                                               / pop[eligible].sum()
                                               if pop[eligible].sum() > 0 else np.nan),
             "eligible_persons": pop[eligible].sum(),
             "cost_eur_year": total,
-            "cost_share_target": c_target / total if total else np.nan,
-            "cost_share_zone": c_zone / total if total else np.nan,
+            "cost_share_target": c_target / total if total and attributable else np.nan,
+            "cost_share_zone": c_zone / total if total and attributable else np.nan,
             "gain_job_persons": g,
             "gain_per_eur": g / total if total else np.nan,
             "gain_share_target": gain[in_target].sum() / g if g else np.nan,

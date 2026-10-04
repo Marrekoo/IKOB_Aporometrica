@@ -102,3 +102,20 @@ def test_a_gain_at_the_level_of_rounding_noise_leaves_r_undefined():
     # a tolerance of zero takes the noise for a gain and R explodes
     q = interchange_ratio(base, a, b, rel_tol=0.0)["pairs"]
     assert q.loc[q.segment == "single_D2", "R"].iloc[0] == pytest.approx(500.0, rel=1e-6)
+
+
+def test_r_by_income_class_by_hand():
+    """D2: A and B both help (R = 4); D3: only B helps (R = 0); D4: B adds
+    nothing (undefined); D5: A helps 1, B helps 2 (R = 0.5)."""
+    ga = {"single_D2": 8.0, "single_D3": 0.0, "single_D4": 3.0, "single_D5": 1.0}
+    gb = {"single_D2": 2.0, "single_D3": 2.0, "single_D4": 0.0, "single_D5": 2.0}
+    base, a, b = world(lambda k: ga[k[1]], lambda k: gb[k[1]])
+    res = interchange_ratio(base, a, b)
+    c = res["by_class"].set_index("income_class")
+    assert c.loc["D2", "median_R"] == pytest.approx(4.0)
+    assert c.loc["D3", "share_a_zero"] == 1.0 and c.loc["D3", "median_R"] == 0.0
+    assert np.isnan(c.loc["D3", "median_R_both"])
+    assert c.loc["D4", "share_b_zero"] == 1.0 and np.isnan(c.loc["D4", "median_R"])
+    assert c.loc["D5", "median_R_both"] == pytest.approx(0.5)
+    # over the defined pairs (D2, D3, D5, equal populations) A adds nothing in D3
+    assert res["summary"]["share_a_zero"].iloc[0] == pytest.approx(1 / 3)

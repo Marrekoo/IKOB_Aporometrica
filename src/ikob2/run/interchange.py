@@ -72,7 +72,9 @@ def interchange_ratio(base: pd.DataFrame, run_a: pd.DataFrame,
         ["household_type", "income_class", "population"]]
     level = base[base["mode"] == mode].set_index(KEY)[value].abs()
     pairs = meta.join(da.rename("da_a")).join(db.rename("da_b"))
-    pairs["defined"] = pairs["da_b"].abs() > rel_tol * level.reindex(pairs.index)
+    floor = rel_tol * level.reindex(pairs.index)
+    pairs["defined"] = pairs["da_b"].abs() > floor
+    pairs["a_zero"] = pairs["da_a"].abs() <= floor        # A adds nothing
     pairs["R"] = np.where(pairs["defined"], pairs["da_a"] / pairs["da_b"].where(
         pairs["defined"]), np.nan)
     pairs = pairs.reset_index()
@@ -113,5 +115,32 @@ def interchange_ratio(base: pd.DataFrame, run_a: pd.DataFrame,
         "pooled_cv": pooled("cv"), "pooled_iqr_ratio": pooled("iqr_ratio"),
         "pooled_spread": pooled("spread"), "pooled_median_R": pooled("median_R"),
     }])
+    summary["share_a_zero"] = _wshare(pairs, "a_zero", pairs["defined"])
     return {"pairs": pairs, "origins": origins.reset_index(),
-            "summary": summary}
+            "summary": summary, "by_class": by_class(pairs)}
+
+
+def _wshare(pairs: pd.DataFrame, flag: str, among) -> float:
+    """Population-weighted share of the pairs `among` with `flag` set."""
+    w = pairs["population"].where(among, 0.0)
+    return float((w * pairs[flag]).sum() / w.sum()) if w.sum() > 0 else np.nan
+
+
+def by_class(pairs: pd.DataFrame, by: str = "income_class") -> pd.DataFrame:
+    """R per income class (or `by`): the population-weighted shares of the
+    pairs where B adds nothing (R undefined) and where A adds nothing among
+    the defined ones (R = 0), and the median R over the defined pairs and over
+    those where both add something. R is bimodal across segments where A
+    helps some classes and not others, so these describe it better than one
+    median."""
+    rows = []
+    for cls, g in pairs.groupby(by):
+        d = g[g["defined"]]
+        both = d[~d["a_zero"]]
+        rows.append({
+            by: cls, "pairs": len(g), "population": float(g["population"].sum()),
+            "share_b_zero": 1.0 - _wshare(g, "defined", pd.Series(True, g.index)),
+            "share_a_zero": _wshare(g, "a_zero", g["defined"]),
+            "median_R": float(d["R"].median()) if len(d) else np.nan,
+            "median_R_both": float(both["R"].median()) if len(both) else np.nan})
+    return pd.DataFrame(rows)

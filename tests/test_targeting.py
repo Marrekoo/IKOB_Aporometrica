@@ -93,3 +93,15 @@ def test_paper_tables_read_the_scenarios_and_pairs(tmp_path):
     assert np.allclose(g0["gap"], 50.0)      # time-only minus gated
     assert res["correlation_by_spec"].empty   # one specification: nothing to correlate
     json.dumps(res["interchange_by_spec"].to_dict())   # plain values
+
+
+def test_hub_cost_is_added_and_not_attributed():
+    runs = {"hubs": (table((1.0, 1.0, 1.0, 1.0)), {
+        "hub_cost_eur_year": 48000.0, "hubs": 12,
+        "scenario": {"cost": {"compensation_eur_year": 0.0,
+                              "by_segment_eur_year": {}, "by_origin_eur_year": {}}}})}
+    s = targeting(table(), runs, ["Z"], target_classes=["D2"])["summary"].iloc[0]
+    assert s["cost_eur_year"] == 48000.0 and s["hubs"] == 12
+    assert s["gain_per_eur"] == pytest.approx(100.0 / 48000.0)   # 10+30+20+40 persons x 1
+    assert np.isnan(s["cost_share_target"]) and np.isnan(s["cost_share_zone"])
+    assert s["gain_share_zone"] == pytest.approx(40 / 100)
