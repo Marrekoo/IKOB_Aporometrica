@@ -22,3 +22,7 @@ exportToHTML/
 
 # working notes for AI assistants (local)
 CLAUDE.md
+# R session files
+.Rhistory
+.RData
+.Rproj.user/

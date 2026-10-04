@@ -34,6 +34,7 @@ hub scenarios.
 | [docs/scenarios.md](docs/scenarios.md) | shared-bicycle variants, scenarios S0-S4, costs, R, the reachability gap, paper tables |
 | [docs/paper_runs.md](docs/paper_runs.md) | the set-up of the paper runs (`paper/runs.toml`, `cli.batch`) |
 | [docs/reproduce.md](docs/reproduce.md) | reproducing the paper runs: repository, data deposit, steps |
+| [paper/figures/README.md](paper/figures/README.md) | the paper's figures and rounded tables (R) |
 | [docs/data_specification.md](docs/data_specification.md) | every input, intermediate and output file |
 | [docs/segments.md](docs/segments.md) | household x income segments, reference budgets, the engine bridge |
 | [docs/data_lineage.md](docs/data_lineage.md) | jobs: sources, imputation onto buurten, income and home-working split |

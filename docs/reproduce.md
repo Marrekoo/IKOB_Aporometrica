@@ -9,7 +9,7 @@ set-up of the runs is in `paper_runs.md`, every step's details in
 
 | Part | Where |
 |---|---|
-| Software, parameters, run plans | this repository (`src/`, `src/ikob2/defaults.toml`, `paper/runs.toml`, `paper/perturbation.toml`) |
+| Software, parameters, run plans, figure scripts | this repository (`src/`, `src/ikob2/defaults.toml`, `paper/runs.toml`, `paper/perturbation.toml`, `paper/figures/`) |
 | Reference files (budgets, margins, tariffs, occupation tables, jobs by education, hubs, OV-fiets locations, bicycle ownership, StatLine snapshots, scenario hubs) | this repository, `data/`; `cli.layout create` copies them into a data folder |
 | GTFS feed, OpenStreetMap extracts, CBS KWB GeoPackage, LISA municipal table | the data deposit on Zenodo (`inputs.tar`): these versions cannot be downloaded again |
 | Skim stores, imputed jobs per buurt and sector | the data deposit (`intermediate.tar`); recomputable from the inputs (`pipeline.md`, steps 3, 5-7) |
@@ -52,9 +52,12 @@ same hashes.
    for the same code version (`code` in `run.json`), and so are the tables
    in `outputs/comparisons/specs`, `targeting` and `precision`.
 
-The figures and the rounded tables of the paper are made from these tables
-by a separate R script set (plain R, ggplot2) that reads
-`outputs/comparisons/` and three scenario runs.
+6. The figures and the rounded tables of the paper:
+
+       IKOB_DATA_ROOT=<root> Rscript paper/figures/run_all.R
+
+   (plain R; `paper/figures/README.md`), written to
+   `<root>/outputs/paper_figures/`.
 
 ## Recomputing the inputs
 
