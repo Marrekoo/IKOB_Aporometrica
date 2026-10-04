@@ -125,6 +125,6 @@ The data folder is outside the repository (`--data-root` or
 `$IKOB_DATA_ROOT`); `cli.layout create` seeds it with the reference files of
 `data/`. The inputs that cannot be downloaded again in the same version (GTFS,
 OpenStreetMap, KWB, LISA), the skims and the paper runs are in a data deposit
-on Zenodo (`python -m ikob2.cli.archive`; `docs/reproduce.md`).
+on Zenodo, https://doi.org/10.5281/zenodo.23142230 (`python -m ikob2.cli.archive`; `docs/reproduce.md`).
 
 Cite as in [CITATION.cff](CITATION.cff). Licence of the software: MIT ([LICENSE](LICENSE)).

@@ -1,7 +1,8 @@
 # Reproducing the paper runs
 
 How to recompute the results of "Either you can reach it or you cannot"
-(Utrecht shared bicycles) from this repository and its data deposit. The
+(Utrecht shared bicycles) from this repository and its data deposit
+(Zenodo, https://doi.org/10.5281/zenodo.23142230). The
 set-up of the runs is in `paper_runs.md`, every step's details in
 `pipeline.md`.
 
