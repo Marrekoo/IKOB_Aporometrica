@@ -338,7 +338,7 @@ mode = "pt_v2"             # the mode compared
 value = "accessibility"    # the column compared
 compare_top_share = 0.10   # cli.compare: overlap of the top share of origins
 interchange_quantiles = [0.9, 0.1]   # R: the interquantile ratio across an origin's segments
-interchange_tol = 1e-9     # R is undefined where |gain(B)| <= this
+interchange_rel_tol = 1e-5   # R is undefined where |gain(B)| <= this x the baseline value (computation noise is below 2e-6)
 interchange_min_segments = 3   # origins with fewer defined segments get no dispersion
 
 [diagnostics]              # money-gate curves per origin (outputs/diagnostics.py)

@@ -202,7 +202,10 @@ Writes to `outputs/comparisons/<a>_over_<b>/`: `interchange_pairs.csv` (one
 row per origin and segment), `interchange_origins.csv` (dispersion of R
 across an origin's segments: CV, interquantile ratio and spread at
 `--quantiles 0.9 0.1`) and `interchange_summary.csv` (population-weighted
-pooling). R is undefined where `|da(B)| <= --tol`; those pairs stay in the
+pooling). R is undefined where `|da(B)| <= --tol` times the baseline value
+of the cell (`analysis.interchange_rel_tol`, 1e-5: baseline and scenario
+share their inputs, so smaller gains are computation noise, measured at
+most 1.4e-6 in the paper runs); those pairs stay in the
 table with `defined = False` and are counted. Under a generalised cost with
 common inputs R does not depend on the segment; under the gates it does,
 and its dispersion is the diagnostic.

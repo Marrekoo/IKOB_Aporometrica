@@ -89,3 +89,16 @@ def test_correlations_between_specifications_agree_in_levels_but_not_in_gains():
                             & (c.spec_a == x) & (c.spec_b == y)]["correlation"].iloc[0]
     assert get("levels", "a", "b") == pytest.approx(1.0)
     assert get("gain_s1", "a", "b") < 0.5
+
+
+def test_a_gain_at_the_level_of_rounding_noise_leaves_r_undefined():
+    """A hub gain of 1e-6 of a level of 1e5 (0.1, single-precision noise)
+    is no gain: R undefined; a gain of 1e-4 of the level (10) is."""
+    base, a, b = world(lambda k: 50.0, lambda k: 0.1 if k[1] == "single_D2" else 10.0)
+    base, a, b = (t.assign(accessibility=t["accessibility"] + 1e5) for t in (base, a, b))
+    p = interchange_ratio(base, a, b)["pairs"]
+    assert list(p.loc[p.segment == "single_D2", "defined"]) == [False, False]
+    assert p.loc[p.segment == "single_D3", "R"].iloc[0] == pytest.approx(5.0, rel=1e-6)
+    # a tolerance of zero takes the noise for a gain and R explodes
+    q = interchange_ratio(base, a, b, rel_tol=0.0)["pairs"]
+    assert q.loc[q.segment == "single_D2", "R"].iloc[0] == pytest.approx(500.0, rel=1e-6)

@@ -36,19 +36,20 @@ def main(argv=None) -> None:
                    metavar=("HI", "LO"),
                    help="default analysis.interchange_quantiles")
     p.add_argument("--tol", type=float, default=None,
-                   help="default analysis.interchange_tol")
+                   help="R undefined where |gain(B)| <= tol x the baseline; "
+                        "default analysis.interchange_rel_tol")
     args = p.parse_args(argv)
     prm = params_mod.from_args(args, {
         "mode": "analysis.mode", "value": "analysis.value",
         "quantiles": "analysis.interchange_quantiles",
-        "tol": "analysis.interchange_tol"})
+        "tol": "analysis.interchange_rel_tol"})
     args.mode, args.value = prm.analysis.mode, prm.analysis.value
     args.quantiles = prm.analysis.interchange_quantiles
-    args.tol = prm.analysis.interchange_tol
+    args.tol = prm.analysis.interchange_rel_tol
     lay = DataLayout(params_mod.data_root(args.data_root, prm))
     read = lambda r: pd.read_csv(lay.run_dir(r) / "accessibility.csv")  # noqa: E731
     res = interchange_ratio(read(args.base), read(args.a), read(args.b),
-                            args.mode, value=args.value, tol=args.tol,
+                            args.mode, value=args.value, rel_tol=args.tol,
                             quantiles=tuple(args.quantiles),
                             min_segments=prm.analysis.interchange_min_segments)
     out = lay.comparison_dir() / f"{args.a}_over_{args.b}"

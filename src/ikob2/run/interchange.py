@@ -44,12 +44,18 @@ def gains(base: pd.DataFrame, run: pd.DataFrame, mode: str,
 def interchange_ratio(base: pd.DataFrame, run_a: pd.DataFrame,
                       run_b: pd.DataFrame, mode: str = "pt_v2", *,
                       value: str = "accessibility",
-                      tol: float = DEFAULTS.analysis.interchange_tol,
+                      rel_tol: float = DEFAULTS.analysis.interchange_rel_tol,
                       quantiles: tuple[float, float] = tuple(
                           DEFAULTS.analysis.interchange_quantiles),
                       min_segments: int = DEFAULTS.analysis.interchange_min_segments
                       ) -> dict[str, pd.DataFrame]:
     """R per origin and segment, the dispersion per origin and pooled.
+
+    R is undefined where the gain of B is not distinguishable from zero:
+    |gain(B)| <= rel_tol x the baseline value of the cell. Baseline and
+    scenario share their inputs, so a gain below that is computation noise
+    (single precision, alternating sums of the union over options), not a
+    gain.
 
     Returns
       pairs   : one row per (origin, segment): da_a, da_b, R, defined and the
@@ -64,8 +70,9 @@ def interchange_ratio(base: pd.DataFrame, run_a: pd.DataFrame,
     db = gains(base, run_b, mode, value)
     meta = base[base["mode"] == mode].set_index(KEY)[
         ["household_type", "income_class", "population"]]
+    level = base[base["mode"] == mode].set_index(KEY)[value].abs()
     pairs = meta.join(da.rename("da_a")).join(db.rename("da_b"))
-    pairs["defined"] = pairs["da_b"].abs() > tol
+    pairs["defined"] = pairs["da_b"].abs() > rel_tol * level.reindex(pairs.index)
     pairs["R"] = np.where(pairs["defined"], pairs["da_a"] / pairs["da_b"].where(
         pairs["defined"]), np.nan)
     pairs = pairs.reset_index()
