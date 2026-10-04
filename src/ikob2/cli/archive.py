@@ -144,7 +144,9 @@ under `outputs/runs/` are the reference to compare with. The deposit holds
 {odin}. The steps are in `docs/reproduce.md` of the repository.
 
 Licences: OpenStreetMap data and the skims derived from them, ODbL 1.0
-(© OpenStreetMap contributors); GTFS NL, OVapi (http://gtfs.ovapi.nl);
+(© OpenStreetMap contributors); GTFS NL, free to use (Stichting OpenGeo,
+"Dutch integrated real-time transit data", https://gtfs.openov.nl/; built from
+the open data of the transit agencies, which do not endorse this deposit);
 CBS Kerncijfers wijken en buurten, CC BY 4.0; LISA municipal data (LISA,
 https://www.lisa.nl/gratis-data/); the model outputs, CC BY 4.0.
 """

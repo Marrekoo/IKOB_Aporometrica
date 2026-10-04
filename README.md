@@ -117,7 +117,7 @@ waiting and transfer penalties, competition for jobs in the paper runs
 | Eurostat (LFS, SES) | Eurostat copyright policy: reuse with acknowledgement |
 | Sostero et al. (2020) teleworkability indices | CC BY 4.0 |
 | OpenStreetMap | ODbL |
-| GTFS NL (OVapi) | open |
+| GTFS NL (OVapi; Stichting OpenGeo, "Dutch integrated real-time transit data", https://gtfs.openov.nl/) | free to use, from the open data of the transit agencies; no endorsement by them |
 | IKOB job table and jobs by education level (Stichting CROW, ikob-scripts) | CC BY 4.0; the NRM-derived job table with the permission of Rijkswaterstaat |
 | ODiN microdata (CBS / Rijkswaterstaat) | via DANS, with permission; not in this repository. The aggregates in `data/envelope/odin/` are published (README there) |
 

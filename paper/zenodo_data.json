@@ -26,5 +26,5 @@
       "resource_type": "software"
     }
   ],
-  "notes": "OpenStreetMap data and the skims derived from them: ODbL 1.0, (c) OpenStreetMap contributors. GTFS NL: OVapi. CBS Kerncijfers wijken en buurten: CC BY 4.0. LISA municipal data: LISA (https://www.lisa.nl/gratis-data/). Model outputs: CC BY 4.0. ODiN aggregates published with the author's approval; the ODiN microdata are not included (DANS)."
+  "notes": "OpenStreetMap data and the skims derived from them: ODbL 1.0, (c) OpenStreetMap contributors. GTFS NL: free to use; Stichting OpenGeo, 'Dutch integrated real-time transit data', https://gtfs.openov.nl/ (built from the open data of the transit agencies, which do not endorse this deposit). CBS Kerncijfers wijken en buurten: CC BY 4.0. LISA municipal data: LISA (https://www.lisa.nl/gratis-data/). Model outputs: CC BY 4.0. ODiN aggregates published with the author's approval; the ODiN microdata are not included (DANS)."
 }
