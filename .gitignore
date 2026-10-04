@@ -1,28 +1,17 @@
-# local project folders
-examples/advanced_project/
-examples/minimal_project/
-examples/test/
 # data folder built by examples/tiny/make_data.py
 examples/tiny/data/
+# calibration output of `cli.skims calibrate-detour --out data/calibration/...`
+data/calibration/*.routes.csv
+# Python, tools and editors
 .venv/
 __pycache__/
 *.egg-info/
-data/skim_dev/
-data/skims/
-data/calibration/*.routes.csv
-
-# draft paper: results and text stay local
-docs/paper/
-docs/paper_status.md
 build/
-.idea/
-# PyCharm HTML exports (local)
-exportToHTML/
 .coverage
-
-# working notes for AI assistants (local)
-CLAUDE.md
+.idea/
 # R session files
 .Rhistory
 .RData
 .Rproj.user/
+# local working notes
+CLAUDE.md

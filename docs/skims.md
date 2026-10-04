@@ -189,7 +189,7 @@ just below a tier bound) is not an option.
 * CSV with `lat`, `lon` and optionally `hub` (name): the municipal hubs
   (`inputs/hubs/utrecht_hubs.csv`: station hubs from the OV-fiets
   coordinates, street hubs from PDOK road geometries) and the extra hubs of
-  scenario S2 (`intermediate/hubs/utrecht_hubs_s2.csv`, `cli.hubs propose`);
+  scenarios S2c and S2t (`intermediate/hubs/utrecht_hubs_s2c.csv`, `_s2t.csv`; `cli.hubs propose`);
 * the OV-fiets feed (`http://fiets.openov.nl/locaties.json`, a JSON object
   `{"locaties": {code: {"lat", "lng", "name", ...}}}`).
 

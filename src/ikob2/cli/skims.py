@@ -3,7 +3,7 @@ CLI for skims.
 
     python -m ikob2.cli.skims build --kwb <wijkenbuurten.gpkg> \
         --study GM0344 --osm netherlands.osm.pbf --gtfs gtfs-nl.zip \
-        --modes car bike walk pt --out data/skims/utrecht
+        --modes car bike walk pt --out <root>/intermediate/skims/utrecht_nl
 
 Origins are the buurten of the study municipalities; destinations are
 all buurten in the KWB file. Destinations within --near-km of any

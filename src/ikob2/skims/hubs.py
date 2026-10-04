@@ -13,7 +13,7 @@ Every file has a tariff kind (`pt.hub_kinds`, parallel to `pt.hub_files`;
 on the command line `--hub-file FILE:KIND`). Relative paths are looked up
 in the current folder first, then under `<data root>/inputs` and
 `<data root>/intermediate` (hubs made by the model, e.g.
-`intermediate/hubs/utrecht_hubs_s2.csv`).
+`intermediate/hubs/utrecht_hubs_s2c.csv`).
 """
 
 from __future__ import annotations

@@ -134,7 +134,7 @@ safeguards (clips, tolerances).
 
 ## Tests and checks
 
-`pytest` runs about 550 tests in about 25 seconds: unit tests of the
+`pytest` runs about 620 tests in about a minute: unit tests of the
 numerical building blocks (survival properties, copula bounds, union of
 options, IPF margins, fares against the NS table), hand computations of the
 measure (bicycle, M0, PT fare spending), the pipeline on small synthetic

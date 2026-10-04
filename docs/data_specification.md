@@ -73,7 +73,7 @@ The runs read the copies in the data folder, not these.
 | `ownership/pt_spend_<study>.csv` | per income decile: PT trips per person and year, mean fare, spending (local shrunk and national) | `cli.segments pt-spend` |
 | `envelope/odin/*.csv` | ODiN aggregates made from the microdata (the published ones are under `inputs/envelope/odin/`) | `cli.envelope aggregates` |
 | `envelope/*.csv` | the re-derived envelope: anchors, residuals, tour bounds, scenario grid, `reference_budgets.csv` | `cli.envelope build` |
-| `hubs/utrecht_hubs_s2.csv` | extra Lime hubs of scenario S2: `hub, lat, lon, precision, source, buurtcode, access, bike_share, score` | `cli.hubs propose` |
+| `hubs/utrecht_hubs_<label>.csv` | extra Lime hubs of a scenario (`--label`; `s2c` and `s2t` in the paper, seeded from `data/hubs_scenarios/`): `hub, lat, lon, precision, source, buurtcode, access, bike_share, score` | `cli.hubs propose` |
 | `skims/<study>/` | skim store (below) | `cli.skims build`, `build-distance`, `build-pt` |
 | `calibration/car_detour.json` | detour model (seeded from `data/calibration/`) | `cli.skims calibrate-detour` |
 | `osm_peak/*.peak.osm.pbf` | OSM with peak-load speeds | `cli.skims make-peak` |
