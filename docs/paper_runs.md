@@ -98,6 +98,15 @@ of the parameters and writes `outputs/comparisons/specs/` and
 `outputs/comparisons/targeting/`. The figures and the remaining tables are
 made from these outputs by the R analysis pipeline.
 
+## Precision
+
+    python -m ikob2.cli.batch --plan paper/perturbation.toml --data-root <root> --jobs 2
+    python -m ikob2.cli.precision --data-root <root>
+
+140 runs (20 draws x 7 scenarios, M2) with the jobs and population drawn within
+the rounding of their sources; the result is the number of significant digits
+per statistic (`docs/scenarios.md`, precision).
+
 ## Notes for the paper
 
 * **Alternative journeys and scenario hubs (Appendix A.5).** The union over

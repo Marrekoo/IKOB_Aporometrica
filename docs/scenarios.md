@@ -258,3 +258,26 @@ segments or places. The target group is `paper.target_classes`
 |---|---|
 | `targeting_summary.csv` | per scenario: the share of the target group with a lower price (coverage, one minus the exclusion error), the share of the eligible residents outside it (the inclusion error), eligible persons, public cost per year and its shares on the target group and in the zone, the gain in acceptable job-persons, per euro, and its shares to the target group and the zone |
 | `targeting_cells.csv` | per scenario, income class and place (zone or rest): population, gain and gain per person |
+
+## Precision: how many digits a result deserves (`run.perturb`, `run.precision`)
+
+The jobs and the population rest on rounded official statistics. A run with
+`--perturb SEED` draws them within the rounding of their sources (`[perturb]`):
+each LISA municipality x sector total within +-5 jobs (published rounded to
+tens; its buurten change in proportion, a zero stays zero), and per buurt the
+KWB total within +-2.5 inhabitants and each income-class and household-type
+share within +-0.5 percentage points (one raking step to the new shares and
+total). The same seed gives the same inputs in every scenario, so scenario
+differences keep the shared data uncertainty.
+
+`paper/perturbation.toml` runs 20 draws of M2 for S0, S1, S1a, S2c, S2t, S4 and
+S4a; `python -m ikob2.cli.precision --data-root <root>` compares them with the
+unperturbed paper runs (`paper.precision_reference`, `sp_m2`) and writes
+`outputs/comparisons/precision/precision.csv`: per statistic (baseline level and
+gain per person by income class, total gain, gain per euro) the reference, the
+mean and standard deviation over the draws, and the significant digits of the
+reference, `n = floor(log10|x|) - floor(log10 u) + 1` (the last digit at the
+leading digit of the standard deviation u; JCGM 100:2008, 7.2.6). The spread
+covers the rounding of the data only, not the specification or the
+parameters.
+

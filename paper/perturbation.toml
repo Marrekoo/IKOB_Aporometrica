@@ -1,0 +1,43 @@
+# Precision of the paper's results (docs/paper_runs.md, precision):
+#   python -m ikob2.cli.batch --plan paper/perturbation.toml --data-root <root> --jobs 2
+#   python -m ikob2.cli.precision --data-root <root>
+# Every draw perturbs the jobs and population within the rounding of their sources
+# ([perturb], run/perturb.py), the same way in every scenario; M2 throughout.
+
+[specs]                    # one entry per draw (the seed)
+d01 = ["--spec", "m2", "--perturb", "1"]
+d02 = ["--spec", "m2", "--perturb", "2"]
+d03 = ["--spec", "m2", "--perturb", "3"]
+d04 = ["--spec", "m2", "--perturb", "4"]
+d05 = ["--spec", "m2", "--perturb", "5"]
+d06 = ["--spec", "m2", "--perturb", "6"]
+d07 = ["--spec", "m2", "--perturb", "7"]
+d08 = ["--spec", "m2", "--perturb", "8"]
+d09 = ["--spec", "m2", "--perturb", "9"]
+d10 = ["--spec", "m2", "--perturb", "10"]
+d11 = ["--spec", "m2", "--perturb", "11"]
+d12 = ["--spec", "m2", "--perturb", "12"]
+d13 = ["--spec", "m2", "--perturb", "13"]
+d14 = ["--spec", "m2", "--perturb", "14"]
+d15 = ["--spec", "m2", "--perturb", "15"]
+d16 = ["--spec", "m2", "--perturb", "16"]
+d17 = ["--spec", "m2", "--perturb", "17"]
+d18 = ["--spec", "m2", "--perturb", "18"]
+d19 = ["--spec", "m2", "--perturb", "19"]
+d20 = ["--spec", "m2", "--perturb", "20"]
+
+[scenarios]                # as in paper/runs.toml
+s0 = []
+s1 = ["--price-scales", "lime_price_scales_all_50.csv"]
+s1a = ["--price-scales", "lime_price_scales_d2_d4_50.csv"]
+s2c = ["--set", 'shared_bike.egress_suffix={lime="_s2c"}']
+s2t = ["--set", 'shared_bike.egress_suffix={lime="_s2t"}']
+s4 = ["--price-scales", "lime_price_scales_all_50.csv", "--price-zones", "lime_price_zones_overvecht_kanaleneiland.csv"]
+s4a = ["--price-scales", "lime_price_scales_d2_d4_50.csv", "--price-zones", "lime_price_zones_overvecht_kanaleneiland.csv"]
+
+[[sets]]
+name = "{prefix}_{spec}_{scenario}"
+prefix = "pert"
+specs = "all"
+scenarios = "all"
+args = ["--modes", "pt", "--shared-bike", "v2", "--ownership", "--set", "accessibility.export=false"]

@@ -515,6 +515,15 @@ def cmd_run(args) -> None:
            == "population_scaled" else segs.household_based)
 
     sector_jobs = pd.read_csv(args.sector_jobs, index_col=0)
+    perturbation = None
+    if args.perturb is not None:
+        # the jobs and population within the rounding of their sources
+        from ikob2.run.perturb import perturb_jobs, perturb_population
+        u = prm.perturb
+        sector_jobs = perturb_jobs(sector_jobs, args.perturb, u.lisa_unit)
+        pop = perturb_population(pop, args.perturb, u.kwb_count_unit,
+                                 u.kwb_share_unit)
+        perturbation = {"seed": args.perturb, **u.to_dict()}
     matching = job_matching(prm, args, sector_jobs)
     job_weights = matching.by_type
     envelope = load_reference_budgets(args.budgets,
@@ -724,7 +733,7 @@ def cmd_run(args) -> None:
         ["job_type", "income_class", "sector", "weight"]].to_csv(
         out_dir / "job_weights.csv", index=False)
     meta = {**result.meta, "parameters": prm.to_dict(), "scenario": scenario,
-            "job_matching": matching.meta,
+            "job_matching": matching.meta, "perturbation": perturbation,
             "lime_price_scales": price_scale, "pt_fare_scales": fare_scale,
             "lime_price_zones": (None if price_zone is None else
                                  [o for o, z in zip(store.origins, price_zone)
@@ -906,6 +915,10 @@ def main(argv=None) -> None:
     p.add_argument("--wage-period", default=None)
     p.add_argument("--wfh-period", default=None)
     p.add_argument("--epsilon", type=float, default=None)
+    p.add_argument("--perturb", type=int, default=None, metavar="SEED",
+                   help="draw the jobs and population within the rounding of "
+                        "their sources ([perturb]); the same seed gives the "
+                        "same inputs in every scenario")
     p.set_defaults(func=cmd_run)
     args = p.parse_args(argv)
     logging.basicConfig(level=args.log_level,

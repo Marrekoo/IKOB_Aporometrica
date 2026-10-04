@@ -359,3 +359,11 @@ targeting = ["S1=scen_s1", "S1a=scen_s1a", "S4=scen_s4", "S4a=scen_s4a", "S2c=sc
 base_run = "scen_s0"       # baseline run of the targeting tables
 target_classes = ["D2", "D3", "D4"]
 zone = "lime_price_zones_overvecht_kanaleneiland.csv"   # under inputs/tariffs
+precision_plan = "paper/perturbation.toml"   # cli.precision: runs with inputs drawn within their rounding
+precision_reference = "sp_m2"              # unperturbed reference runs <prefix>_<scenario>
+precision_cost_runs = "scen"               # runs with --report-usage for the cost of a scenario
+
+[perturb]                  # --perturb SEED: inputs drawn within the rounding of their sources (run/perturb.py)
+lisa_unit = 10.0           # LISA jobs per municipality and sector are published rounded to tens
+kwb_count_unit = 5.0       # CBS KWB inhabitants per buurt, taken as rounded to fives
+kwb_share_unit = 0.01      # CBS KWB shares (income class, household type), taken as rounded to whole percents

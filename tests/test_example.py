@@ -80,3 +80,26 @@ def test_example_runs_the_calibrated_specifications(tmp_path, monkeypatch, spec)
     else:
         assert meta["scenario"]["m1c"]["cost_mean_eur"] > 0
         assert (got["atom"] == 0).all()
+
+
+def test_example_perturbed_inputs_are_recorded_and_reproducible(tmp_path, monkeypatch):
+    import json
+
+    from ikob2.cli import accessibility
+
+    monkeypatch.delenv("IKOB_DATA_ROOT", raising=False)
+    root = tmp_path / "data"
+    _make_data().build(root)
+    base = ["--data-root", str(root), "--study", "tiny", "--modes", "car", "pt",
+            "--log-level", "ERROR"]
+    for run, extra in (("ref", []), ("p1", ["--perturb", "1"]), ("p1b", ["--perturb", "1"])):
+        accessibility.main(base + ["--run", run] + extra)
+    read = lambda r: pd.read_csv(root / "outputs/runs" / r / "accessibility.csv")  # noqa: E731
+    ref, p1, p1b = read("ref"), read("p1"), read("p1b")
+    assert not np.allclose(ref["accessibility"], p1["accessibility"])
+    pd.testing.assert_frame_equal(p1, p1b)
+    # the perturbation is small: within a few percent of the levels
+    rel = (p1["accessibility"] - ref["accessibility"]).abs() / ref["accessibility"].clip(lower=1)
+    assert rel.max() < 0.1
+    meta = json.loads((root / "outputs/runs/p1/run.json").read_text())
+    assert meta["perturbation"]["seed"] == 1 and meta["perturbation"]["lisa_unit"] == 10.0
