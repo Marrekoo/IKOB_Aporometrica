@@ -114,8 +114,11 @@ def readme(counts: dict[str, int], plans: list[Path], odin_aggregates: bool) -> 
     """README.md of the deposit."""
     rows = "\n".join(f"| `{k}` | {v} |" for k, v in counts.items())
     plan_list = ", ".join(f"`{Path(p).as_posix()}`" for p in plans)
-    odin = ("the ODiN-derived car availability and PT spending per household "
-            "type and decile (aggregates)" if odin_aggregates else
+    odin = ("the ODiN-derived car availability per household type and decile "
+            "and PT spending per decile (`intermediate/ownership/`): weighted "
+            "aggregates of ODiN 2022-23 with the number of respondents behind "
+            "each share (the `n_*` columns), published with the author's "
+            "approval; the microdata are not included" if odin_aggregates else
             "not the ODiN-derived car availability: runs with `--ownership` "
             "need `cli.segments car-availability` on ODiN microdata (DANS)")
     return f"""# IKOB Aporometrica: data of the Utrecht paper runs
@@ -194,7 +197,8 @@ def main(argv=None) -> None:
                         "paper/runs.toml and paper.precision_plan)")
     b.add_argument("--odin-aggregates", action="store_true",
                    help="include the ODiN-derived car availability and PT "
-                        "spending tables")
+                        "spending tables (aggregates; the paper deposit "
+                        "includes them)")
     u = sub.add_parser("upload", help="create an unpublished Zenodo draft")
     u.add_argument("--folder", required=True)
     u.add_argument("--metadata", required=True, help="JSON with the Zenodo metadata")

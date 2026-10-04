@@ -14,7 +14,8 @@ set-up of the runs is in `paper_runs.md`, every step's details in
 | GTFS feed, OpenStreetMap extracts, CBS KWB GeoPackage, LISA municipal table | the data deposit on Zenodo (`inputs.tar`): these versions cannot be downloaded again |
 | Skim stores, imputed jobs per buurt and sector | the data deposit (`intermediate.tar`); recomputable from the inputs (`pipeline.md`, steps 3, 5-7) |
 | IKOB job table (`inputs/ikob/Alle_Zones_2030_2040.xlsx`) | Stichting CROW, https://github.com/Stichting-CROW/ikob-scripts, `segs/Databronnen SEGS compleet/`, commit f90ac72; only needed to recompute the jobs |
-| ODiN microdata | DANS, with permission; only needed for car availability and PT fare spending (`pipeline.md`, step 4) |
+| Car availability and PT fare spending per segment (ODiN aggregates) | the data deposit (`intermediate.tar`, `intermediate/ownership/`), with the respondents behind each cell |
+| ODiN microdata | DANS, with permission; only needed to recompute those aggregates (`pipeline.md`, step 4) |
 | The runs and paper tables of the paper | the data deposit (`outputs.tar.gz`), to compare with |
 
 Every run writes `run.json` with its resolved parameters, the SHA-256 of its
@@ -35,8 +36,9 @@ same hashes.
    To keep the deposit's runs for comparison, move `<root>/outputs` aside
    before step 4.
 3. Car availability per household type and decile (runs with
-   `--ownership`): `python -m ikob2.cli.segments --data-root <root>
-   car-availability` with the ODiN microdata in `inputs/odin/`.
+   `--ownership`) comes with the deposit; to recompute it, `python -m
+   ikob2.cli.segments --data-root <root> car-availability` with the ODiN
+   microdata in `inputs/odin/`.
 4. The runs and tables:
 
        python -m ikob2.cli.batch --plan paper/runs.toml --data-root <root> --jobs 2
