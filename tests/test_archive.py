@@ -88,3 +88,60 @@ def test_missing_input_is_an_error(tmp_path):
     (lay.inputs / "gtfs" / "gtfs-nl.zip").unlink()
     with pytest.raises(FileNotFoundError, match="gtfs-nl.zip"):
         contents(lay, DEFAULTS, [plan])
+
+
+def _fake_zenodo(monkeypatch, deposition):
+    """Record the API calls of `upload` against a fake Zenodo."""
+    from ikob2.cli import archive
+
+    calls = []
+
+    def call(method, url, token, data=None, json_body=None, size=None):
+        calls.append((method, url, json_body))
+        if method == "GET":
+            return deposition
+        if method == "POST":
+            return {"id": 9, "links": {"bucket": "B", "html": "new"}}
+        return {}
+
+    monkeypatch.setattr(archive, "_call", call)
+    return calls
+
+
+def test_upload_to_an_existing_draft_replaces_files_and_keeps_its_metadata(
+        tmp_path, monkeypatch):
+    from ikob2.cli.archive import upload
+
+    (tmp_path / "outputs.tar.gz").write_bytes(b"x")
+    draft = {"id": 7, "submitted": False,
+             "links": {"bucket": "B7", "html": "draft"},
+             "files": [{"links": {"self": "F1"}}, {"links": {"self": "F2"}}],
+             "metadata": {"prereserve_doi": {"doi": "10.5281/zenodo.7"},
+                          "title": "old"}}
+    calls = _fake_zenodo(monkeypatch, draft)
+    assert upload(tmp_path, {"title": "new"}, "t", deposition=7) == "draft"
+    assert [(m, u) for m, u, _ in calls] == [
+        ("GET", "https://zenodo.org/api/deposit/depositions/7"),
+        ("DELETE", "F1"), ("DELETE", "F2"), ("PUT", "B7/outputs.tar.gz"),
+        ("PUT", "https://zenodo.org/api/deposit/depositions/7")]
+    # the reserved DOI stays, the metadata file wins where both have a key
+    assert calls[-1][2] == {"metadata": {
+        "prereserve_doi": {"doi": "10.5281/zenodo.7"}, "title": "new"}}
+
+
+def test_upload_refuses_a_published_deposition(tmp_path, monkeypatch):
+    from ikob2.cli.archive import upload
+
+    calls = _fake_zenodo(monkeypatch, {"id": 7, "submitted": True})
+    with pytest.raises(SystemExit, match="published"):
+        upload(tmp_path, {}, "t", deposition=7)
+    assert [m for m, _, _ in calls] == ["GET"]
+
+
+def test_upload_without_a_deposition_creates_a_new_draft(tmp_path, monkeypatch):
+    from ikob2.cli.archive import upload
+
+    (tmp_path / "README.md").write_text("r")
+    calls = _fake_zenodo(monkeypatch, None)
+    assert upload(tmp_path, {"title": "t"}, "t") == "new"
+    assert [m for m, _, _ in calls] == ["POST", "PUT", "PUT"]

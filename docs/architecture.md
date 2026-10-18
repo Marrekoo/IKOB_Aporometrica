@@ -73,7 +73,7 @@ these; `cli` uses everything.
 | `cli.paper_tables` | tables over a specification grid, targeting tables |
 | `cli.batch` | a set of runs from a run plan (`paper/runs.toml`) |
 | `cli.precision` | significant digits of the paper's results from runs with perturbed inputs |
-| `cli.archive` | the data deposit of the paper runs (Zenodo): build the archives and manifest, upload a draft |
+| `cli.archive` | the data deposit of the paper runs (Zenodo): build the archives and manifest, upload them to a new or an existing draft |
 
 ## Design rules
 

@@ -4,7 +4,7 @@ downloaded again in the same version, the skims, and the runs and tables.
     python -m ikob2.cli.archive --data-root <root> build --out <folder> \\
         [--plan paper/runs.toml --plan paper/perturbation.toml] [--odin-aggregates]
     python -m ikob2.cli.archive upload --folder <folder> \\
-        --metadata paper/zenodo_data.json [--sandbox]
+        --metadata paper/zenodo_data.json [--deposition ID] [--sandbox]
 
 `build` writes to --out, in the layout of a data folder (DataLayout), so
 that the unpacked deposit together with `cli.layout create` (the reference
@@ -25,7 +25,9 @@ files of the repository's data/) is a data folder for the paper runs:
 
 `upload` creates a Zenodo deposition with these files and the metadata of
 --metadata, and leaves it as an unpublished draft: the author reviews and
-publishes it on zenodo.org. The token is read from $ZENODO_TOKEN (scope
+publishes it on zenodo.org. With --deposition it replaces the files of that
+existing draft instead and merges --metadata into its metadata, so a
+reserved DOI stays; a published deposition is refused. The token is read from $ZENODO_TOKEN (scope
 deposit:write); --sandbox uses sandbox.zenodo.org.
 """
 
@@ -170,11 +172,22 @@ def _call(method: str, url: str, token: str, data=None, json_body=None,
     return json.loads(body) if body else {}
 
 
-def upload(folder: Path, metadata: dict, token: str, sandbox: bool = False) -> str:
-    """Create a draft deposition with every file of `folder`; returns the
-    URL of the draft (not published)."""
+def upload(folder: Path, metadata: dict, token: str, sandbox: bool = False,
+           deposition: int | None = None) -> str:
+    """Put every file of `folder` in a draft deposition, a new one or the
+    existing draft `deposition` (its files replaced, `metadata` merged into
+    its own); returns the URL of the draft (not published)."""
     api = ZENODO["sandbox" if sandbox else "zenodo"]
-    dep = _call("POST", f"{api}/deposit/depositions", token, json_body={})
+    if deposition is None:
+        dep = _call("POST", f"{api}/deposit/depositions", token, json_body={})
+    else:
+        dep = _call("GET", f"{api}/deposit/depositions/{deposition}", token)
+        if dep.get("submitted"):
+            raise SystemExit(f"Deposition {deposition} is published; make a new "
+                             "version on zenodo.org instead.")
+        for old in dep.get("files", []):
+            _call("DELETE", old["links"]["self"], token)
+        metadata = {**dep.get("metadata", {}), **metadata}
     for f in sorted(folder.iterdir()):
         if f.is_file():
             with open(f, "rb") as fh:
@@ -204,6 +217,8 @@ def main(argv=None) -> None:
     u = sub.add_parser("upload", help="create an unpublished Zenodo draft")
     u.add_argument("--folder", required=True)
     u.add_argument("--metadata", required=True, help="JSON with the Zenodo metadata")
+    u.add_argument("--deposition", type=int, default=None,
+                   help="id of an existing draft whose files to replace")
     u.add_argument("--sandbox", action="store_true")
     args = p.parse_args(argv)
     if args.command == "upload":
@@ -212,7 +227,7 @@ def main(argv=None) -> None:
             raise SystemExit("Set $ZENODO_TOKEN (zenodo.org: Applications, "
                              "personal access token, scope deposit:write).")
         meta = json.loads(Path(args.metadata).read_text())
-        print(upload(Path(args.folder), meta, token, args.sandbox))
+        print(upload(Path(args.folder), meta, token, args.sandbox, args.deposition))
         return
     prm = params_mod.from_args(args, {})
     lay = DataLayout(params_mod.data_root(args.data_root, prm))
