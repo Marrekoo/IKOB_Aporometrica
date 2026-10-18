@@ -141,7 +141,7 @@ not. M0u -> M0s isolates the segment budgets at the degenerate shape, as
 M1 -> M1' does at the exponential one. Under exponential margins the gate
 and generalised cost coincide (M1' is both); under steps they do not.
 A price cut changes M0u only where a fare crosses the one cost cut-off
-`C*`; in the Utrecht runs `C*` (EUR 37.84 per journey) lies above every fare,
+`C*`; in the Utrecht runs `C*` (EUR 34.84 per journey) lies above every fare,
 so no price scenario moves M0u.
 
 **Values of time** (`[vot]`): the commuting values of the Dutch
