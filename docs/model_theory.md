@@ -87,7 +87,9 @@ Free modes have `S_M = 1`.
 
 The budgets are per priced one-way journey, in 2022 euros: what a household
 can spend on travel once everything a capabilities approach counts as basic
-is paid for (the Nibud minimum basket and rent), spread over its journeys.
+is paid for (the Nibud minimum basket and rent), spread over its priced
+journeys, unreimbursed commutes included, so the commute to a candidate job
+is gated against the same amount as any other journey.
 The uniform distribution between `low` and `high` is across households of a
 segment, which give up different shares (gamma) of the Nibud example basket;
 where no example basket exists the margin is a step (`low` = `high`).

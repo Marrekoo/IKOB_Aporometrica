@@ -59,10 +59,26 @@ travel. The share given up, gamma, is taken uniform over [0, 1] across the
 households of a cell, so the budget per journey is uniform between the
 residual after the example basket (`low`, gamma = 0) and after the minimum
 basket (`high`, gamma = 1), each spread over the household's journeys. All
-other assumptions sit at their central value (tours per month from ODiN,
-interpolated rent, average unreimbursed commuting, Nibud's PT rate). Warnaar's
+other assumptions sit at their central value (journeys per month from ODiN,
+interpolated rent, average unreimbursed commute journeys, Nibud's PT rate). Warnaar's
 published residual b_norm is the midpoint between his two outer anchors and
 adds no information beyond them (`gamma_anchor` = 0.5).
+
+**Commuting.** The residual is the money a household can spend on all its
+travel, so unreimbursed commutes are paid from it like any other priced
+journey: their journeys join the journeys the residual is spread over, and
+no commuting cost is set aside beforehand. The budget per journey is then
+the same amount for a trip to work as for any other trip, which is what the
+accessibility model needs: every journey it gates is a commute to a
+candidate job, and the money for that commute is the residual itself.
+Setting a commuting cost aside at its observed price would instead treat the
+current commute as fixed, although observed commutes are cheap because
+households choose jobs they can afford to reach, the very constraint the
+model measures. Centrally the household adds the average unreimbursed
+commute journeys of its cell (the same composition and passenger correction
+as its other journeys); the alternatives are none and those of an
+unreimbursed commuter (`commute_scenarios`, with `spread` all). Reimbursed
+commutes are paid by the employer and count nowhere.
 
 Where no example basket exists, gamma has no range and the budget is one
 amount (`low` = `high`, a step margin): above the highest Nibud anchor (19

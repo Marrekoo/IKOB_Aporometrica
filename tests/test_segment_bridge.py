@@ -462,13 +462,13 @@ def test_reference_budgets_match_the_published_table():
 
     # spot checks against data/envelope/reference_budgets.csv
     assert (row("single", "D2").low, row("single", "D2").high,
-            row("single", "D2").km_low) == (8.38, 16.51, 44.75)
-    assert (row("couple", "D5").low, row("couple", "D5").high) == (17.75, 29.74)
+            row("single", "D2").km_low) == (8.06, 15.65, 43.03)
+    assert (row("couple", "D5").low, row("couple", "D5").high) == (16.77, 27.96)
     # no gamma range: a step margin at one value
     assert (row("couple_children", "D5").low,
-            row("couple_children", "D5").high) == (24.5, 24.5)
+            row("couple_children", "D5").high) == (22.6, 22.6)
     assert (row("single_parent", "D10").low, row("single_parent", "D10").high,
-            row("single_parent", "D10").km_high) == (97.52, 97.52, 523.29)
+            row("single_parent", "D10").km_high) == (86.14, 86.14, 462.27)
     # the rent step between Warnaar's anchors: couples' D3 floor below D2
     assert row("couple", "D3").low < row("couple", "D2").low
 
@@ -497,19 +497,19 @@ def test_reference_budgets_drive_segments_and_the_gate():
     q1 = next(s for s in segs if s.name == "single_D1")
     assert q1.class_filter.cost.atom == 1.0
     q5 = next(s for s in segs if s.name == "couple_D5")
-    assert q5.class_filter.cost == CurveSpec("uniform", (17.75, 29.74))
+    assert q5.class_filter.cost == CurveSpec("uniform", (16.77, 27.96))
 
     # a censored segment reaches only free (cost 0) trips; a middle
-    # segment with budget 17.75-29.74 EUR clears fares below 17.75 and
+    # segment with budget 16.77-27.96 EUR clears fares below 16.77 and
     # part of those above
     state, time, money, jobs = small_state()
-    assert money.max() > 17.75
+    assert money.max() > 16.77
     a = SegmentedRunner(decay_epsilon=None).run_hansen(
         state, [q1, q5], cost_matrices={"time": time, FARE: money})
     w = weibull(time, 2.0, 45.0)
     np.testing.assert_allclose(a["single_D1"], np.diag(w) * jobs, rtol=1e-5)
     np.testing.assert_allclose(a["couple_D5"],
-                               (w * uniform(money, 17.75, 29.74)) @ jobs, rtol=1e-5)
+                               (w * uniform(money, 16.77, 27.96)) @ jobs, rtol=1e-5)
 
 
 # ── Tour versus trip basis ───────────────────────────────────────────
@@ -529,12 +529,12 @@ def test_default_basis_converts_per_tour_to_per_journey(per_tour):
     env = load_reference_budgets(per_tour)
     raw = pd.read_csv(per_tour)
     s = env[(env.household_type == "single") & (env.income_class == "D2")].iloc[0]
-    assert (s.low, s.high) == (pytest.approx(8.38 / 2.2), pytest.approx(16.51 / 2.2))
+    assert (s.low, s.high) == (pytest.approx(8.06 / 2.2), pytest.approx(15.65 / 2.2))
     assert env.attrs["legs_per_tour"] == 2.2
     assert len(env) == len(raw)
     one = load_reference_budgets(per_tour, legs_per_tour=1.0)
     s = one[(one.household_type == "single") & (one.income_class == "D2")].iloc[0]
-    assert (s.low, s.high) == (8.38, 16.51)            # 1: the table as it is
+    assert (s.low, s.high) == (8.06, 15.65)            # 1: the table as it is
 
 
 def test_legs_per_tour_divides_bounds_and_km_but_not_atom(per_tour):
@@ -568,7 +568,7 @@ def test_legs_per_tour_validation(bad):
 
 
 def test_rescaled_budget_changes_who_clears_a_fare(per_tour):
-    # a 20 EUR one-way trip: cleared by part of the D5 couples (17.75-29.74
+    # a 20 EUR one-way trip: cleared by part of the D5 couples (16.77-27.96
     # EUR) when the table is read per journey, by none per 3-leg tour
     env1 = load_reference_budgets(per_tour, legs_per_tour=1.0)
     env3 = rescale_budgets(env1, 3.0)
@@ -578,7 +578,7 @@ def test_rescaled_budget_changes_who_clears_a_fare(per_tour):
                         only=["couple_D5"])[0].class_filter.cost
     c = np.array([[20.0]], dtype=DTYPE)
     assert uniform(c, *s1.params)[0, 0] > uniform(c, *s3.params)[0, 0]
-    assert s3.params == pytest.approx((17.75 / 3, 29.74 / 3))
+    assert s3.params == pytest.approx((16.77 / 3, 27.96 / 3))
 
 
 def test_mixed_units_divide_only_the_rows_per_tour(per_tour, tmp_path):

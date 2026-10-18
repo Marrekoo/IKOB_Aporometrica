@@ -326,7 +326,7 @@ pt_btm_board_eur = 1.08
 boardings_per_tour = 2
 urbanity_adj_eur = 0.0
 rent_scenarios = ["lo", "interp", "hi"]
-commute_scenarios = ["none", "average", "worker"]
+commute_scenarios = ["none", "average", "worker"]   # unreimbursed commute journeys added to the journeys the residual covers
 pt_bases = ["nibud_flat", "chipkaart"]
 
 [analysis]                 # cli.compare, cli.interchange, cli.paper_tables

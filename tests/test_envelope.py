@@ -157,25 +157,27 @@ def test_pairwise_pava():
     assert np.isnan(xm.pairwise_pava([1, np.nan, 0])).any()   # unchanged
 
 
-def test_budget_per_tour_is_residual_over_tours(src, pub_prm):
+def test_budget_per_tour_is_residual_over_tours_commutes_included(src, pub_prm):
     env = pd.DataFrame([{"hh_type": "single", "point_id": "Q5", "rent_scenario": "lo",
                          "b_ex": 500.0, "b_bas": 900.0, "env_bas_ok": True,
                          "gamma_identified": True, "b_kind": "gamma_indexed"}])
     nb = pd.DataFrame([{"hh_type": "single", "quantile": "Q5", "N_min": 8.0,
                         "N_iso": 20.0, "N_max": 40.0, "N_commit_avg": 4.0}])
-    comm = pd.DataFrame([{"hh_type": "single", "quantile": "Q5",
-                          "eur_per_tour": 5.0, "n_commute_pm": 10.0}])
+    comm = pd.DataFrame([{"hh_type": "single", "quantile": "Q5", "n_commute_pm": 10.0}])
     prm = pub_prm.with_values({"envelope.unit": "tour", "envelope.n_lower": "fixed"})
     agg = {"pt_km": pd.DataFrame({"train_km": [1.0], "btm_km": [1.0]})}
     bund = xm.bundles(agg, src, prm)
     g = xm.grid(env, nb, comm, bund, src, prm).set_index(
         ["gamma", "N_source", "commute_scenario", "pt_basis"])
-    # gamma 0.5: b = 700; average commuting: 4 x 5 = 20; N_emp 20 -> 34
-    assert g.loc[(0.5, "N_emp", "average", "nibud_flat"), "X_M"] == pytest.approx(680 / 20)
+    # gamma 0.5: b = 700 over N_emp 20 plus 4 average commute tours; nothing
+    # is deducted for commuting
+    assert g.loc[(0.5, "N_emp", "average", "nibud_flat"), "X_M"] == pytest.approx(700 / 24)
     assert g.loc[(1.0, "N_min", "none", "nibud_flat"), "X_M"] == pytest.approx(900 / 8)
-    assert g.loc[(0.0, "N_max", "worker", "chipkaart"), "X_M"] == pytest.approx(450 / 40)
+    # gamma 0: b = 500 over N_max 40 plus the 10 tours of an unreimbursed
+    # commuter (PT has no fixed EUR/month)
+    assert g.loc[(0.0, "N_max", "worker", "chipkaart"), "X_M"] == pytest.approx(500 / 50)
     gt = xm.gate(g.reset_index())
-    assert gt["X_M_lo"].item() == pytest.approx(450 / 40)
+    assert gt["X_M_lo"].item() == pytest.approx(500 / 50)
     assert gt["X_M_hi"].item() == pytest.approx(900 / 8)
 
 

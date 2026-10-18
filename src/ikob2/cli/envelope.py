@@ -64,7 +64,7 @@ def build(src_dir, agg_dir, prm) -> dict:
     env = nibud.quantile_envelope(anch, income.income_axis(src, prm), src, prm)
     bounds = xm.tour_bounds(agg, prm)
     bund = xm.bundles(agg, src, prm)
-    grid = xm.grid(env, bounds, xm.commuting(agg, bund, src, prm), bund, src, prm)
+    grid = xm.grid(env, bounds, xm.commuting(agg, prm), bund, src, prm)
     gate = xm.gate(grid, prm, agg["km_cdf"])
     return {"anchors": anch, "envelope": env, "tour_bounds": bounds,
             "bundles": bund, "grid": grid,

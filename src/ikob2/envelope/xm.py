@@ -1,5 +1,5 @@
 """
-Tours per month, commuting costs and the budget per tour X_M, from the
+Tours per month, commute tours and the budget per tour X_M, from the
 residual envelope (`nibud`) and the ODiN aggregates (`odin`).
 
 The unit (`envelope.unit`) is a priced home-based tour or a priced one-way
@@ -17,14 +17,16 @@ Tours per household and month, per household type and income decile:
     `n_min_fixed` (in journeys: times the journeys per tour) or, with
     `n_lower` = lowest_decile, the lowest value of the household type.
 
-Commuting: unreimbursed commute tours per month (the household average, or
-that of an unreimbursed commuter) times their mean cost (car km at the car
-class's rate, other km at the cheapest PT rate).
+Commuting: unreimbursed commutes are paid from the same residual as every
+other priced tour, so their tours join the tours the residual is spread
+over: none, the household average (`N_commit_avg`, the same composition and
+passenger correction as `N_emp`) or those of an unreimbursed commuter.
+Reimbursed commutes are paid by the employer and count nowhere.
 
 The grid: every combination of gamma, N (N_min, N_emp, N_max), rent
 scenario, commuting scenario and PT tariff basis. For each, the residual
-b(gamma) minus fixed car costs and commuting is spread over N tours; X_M is
-the largest budget per tour over the household's feasible bundles (public
+b(gamma) minus fixed car costs is spread over N plus the commute tours; X_M
+is the largest budget per tour over the household's feasible bundles (public
 transport, or the car class of the household type).
 
 The envelope per cell: `low` and `high` are the minimum and maximum of X_M
@@ -159,21 +161,11 @@ def bundles(agg: dict, src: Sources, prm) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def commuting(agg: dict, bund: pd.DataFrame, src: Sources, prm) -> pd.DataFrame:
-    """Per household type and decile: EUR per unreimbursed commute tour (or
-    journey) and the commute tours (journeys) per month of an unreimbursed
-    commuter."""
+def commuting(agg: dict, prm) -> pd.DataFrame:
+    """Per household type and decile: the commute tours (journeys) per month
+    of an unreimbursed commuter."""
     e = prm.envelope
     j = _unit(prm) == "journey"
-    car_class = src["car_class"].set_index("hh_type")["bundle"]
-    car_rate = (bund[bund["kind"] == "car"].drop_duplicates("bundle")
-                .set_index("bundle")["cost_per_km"])
-    pt = bund[bund["kind"] == "pt"]
-    pt_rate, pt_fix = pt["cost_per_km"].min(), pt["cost_fixed_per_tour"].min()
-    c = agg["commute_tours"].copy()
-    kc, kp = ("km_car_j", "km_pt_j") if j else ("km_car", "km_pt")
-    c["eur_per_tour"] = (c[kc] * c["hh_type"].map(car_class).map(car_rate)
-                         + c[kp] * pt_rate + c["share_pt"] * pt_fix)
     r = agg["commuter_rates"]
     col = "jrate" if j else "rate"
     cell = r[r["level"] == "cell"][["hh_type", "quantile", col, "n"]].rename(columns={col: "rate"})
@@ -181,8 +173,7 @@ def commuting(agg: dict, bund: pd.DataFrame, src: Sources, prm) -> pd.DataFrame:
     w = cell.merge(pool, on="quantile", how="left")
     w["n_commute_pm"] = np.where(w["n"] >= e.min_commuter_n, w["rate"], w["rate_pool"]) \
         * e.days_per_month
-    return c[["hh_type", "quantile", "eur_per_tour"]].merge(
-        w[["hh_type", "quantile", "n_commute_pm"]], on=["hh_type", "quantile"], how="outer")
+    return w[["hh_type", "quantile", "n_commute_pm"]]
 
 
 def grid(env: pd.DataFrame, nb: pd.DataFrame, comm: pd.DataFrame,
@@ -197,18 +188,17 @@ def grid(env: pd.DataFrame, nb: pd.DataFrame, comm: pd.DataFrame,
         names=["gamma", "N_source", "commute_scenario"]).to_frame(index=False)
     d = d.merge(scen, how="cross")
     d = d[d["gamma_identified"] | (d["gamma"] == 0)]
+    d["N_commute"] = np.select(
+        [d["commute_scenario"] == "average", d["commute_scenario"] == "worker"],
+        [d["N_commit_avg"].fillna(0.0), d["n_commute_pm"].fillna(0.0)], 0.0)
     d["N"] = np.select([d["N_source"] == "N_min", d["N_source"] == "N_emp"],
-                       [d["N_min"], d["N_iso"]], d["N_max"])
+                       [d["N_min"], d["N_iso"]], d["N_max"]) + d["N_commute"]
     d["b"] = np.where(d["gamma_identified"],
                       (1 - d["gamma"]) * d["b_ex"] + d["gamma"] * d["b_bas"], d["b_bas"])
-    d["commute_cost"] = np.select(
-        [d["commute_scenario"] == "average", d["commute_scenario"] == "worker"],
-        [(d["N_commit_avg"] * d["eur_per_tour"]).fillna(0.0),
-         (d["n_commute_pm"] * d["eur_per_tour"]).fillna(0.0)], 0.0)
     car_class = src["car_class"].set_index("hh_type")["bundle"]
     d = d.merge(bund, how="cross")
     d = d[(d["kind"] == "pt") | (d["bundle"] == d["hh_type"].map(car_class))]
-    d["residual"] = d["b"] - (d["fixed_eur"] + d["commute_cost"] + e.urbanity_adj_eur)
+    d["residual"] = d["b"] - (d["fixed_eur"] + e.urbanity_adj_eur)
     d["feasible"] = d["env_bas_ok"] & np.isfinite(d["residual"]) & (d["residual"] >= 0)
     ok_n = np.isfinite(d["N"]) & (d["N"] > 0)
     d["budget"] = np.where(ok_n, d["residual"] / d["N"].where(ok_n, 1.0), np.nan)
