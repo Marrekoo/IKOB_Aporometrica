@@ -144,13 +144,20 @@ A price cut changes M0u only where a fare crosses the one cost cut-off
 `C*`; in the Utrecht runs `C*` (EUR 37.84 per journey) lies above every fare,
 so no price scenario moves M0u.
 
-**Values of time** (EUR per hour, Dutch national value-of-time study,
-`[vot]`): car 12.05, rail 15.10, bus/tram/metro 10.80. Public transport is
-priced per journey at a rail-share-weighted value,
-`VoT_ij = s_ij 15.10 + (1 - s_ij) 10.80`, `s_ij = rail_km / (rail_km + other_km)`;
-the cost is rescaled to the rail value, `c' = c 15.10 / VoT_ij`, so that one
+**Values of time** (`[vot]`): the commuting values of the Dutch
+value-of-time study (KiM, 2023, *De nieuwe waarderingskengetallen voor
+reistijd, betrouwbaarheid en comfort*), EUR per hour at the 2022 price
+level including VAT, the price level of the budgets: car 10.78, rail 12.05,
+bus/tram/metro 7.62. Public transport is priced per journey at a
+rail-share-weighted value,
+`VoT_ij = s_ij 12.05 + (1 - s_ij) 7.62`, `s_ij = rail_km / (rail_km + other_km)`
+(in-vehicle kilometres; a journey without a share takes the rail value);
+the cost is rescaled to the rail value, `c' = c 12.05 / VoT_ij`, so that one
 exponential cost gate equals the generalised-cost form (`vot_weighted_cost`).
-`--vot mode=value` overrides the values.
+The cost of a chain with a shared-bicycle leg (fare and rental) is valued
+at the journey's public-transport value; the bicycle itself costs nothing,
+so the study's cycling value does not enter. `--vot mode=value` overrides
+the values.
 
 ## 5. Alternative journeys
 

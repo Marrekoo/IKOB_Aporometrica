@@ -30,7 +30,7 @@ in `run.json`.
 | m0 | cut-off on generalised time at the median acceptable time (one value of time per mode) |
 | m0u | dual cut-off: median acceptable time, one cost cut-off for everyone (median of the population's cost thresholds) |
 | m0s | dual cut-off: median acceptable time, the cost cut-off of each segment (median of its cost margin) |
-| m1 | exponential generalised cost, national values of time |
+| m1 | exponential generalised cost, national commuting values of time (KiM 2023) |
 | m1p | exponential margins: time with the mean acceptable time, cost with the segment's mean budget |
 | m2 | Weibull time margin and uniform cost margin with an atom, independent |
 | m3t1.25 ... m3tinf | M2 margins joined by a Gumbel-Hougaard copula, theta 1.25, 1.5, 2, 4, infinity |

@@ -36,10 +36,10 @@ ikob_jobs = "Alle_Zones_2030_2040.xlsx"               # under inputs/ikob: buurt
 education_jobs = "jobs_by_education_buurt_2016.csv"  # under inputs/jobs_education (data/jobs_education)
 odin = "ODIN_22_23_clean.csv"                         # under inputs/odin
 
-[vot]                      # EUR per hour (LMS/NRM), used by M1
-car = 12.05
-pt = 15.10                 # rail
-pt_other = 10.80           # bus, tram, metro
+[vot]                      # EUR per hour, commuting, 2022 prices incl. VAT (KiM 2023), used by M0 and M1
+car = 10.78
+pt = 12.05                 # rail
+pt_other = 7.62            # bus, tram, metro
 
 [accessibility]
 spec = "m2"                # m0, m0u, m0s, m1, m1c, m1p, m2, m3 (segments/specs.py)
