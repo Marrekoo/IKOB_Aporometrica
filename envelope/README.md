@@ -81,12 +81,22 @@ unreimbursed commuter (`commute_scenarios`, with `spread` all). Reimbursed
 commutes are paid by the employer and count nowhere.
 
 Where no example basket exists, gamma has no range and the budget is one
-amount (`low` = `high`, a step margin): above the highest Nibud anchor (19
-cells, `upper_bound`: the residual after the minimum basket, the most the
-household could spend) and at couples and couples with children in D2
-(Warnaar's couple at minimum wage implies an example basket below the
-minimum basket). Couples in D2 therefore get the most generous point, which
-lies above the low end of D3.
+amount (`low` = `high`, a step margin), in 20 of the 36 cells. Nineteen lie
+above the highest Nibud anchor (`upper_bound`: the residual after the
+minimum basket, the most the household could spend): couples from D7,
+couples with children and single parents from D5, singles from D8. The
+twentieth is couples in D2: Warnaar's couple at minimum wage implies an
+example basket below the minimum basket, so there is nothing to give up.
+Couples in D2 therefore get the most generous point, which lies above the
+low end of D3.
+
+In the other 16 cells the band follows the slack between the two baskets.
+It is narrow where the example basket leaves little to give up: couples
+with children and single parents in D2 (EUR 100 and 76 a month of slack),
+where `high - low` is about a fifth to a quarter of `central`, and couples
+in D3 (a quarter). Elsewhere it is wide, about half to two thirds of
+`central`: singles in D2-D7, couples in D4-D6, couples with children and
+single parents in D3-D4.
 
 **The choices**, as parameters in `defaults.toml` [envelope], each with the
 alternative the code also offers:

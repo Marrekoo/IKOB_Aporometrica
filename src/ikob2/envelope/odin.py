@@ -29,8 +29,6 @@ Tables returned (dict name -> DataFrame):
                    unreimbursed), n (persons)
   composition      hh_type, quantile, hh_size, hh_lft1..hh_lft4 (weighted means)
   passenger_share  hh_type, pass_share (share of tours with a car-passenger leg)
-  commute_tours    hh_type, quantile, km_car, km_pt, share_pt, n (unreimbursed
-                   commute tours: weighted mean km by car, by other modes)
   commuter_rates   level (cell | quantile), hh_type, quantile, rate (commute
                    tours per day of unreimbursed commuters), n
   pt_km            train_km, btm_km (km of train and bus/tram/metro trips)
@@ -52,7 +50,7 @@ import pandas as pd
 
 COLS = {"OPID": "person", "Verpl": "verpl", "VerplNr": "trip_no",
         "FactorP": "w_person", "KHvm": "mode", "MotiefV": "motive",
-        "Doel": "doel", "AfstV": "dist_hm", "VertUur": "vert_uur",
+        "Doel": "doel", "AfstV": "dist_hm",
         "HHPers": "hh_size", "HHSam": "hh_comp", "HHLft1": "hh_lft1",
         "HHLft2": "hh_lft2", "HHLft3": "hh_lft3", "HHLft4": "hh_lft4",
         "HHGestInkG": "income", "Leeftijd": "age", "WrkVervw": "wrk_vervw",
@@ -62,7 +60,6 @@ PERSON_VARS = ("w_person", "hh_size", "hh_comp", "hh_lft1", "hh_lft2",
                "bet_werk")
 PRICED = (1, 2, 3, 4, 7)            # KHvm: car driver, passenger, train, BTM, other
 CAR_PASSENGER, TRAIN, BTM = 2, 3, 4
-CAR_MODES = (1, 2)
 HOME, COMMUTE, TOURING, BUSINESS = 1, 1, 9, (2, 3)
 WRK_CAR, WRK_PT = (3, 4, 5, 6), (7, 8)
 INCOME_UNKNOWN, HH_UNKNOWN = 11, (10, 11)
@@ -128,8 +125,8 @@ def _r_cumsum(x: pd.Series) -> pd.Series:
 
 
 def tours(odin: pd.DataFrame, p: pd.DataFrame, journeys: bool = False):
-    """Priced home-based tours: person, any_commute, any_pass, mode_max, km,
-    dep_hour, nj (priced journeys) and nj_pass (of them as car passenger),
+    """Priced home-based tours: person, any_commute, any_pass, km, nj (priced
+    journeys) and nj_pass (of them as car passenger),
     with the person's household type and commute status; with
     `journeys=True` also the priced journeys of those tours (km, w_person,
     any_commute of their tour).
@@ -144,16 +141,13 @@ def tours(odin: pd.DataFrame, p: pd.DataFrame, journeys: bool = False):
     prev = home.groupby(t["person"]).shift(1)
     prev[~t.duplicated("person")] = 0.0
     t = t.assign(tour=prev.groupby(t["person"]).transform(_r_cumsum) + 1,
-                 _km=t["km"].fillna(-np.inf),
                  priced=t["mode"].isin(PRICED),
                  passenger=t["mode"] == CAR_PASSENGER,
                  commute=t["motive"] == COMMUTE)
     g = t.groupby(["person", "tour"], dropna=False, sort=False)
     out = g.agg(any_priced=("priced", "max"), any_pass=("passenger", "max"),
                 any_commute=("commute", "max"), km=("km", "sum"),
-                dep_hour=("vert_uur", lambda s: s.iloc[0]),
                 nj=("priced", "sum"), nj_pass=("passenger", "sum"))
-    out["mode_max"] = t.loc[g["_km"].idxmax().to_numpy(), "mode"].to_numpy()
     out = out.reset_index()
     out = out[out["any_priced"]]
     out = out.merge(p[["hh_type", "reimbursed", "unreimb_commuter", "w_person"]],
@@ -236,18 +230,6 @@ def aggregates(odin: pd.DataFrame, hh_types: pd.DataFrame) -> dict:
         _wmean_na(ps, "pass_share_j", ("hh_type",)).rename("pass_share_j")],
         axis=1).reset_index()
 
-    ct = tr[tr["any_commute"] & tr["dep_hour"].notna() & tr["hh_type"].notna()]
-    ct = ct.merge(pq[["person", "quantile", "w_eff"]], on="person")
-    ct = ct[np.isfinite(ct["km"]) & (ct["km"] > 0) & (ct["reimbursed"] == False)]  # noqa: E712
-    is_car = ct["mode_max"].isin(CAR_MODES)
-    ct = ct.assign(km_car=ct["km"] * is_car, km_pt=ct["km"] * ~is_car, pt=(~is_car).astype(float))
-    ct = ct.assign(km_car_j=ct["km_car"] / ct["nj"], km_pt_j=ct["km_pt"] / ct["nj"])
-    commute = pd.DataFrame({c: _wmean_na(ct, c, ("hh_type", "quantile"))
-                            for c in ("km_car", "km_pt", "pt", "km_car_j", "km_pt_j")}).rename(
-        columns={"pt": "share_pt"})
-    commute["n"] = ct.groupby(["hh_type", "quantile"]).size()
-    commute = commute.reset_index()
-
     uc = pq[pq["unreimb_commuter"]].merge(by_person[["n_commute"]], left_on="person",
                                           right_index=True, how="left")
     uc = uc.merge(by_person[["j_commute"]], left_on="person", right_index=True, how="left")
@@ -275,8 +257,8 @@ def aggregates(odin: pd.DataFrame, hh_types: pd.DataFrame) -> dict:
                      _cdf(bench_j["km"], bench_j["w_person"]).assign(unit="journey")],
                     ignore_index=True)[["unit", "km", "share"]]
     return {"crosswalk": cw, "band_rates": band, "composition": comp,
-            "passenger_share": pass_share, "commute_tours": commute,
-            "commuter_rates": commuters, "pt_km": pt_km, "units": units,
+            "passenger_share": pass_share, "commuter_rates": commuters,
+            "pt_km": pt_km, "units": units,
             "km_cdf": cdf}
 
 
@@ -304,5 +286,5 @@ def read_aggregates(folder: str | Path) -> dict:
     """Read the tables written by `write_aggregates`."""
     folder = Path(folder)
     names = ("crosswalk", "band_rates", "composition", "passenger_share",
-             "commute_tours", "commuter_rates", "pt_km", "units", "km_cdf")
+             "commuter_rates", "pt_km", "units", "km_cdf")
     return {n: pd.read_csv(folder / f"{n}.csv") for n in names}

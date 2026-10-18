@@ -113,7 +113,7 @@ def _diary():
     def trip(person, nr, doel, mode, motive, km, hh=2, inc=5):
         rows.append({"person": person, "verpl": 1, "trip_no": nr, "w_person": 1.0,
                      "mode": mode, "motive": motive, "doel": doel,
-                     "dist_hm": km * 10, "vert_uur": 8, "hh_size": 2, "hh_comp": hh,
+                     "dist_hm": km * 10, "hh_size": 2, "hh_comp": hh,
                      "hh_lft1": 0, "hh_lft2": 0, "hh_lft3": 0, "hh_lft4": 2,
                      "income": inc, "age": 40, "wrk_vervw": 3, "wrk_verg": 0,
                      "bet_werk": 2})

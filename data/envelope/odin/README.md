@@ -28,10 +28,8 @@ occur:
 | Table | Cells | n < 5 | n < 30 | smallest n |
 |---|---|---|---|---|
 | 2023 `band_rates` (cell level) | 105 | 25 | 28 | 1 |
-| 2023 `commute_tours` | 40 | 0 | 8 | 11 |
 | 2023 `commuter_rates` (cell level) | 49 | 8 | 10 | 2 |
 | 2022-23 `band_rates` (cell level) | 108 | 21 | 29 | 1 |
-| 2022-23 `commute_tours` | 40 | 0 | 1 | 23 |
 | 2022-23 `commuter_rates` (cell level) | 50 | 3 | 10 | 2 |
 
 The envelope uses a cell's own discretionary tour rate only from 150
@@ -51,7 +49,6 @@ journeys instead of priced home-based tours.
 | `band_rates.csv` | level (cell, type, quantile), hh_type, quantile, age_band, rate_disc / jrate_disc (non-commute), rate_comm / jrate_comm (unreimbursed commute; cell level), n |
 | `composition.csv` | hh_type, quantile, weighted mean household size and members per age band (HHLft1-4) |
 | `passenger_share.csv` | hh_type, share of tours (pass_share) and journeys (pass_share_j) as car passenger |
-| `commute_tours.csv` | hh_type, quantile, km by car and by other modes per unreimbursed commute tour (and per journey: `_j`), share by other modes, n tours |
 | `commuter_rates.csv` | level (cell, quantile), hh_type, quantile, commute tours (rate) and journeys (jrate) per day of unreimbursed commuters, n |
 | `pt_km.csv` | km of train and of bus/tram/metro journeys (unweighted totals) |
 | `units.csv` | priced journeys per priced home-based tour |
