@@ -68,28 +68,29 @@ therefore a weak proxy for L09, and L10 is taken to be M+N only
 
 ### Validation of the buurt totals
 
-LISA 2016 jobs per buurt exist in the education file (10,137 buurten in 304
-municipalities in common with KWB 2016 and the IKOB table). The job-weighted
-total-variation distance between predicted and true buurt job shares within
-municipalities (`jobs_impute.within_municipality_tv`, lower is better):
+LISA 2016 jobs per buurt exist in the education file: 10,100 buurten in 304
+municipalities in common with KWB 2016 and the IKOB table (municipalities
+with at least 3 common buurten). The job-weighted total-variation distance
+between predicted and true buurt job shares within municipalities
+(`jobs_impute.within_municipality_tv`, lower is better):
 
 | Predictor of the buurt job share | Distance |
 |---|---|
-| uniform | 0.454 |
-| IKOB table (NRM-based) | 0.301 |
-| KWB 2016 establishments, total | 0.338 |
-| establishments weighted by job size per group | 0.365 |
-| 75% IKOB table + 25% establishments | **0.277** |
-| 50% / 50% | 0.280 |
-| 25% IKOB table + 75% establishments | 0.301 |
+| uniform | 0.453 |
+| IKOB table (NRM-based, 2018) | 0.298 |
+| KWB 2016 establishments, total | 0.336 |
+| establishments weighted by job size per group | 0.368 |
+| 75% IKOB table + 25% establishments | **0.274** |
+| 50% / 50% | 0.278 |
+| 25% IKOB table + 75% establishments | 0.299 |
 
-The blend beats both components; weighting establishments by job size makes
-it worse (the O-Q group, about 65 jobs per establishment, dominates), so it
-is not used. The optimum is flat between 0.25 and 0.5. The comparison uses
-2016 truth against 2018 totals and 2016 establishments. The script is
-`validation/jobs_buurt_totals.py` (KWB 2016 via 83487NED), which follows
-this description; `validation/README.md` gives how far it reproduces the
-table.
+The blend beats both components; weighting establishments by job size (the
+national LISA 2016 jobs per KWB 2016 establishment of each SBI group) makes
+it worse, because the O-Q group, with about 87 jobs per establishment against
+2-7 in the other groups, dominates; it is not used. The optimum is flat
+between 0.25 and 0.5. The comparison uses 2016 truth against 2018 totals and
+2016 establishments. `validation/jobs_buurt_totals.py` computes the table
+(it downloads KWB 2016, CBS 83487NED, on its first run).
 
 The placement of *sectors* within a municipality has no buurt-level truth
 and is not validated.

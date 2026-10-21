@@ -69,11 +69,11 @@ private bicycle is the buurt's ownership share.
 | v0 | `pt_v0` | owners (others: plain PT) | plain PT; own bicycle to the stop, walk egress |
 | v1 | `pt_v1` | everyone | plain PT; walk access + shared bicycle egress |
 | v2 | `pt_v2` | owners: own bicycle access; others: dockless access; everyone: shared egress | plain; bicycle access; bicycle access + shared egress; walk + shared egress |
-| v3 | `pt_v3` | as v2 | the options of v2 with leg-wise time gates (bicycle margin on bicycle legs, PT margin on the PT leg), cost on the journey total; independent thresholds |
+| v3 | `pt_v3` | as v2 | the options of v2 with leg-wise time gates (bicycle margin on bicycle legs, PT margin on the PT leg), cost on the journey total; independent leg thresholds, joined to the cost by the specification's copula |
 | v4 | `bike_v4` | owners ride their own bicycle; others a dockless bicycle door to door | needs `--modes bike` |
 
 v0 is the reference for the other variants: plain PT understates PT
-accessibility for bicycle owners. Every variant assumes unlimited supply
+accessibility for bicycle owners. The paper runs use v2. Every variant assumes unlimited supply
 (no stock-outs) and dockless availability at every origin.
 
 ## Scenarios
@@ -153,7 +153,8 @@ option `k` (in time order) is the one chosen is
 
     S_T(t_k) [ S_M(c_k) - S_M(max(c_k, cmin_(k-1))) ]
 
-(`choice_terms`, checked against Monte Carlo in the tests). Without
+(`choice_terms`; the tests check it against simulated thresholds and against
+the union of options). Without
 `--flat-eur`, the flat price is calibrated for revenue neutrality:
 `fixed_point` (price x rentals at that price = baseline revenue, default) or
 `weighted_mean` (baseline volumes). Calibration requires M2. The calibrated

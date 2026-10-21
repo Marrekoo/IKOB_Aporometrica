@@ -7,7 +7,7 @@ and, for the PT comparison, a running OpenTripPlanner server.
 | Script | Documented in | Status |
 |---|---|---|
 | `pt_router_vs_otp.py` | `docs/servers.md`, validation of the frequency-model PT router | the samples in `results/` reproduce every documented figure (`summary`) |
-| `jobs_buurt_totals.py` | `docs/data_lineage.md`, validation of the buurt totals | follows the documented method; run with the 2022 establishments as a stand-in for KWB 2016 (see below) |
+| `jobs_buurt_totals.py` | `docs/data_lineage.md`, validation of the buurt totals | reproduces the documented table |
 
 ## PT router against OpenTripPlanner
 
@@ -27,18 +27,7 @@ GTFS feed or the skim store differ.
     python validation/jobs_buurt_totals.py --data-root <root>
 
 Downloads the KWB 2016 establishments (CBS 83487NED) into
-`<root>/cache/statline/` on the first run. The script follows the method
-described in `docs/data_lineage.md`. It has been run with the 2022
-establishments as a stand-in (`--establishments`), because CBS StatLine was
-unreachable at the time. In that run the two rows that do not depend on the establishments
-came out at 0.452 (uniform) and 0.299 (IKOB job table) on 10,123 buurten in
-306 municipalities, against the documented 0.454 and 0.301 on 10,137 buurten
-in 304 municipalities. Check, when running with KWB 2016:
-
-* whether the buurt set then matches (10,137 buurten, 304 municipalities);
-* the job size per SBI group: the documentation gives about 65 jobs per
-  establishment for O-Q, while national LISA jobs per KWB establishment give
-  about 8 with the 2022 counts, so the documented figure may rest on a
-  different definition of job size.
-
-Update the table in `docs/data_lineage.md` with the result.
+`<root>/cache/statline/` on the first run and prints the job size per SBI
+group and the table of `docs/data_lineage.md` (`--out` writes it as CSV).
+`--establishments FILE` replaces the KWB 2016 establishments by another
+snapshot, to test the script without the download.

@@ -7,13 +7,14 @@ the microdata.
 
 | Folder | Microdata | Use |
 |---|---|---|
-| `2023/` | ODiN 2023 (`ODIN_23.csv`) | the published `data/envelope/reference_budgets.csv` (`envelope.aggregates = "2023"`) |
-| `2022_2023/` | ODiN 2022 and 2023 pooled (`ODIN_22_23_clean.csv`) | the switch `envelope.aggregates = "2022_2023"` |
+| `2022_2023/` | ODiN 2022 and 2023 pooled (`ODIN_22_23_clean.csv`) | the published `data/envelope/reference_budgets.csv` (`envelope.aggregates = "2022_2023"`, the default) |
+| `2023/` | ODiN 2023 (`ODIN_23.csv`) | the sensitivity switch `envelope.aggregates = "2023"` |
 
 Made with `python -m ikob2.cli.envelope aggregates` (`ikob2.envelope.odin`,
-which documents every definition). The 2023 part of the pooled file gives
-exactly the tables of `2023/`; `tests/test_envelope.py` checks, where the
-microdata are available, that a fresh aggregation equals the published one.
+which documents every definition; `--odin ODIN_23.csv` for `2023/`). The 2023
+part of the pooled file gives exactly the tables of `2023/`;
+`tests/test_envelope.py` checks, where the microdata are available, that a
+fresh aggregation equals the published tables of both folders.
 
 ## Licence and disclosure
 

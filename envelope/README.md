@@ -107,7 +107,7 @@ alternative the code also offers:
 | `spread` | `gamma`: low/high over gamma only | `all`: over every assumption as well | the spread describes differences between households; uncertainty about assumptions belongs in sensitivity runs |
 | `price_base` | `2022`: every amount in 2022 euros | `published`: each input at its own price date | the price level of the KWB population year (below) |
 | `income_bridge` | `per_adult`: + the basic health premium per adult | `none` | CBS disposable income is net of the premium, which the Nibud basket also contains |
-| `n_lower` | `lowest_decile`: the lowest journey rate over the deciles | `fixed`: 8 per household and month | only matters with `spread` all; data-based instead of a constant |
+| `n_lower` | `lowest_decile`: the lowest journey rate of the household type over the deciles | `fixed`: 8 priced tours per household and month (`n_min_fixed`; in journeys times the journeys per tour) | only matters with `spread` all; data-based instead of a constant |
 | `aggregates` | `2022_2023` | `2023` | ODiN years pooled, as in the rest of the model |
 | `car_all_tariffs` | `true`: car options in every PT-tariff scenario | `false`: only in the "chipkaart" scenarios | changes the km columns only |
 | `gamma_anchor` | `0.5` | `0` | b_norm is the midpoint of the outer anchors |

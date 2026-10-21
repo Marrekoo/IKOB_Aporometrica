@@ -65,8 +65,8 @@ loads it:
 * **Basis: per journey, 2022 euros.** The table gives EUR per priced
   one-way journey (column `unit` = journey), the money a household can
   spend on it once the Nibud basket and rent are paid, spread over the
-  household's priced journeys per month (ODiN 2022-23), at the 2022 price
-  level. `ikob2.envelope` builds it; `envelope/README.md` describes the
+  household's priced journeys per month (ODiN 2022-23, unreimbursed commutes
+  included), at the 2022 price level. `ikob2.envelope` builds it; `envelope/README.md` describes the
   method. The spread between `low` and `high` is across households: how much
   of the example basket each gives up (gamma, uniform on [0, 1]); cells
   without an example basket have `low` = `high`.
@@ -75,7 +75,8 @@ loads it:
   journeys per home-based tour in ODiN 2022-23 (2.19; 2.17 weighted;
   `envelope/journeys_per_tour.py`).
 * **Upper bounds and steps.** Above the highest Nibud anchor (19 of the 36
-  cells: singles from D8, couples from D7, families from D5; `upper_bound`)
+  cells: singles from D8, couples from D7, couples with children and single
+  parents from D5; `upper_bound`)
   the budget is the residual after the minimum basket. Couples in D2 get
   that point as well (Warnaar's minimum-wage couple has no example basket
   above the minimum), so it lies above the low end of D3; couples' D3 also

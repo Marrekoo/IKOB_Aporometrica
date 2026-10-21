@@ -87,7 +87,8 @@ def main(argv=None) -> None:
         raise SystemExit("Give --data-root or set IKOB_DATA_ROOT.")
     lay = DataLayout(Path(args.data_root))
 
-    truth = parse_education_shares(pd.read_excel(lay.education_jobs()))["edu_jobs"]
+    truth = parse_education_shares(pd.read_csv(
+        lay.education_jobs(), float_precision="round_trip"))["edu_jobs"]
     ikob = parse_ikob_jobs(pd.read_excel(
         lay.ikob_jobs(), sheet_name="buurten-arbeidsplaatsen", header=2),
         "2018").sum(axis=1)

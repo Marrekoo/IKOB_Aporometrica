@@ -109,7 +109,7 @@ Money costs are not stored; they are computed at run time
 
 | File | Content |
 |---|---|
-| `accessibility.csv` | one row per origin x mode x segment: `buurtcode, mode, segment, household_type, income_class, population, accessibility` (acceptable jobs, conditional on having the mode), `atom`, `accessibility_normalised`; with `--ownership` also `availability` and `accessibility_expected` |
+| `accessibility.csv` | one row per origin x mode x segment: `buurtcode, mode, segment, household_type, income_class, population, accessibility` (acceptable jobs, conditional on having the mode), `atom`, `accessibility_normalised` (`accessibility / (1 - atom)`, empty where the atom is 1), `availability` (the share of the segment with the mode; 1 without `--ownership`) and `accessibility_expected` (`accessibility x availability`) |
 | `summary_income.csv`, `summary_household.csv` | population-weighted means by mode and income class / household type; `*_expected.csv` for `accessibility_expected` |
 | `run.json` | resolved parameters, arguments, specification, scenario (calibrated flat price, Lime usage and public cost per segment and origin), `lime_price_zones` (the origins whose residents get the price scales), `job_matching` (method, within-cell spread, decile edges in EUR per hour, teleworkability per ISCO major group), `input_files`: path and SHA-256 of every input file, and `code`: package version, git commit and whether the working tree had uncommitted changes |
 | `job_weights.csv` | `job_type`, `income_class`, `sector`, `weight`: the share of a LISA sector's jobs in each income-class pool and job type (over job types and deciles D1-D10 a sector adds up to 1) |
@@ -122,15 +122,20 @@ Money costs are not stored; they are computed at run time
 | `dictionary.csv`, `README.md` | every column with description and unit; how to join the files (R snippet) |
 
 `outputs/comparisons/` holds `cli.compare` (`<a>__vs__<b>/`),
-`cli.interchange` (`<a>_over_<b>/`) and `cli.paper_tables` (`specs/`)
-tables (`pipeline.md`, `scenarios.md`).
+`cli.interchange` (`<a>_over_<b>/`), `cli.paper_tables` (`specs/`,
+`targeting/`) and `cli.precision` (`precision/`) tables (`pipeline.md`,
+`scenarios.md`). `paper/figures/run_all.R` writes the figures and rounded
+tables to `outputs/paper_figures/`.
 
 ## Conventions
 
 * Buurt codes are strings `BUnnnnnnnn`; municipality codes `GMnnnn`;
   segments `<household_type>_<income_class>`.
 * Time in minutes, distance in km, money in euro at the price level of the
-  source (NS 2026, CBS 2022; not deflated to a common year).
+  source, not deflated to a common year: the reference budgets and the values
+  of time are in 2022 euros, the fares and tariffs are those of 2026 (NS
+  2026, Lime from January 2026), the car costs per km are nominal
+  (`[car.models]`).
 * Populations and jobs are non-integer after IPF and imputation.
 * Every negative value in a CBS numeric attribute is a suppression code and
   is read as NaN.

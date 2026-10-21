@@ -90,13 +90,20 @@ fare concessions (`scenarios.md`). Bicycle ownership is an input file
 
 ## Reference budgets (optional)
 
-    python -m ikob2.cli.envelope --data-root <root> aggregates
     python -m ikob2.cli.envelope --data-root <root> build
 
-re-derive `reference_budgets.csv` from its source tables and ODiN 2023
-(linked as `inputs/odin/ODIN_23.csv`); the result equals the shipped table
-(`envelope/README.md`). The runs read the table from
-`inputs/envelope/reference_budgets.csv`.
+re-derives `reference_budgets.csv` from its source tables and the published
+ODiN aggregates of 2022-23 (`inputs/envelope/odin/2022_2023/`, seeded from
+`data/envelope/odin/`) and writes it to `intermediate/envelope/`; the result
+equals the shipped table (tested). With the ODiN microdata the aggregates
+themselves can be remade:
+
+    python -m ikob2.cli.envelope --data-root <root> aggregates
+
+reads `inputs/odin/ODIN_22_23_clean.csv` (`envelope.odin`) and writes the
+tables to `intermediate/envelope/odin/`; they equal the published ones
+(tested where the microdata are present). `envelope/README.md` describes the
+method. The runs read the table from `inputs/envelope/reference_budgets.csv`.
 
 ## 5. Car, bicycle and walking skims
 

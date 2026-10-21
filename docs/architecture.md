@@ -28,7 +28,7 @@ these; `cli` uses everything.
 
 | Package | Module | Purpose |
 |---|---|---|
-| core | `families` | survival families, hazard, elasticity, implied VOT, TTT, moment matching |
+| core | `families` | survival families, hazard, elasticity, implied VOT, TTT, scale transform and moment matching |
 | core | `decay_curves` | numerically safe curve evaluation, atom, epsilon sparsification |
 | core | `compose` | survival copulas (independence, Frank, Gumbel-Hougaard, Frechet bounds), `compose_filters` |
 | core | `accessibility`, `competition` | Hansen and Shen measures |
@@ -38,7 +38,7 @@ these; `cli` uses everything.
 | domain | `filter_config`, `segments` | `CurveSpec`, `CopulaSpec`, `ClassFilter` (with parsing of curve and copula blocks); `Segment` and its filter identity |
 | domain | `zones`, `state` | `ZoneSet`, immutable `ModelState` (square runs) |
 | segments | `pipeline`, `structure`, `ipf`, `marginals`, `kwb`, `config` | household x income segments per buurt |
-| segments | `lisa`, `jobs_impute`, `establishments`, `jobs`, `occupations`, `wfh` | jobs by sector, income class (sector x occupation cells) and job type |
+| segments | `lisa`, `jobs_impute`, `establishments`, `jobs`, `occupations` | jobs by sector, income class (sector x occupation cells) and job type (home working) |
 | segments | `time_margins`, `bridge`, `specs` | Weibull margins, reference budgets, specifications M0-M3 |
 | segments | `car_availability`, `ownership`, `pt_spend` | mode availability; PT fare spending by decile (ODiN) |
 | segments | `statline` | CBS StatLine snapshots |
@@ -62,7 +62,7 @@ these; `cli` uses everything.
 | Module | Subcommands / purpose |
 |---|---|
 | `cli.layout` | `create`, `link`: data folder |
-| `cli.segments` | `fetch`, `run`, `jobs`, `car-availability`, `pt-spend` |
+| `cli.segments` | `fetch`, `occupations`, `run`, `jobs`, `car-availability`, `pt-spend` |
 | `cli.envelope` | `aggregates`, `build`: the reference-budget envelope |
 | `cli.skims` | `build`, `calibrate-detour`, `build-distance`, `make-peak`, `build-pt`, `inspect` |
 | `cli.servers` | `valhalla build/start/stop/status`, `otp prepare/build/start/stop/status` |
@@ -73,7 +73,7 @@ these; `cli` uses everything.
 | `cli.paper_tables` | tables over a specification grid, targeting tables |
 | `cli.batch` | a set of runs from a run plan (`paper/runs.toml`) |
 | `cli.precision` | significant digits of the paper's results from runs with perturbed inputs |
-| `cli.archive` | the data deposit of the paper runs (Zenodo): build the archives and manifest, upload them to a new or an existing draft |
+| `cli.archive` | `build`, `upload`: the data deposit of the paper runs (Zenodo): the archives and manifest, uploaded to a new or an existing draft |
 
 ## Design rules
 
@@ -134,19 +134,23 @@ safeguards (clips, tolerances).
 
 ## Tests and checks
 
-`pytest` runs about 620 tests in about a minute: unit tests of the
-numerical building blocks (survival properties, copula bounds, union of
-options, IPF margins, fares against the NS table), hand computations of the
-measure (bicycle, M0, PT fare spending), the pipeline on small synthetic
-inputs, the scenarios and cost model, and the server clients with mocked HTTP.
+`pytest` runs about 660 tests in about a minute: unit tests of the
+numerical building blocks (survival properties, closed forms of the
+copulas and their Frechet bounds, union of options, IPF margins, fares
+against the NS table), hand computations of the measure (bicycle, the priced
+M2 gate, M0, M0u, M0s, M1, the rail-share value of time in every journey
+type), the envelope against its published table, the pipeline on small
+synthetic inputs, the scenarios and cost model, and the server clients with
+mocked HTTP.
 
 * **End to end:** `tests/test_example.py` builds the synthetic data folder of
   `examples/tiny`, runs `cli.accessibility` and compares all 480 rows with
   `examples/tiny/expected/accessibility.csv`.
 * **Segment baseline:** `tests/test_segments.py` pins the pipeline's output
   (synthetic, and the 2022 KWB file when `IKOB_KWB_2022_GPKG` points to it).
-* **Skips:** a few tests need local data (set `IKOB_DATA_ROOT`) or routing
-  inputs, and skip without them.
+* **Skips:** a few tests need local data (set `IKOB_DATA_ROOT`: the ODiN
+  microdata, for the check that a fresh aggregation equals the published
+  aggregates) or routing inputs, and skip without them.
 * **Coverage:** CI runs the tests with `--cov` and fails below 80% of the
   statements of `ikob2` (`[tool.coverage.report]`).
 * **Lint:** `ruff check` with pyflakes, the pycodestyle errors and bugbear,

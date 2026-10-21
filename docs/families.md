@@ -76,10 +76,13 @@ factor (`tanner`).
 * `ttt_transform`: the scaled total-time-on-test transform. Exponential
   is the diagonal, increasing hazard (Weibull shape > 1) concave,
   decreasing hazard (Lomax) convex. It needs a finite mean;
-* `mean_threshold` (E[X], infinite for heavy tails) and
-  `moment_matched_scale`, which rescales a family to a common mean so
-  shapes can be compared on dispersion alone (e.g. a common mean of 30
-  minutes for a Weibull with shape 2.5 and a Lomax with alpha 2.2).
+* `mean_threshold` (E[X], infinite for heavy tails);
+* `scaled_params(name, params, lambda)`, the parameters of the threshold
+  lambda X (the same shape stretched along the impedance axis, f(z / lambda);
+  for the exponential and the `chi` of `tanner` the rate is divided by
+  lambda), and `moment_matched_scale`, which stretches a family to a given
+  mean so that shapes can be compared at a common first moment (e.g. a mean
+  of 30 minutes for a Weibull with shape 2.5 and a Lomax with alpha 2.2).
 
 Example:
 

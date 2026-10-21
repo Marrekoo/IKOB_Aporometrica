@@ -16,9 +16,39 @@ def test_choice_terms_sorts_by_time_and_tracks_the_cheaper_faster_option():
     order, ts, cs, hi = choice_terms(t, c)
     assert list(order[:, 0, 0]) == [1, 2, 0]
     assert list(ts[:, 0, 0]) == [15.0, 20.0, 30.0]
-    # hi: inf for the fastest; then max(c, cheapest faster)
-    assert np.isinf(hi[0, 0, 0]) or hi[0, 0, 0] >= 9.0
-    assert hi[1, 0, 0] == 9.0 and hi[2, 0, 0] == 5.0    # 4 vs min(9, 4)=4 -> 5
+    # hi: inf for the fastest; then max(c_k, cheapest of the faster ones)
+    assert np.isinf(hi[0, 0, 0])
+    assert hi[1, 0, 0] == 9.0                  # max(4, 9)
+    assert hi[2, 0, 0] == 5.0                  # max(5, min(9, 4))
+
+
+def test_fastest_acceptable_option_probability_against_monte_carlo():
+    """P(option k is the fastest acceptable one) = S_T(t_k) [S_M(c_k) -
+    S_M(hi_k)] for independent thresholds, checked by drawing thresholds;
+    the probabilities add up to the union of `union_terms`."""
+    from ikob2.core import families as fam
+    from ikob2.run.accessibility import union_terms
+
+    t = np.array([30.0, 15.0, 20.0, 40.0]).reshape(4, 1, 1)
+    c = np.array([5.0, 9.0, 7.0, 2.0]).reshape(4, 1, 1)
+    k_w, eta, low, high = 3.0, 30.0, 3.0, 12.0
+    s_t = lambda x: fam.survival("weibull", (k_w, eta), x)          # noqa: E731
+    s_m = lambda x: np.clip((high - np.asarray(x)) / (high - low), 0, 1)  # noqa: E731
+    order, ts, cs, hi = choice_terms(t, c)
+    formula = s_t(ts[:, 0, 0]) * (s_m(cs[:, 0, 0]) - s_m(hi[:, 0, 0]))
+
+    rng = np.random.default_rng(7)
+    n = 400_000
+    tau = eta * rng.weibull(k_w, n)
+    mu = rng.uniform(low, high, n)
+    ok = (tau[:, None] >= ts[None, :, 0, 0]) & (mu[:, None] >= cs[None, :, 0, 0])
+    first = np.where(ok.any(axis=1), ok.argmax(axis=1), -1)   # options in time order
+    empirical = np.array([(first == k).mean() for k in range(4)])
+    np.testing.assert_allclose(formula, empirical, atol=3e-3)
+    union = sum(sign * s_t(tt[0, 0]) * s_m(cc[0, 0])
+                for tt, cc, sign in union_terms(t, c))
+    assert formula.sum() == pytest.approx(union, abs=1e-9)
+
 
 
 def usage(lime_cost, scale=None):

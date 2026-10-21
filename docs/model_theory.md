@@ -79,8 +79,9 @@ per journey. The maximum acceptable cost is uniform on that interval:
            = (high - c) / (high - low)  low < c < high
            = 0                          c >= high
 
-Decile 1 has no envelope row (censored). It carries an *atom* `pi` of mass at
-zero: `S_M(c) = (1 - pi) S_u(c)` for `c > 0` and `S_M(0) = 1`, with `pi = 1`
+Decile 1 has no bounds in the table: the minimum basket and rent exhaust its
+income, so nothing is left for priced travel (a censored cell). It carries an
+*atom* `pi` of mass at zero: `S_M(c) = (1 - pi) S_u(c)` for `c > 0` and `S_M(0) = 1`, with `pi = 1`
 for decile 1, so no priced journey is acceptable to it. The atom is reported
 per row (`atom`), and `accessibility_normalised = accessibility / (1 - atom)`.
 Free modes have `S_M = 1`.
@@ -112,9 +113,12 @@ copula reduces to the time margin, so time-only runs use the same code path.
 long trips also tolerate high costs. The excluded group becomes smaller and
 more concentrated in the low deciles where the money gate binds. An analysis
 that assumes dependence, or a generalised cost (the comonotone extreme),
-reports fewer excluded people than one that assumes independence. Results for
-the lowest deciles are therefore reported over the dependence range
-(countermonotone to comonotone), not at one `theta`.
+reports fewer excluded people than one that assumes independence. The paper
+runs therefore report the results over a range of dependence, from
+independence (M2) through Gumbel-Hougaard `theta` = 1.25, 1.5, 2 and 4 to the
+comonotone limit (M3), rather than at one `theta`; negative dependence
+(`--copula countermonotone`, Frank with `theta < 0`) is available for
+sensitivity runs.
 
 ### Impedance specifications (`segments.specs`, `--spec`)
 
@@ -191,8 +195,10 @@ baseline's and P cannot fall (`scenarios.md`, scenario hubs).
 **Leg-wise gates** (`LegOptionSet`, variant v3): each leg of a chain is
 judged on its own time margin (bicycle legs on the bicycle margin, the PT leg
 on the PT margin for the in-PT time) and the cost margin on the journey
-total. With independent thresholds the joint survival of an option is the
-product of its leg survivals and the cost survival.
+total. The leg thresholds are independent, so the time block of an option is
+the product of its leg survivals, joined to the cost survival by the
+specification's copula (the product under M2). The paper runs judge the
+chains on their total time (variant v2).
 
 The variants and their tariffs are in `scenarios.md`.
 
@@ -257,3 +263,7 @@ rectangular and use the Hansen form (`run_hansen`).
   bus/tram/metro fares are a regional linear approximation.
 * Jobs below the municipal level are imputed (`data_lineage.md`).
 * The cost of a journey is gated as a whole; the budget is per journey.
+* Price levels are not harmonised: the budgets and the values of time are in
+  2022 euros, the fares and shared-bicycle tariffs are the 2026 tariffs, so a
+  fare is compared with a budget about four years of inflation older
+  (`data_specification.md`, conventions).
