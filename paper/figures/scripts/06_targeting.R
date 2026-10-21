@@ -41,7 +41,7 @@ save_table(cells, "targeting_cells", "Gain per resident by income group and plac
 # Gains below the floor (rounding noise, slightly negative where a cut reaches nobody) fill as zero.
 p <- ggplot(cells, aes(place, group, fill = ifelse(abs(gain_per_person) < CFG$gain_floor, 0, gain_per_person))) +
   geom_tile(colour = "white", linewidth = 1) +
-  geom_text(aes(label = format(round_report(gain_per_person, floor = CFG$gain_floor), big.mark = ",", trim = TRUE)), size = 3.6) +
+  geom_text(aes(label = format(round_report(gain_per_person, floor = CFG$gain_floor), big.mark = ",", trim = TRUE, drop0trailing = TRUE)), size = 3.6) +
   facet_wrap(~scenario) +
   scale_fill_gradient(low = "grey95", high = OI[["blue"]], trans = "sqrt", name = "Gain per resident") +
   labs(title = "Who gains: a price cut by income, by address, and extra hubs",
