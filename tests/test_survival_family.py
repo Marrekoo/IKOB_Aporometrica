@@ -151,6 +151,55 @@ def test_compose_filters_gumbel_and_theta_rules():
         compose_filters(u, v, family="independence", theta=2.0, epsilon=None)
 
 
+# ── Frank ────────────────────────────────────────────────────────────
+
+from ikob2.core.compose import countermonotone, frank  # noqa: E402
+
+
+@pytest.mark.parametrize("theta", [-8.0, -2.0, 0.5, 3.0, 12.0])
+def test_frank_matches_the_closed_form(theta):
+    u = np.array([0.8, 0.5, 0.3, 0.95], dtype=DTYPE)
+    v = np.array([0.6, 0.9, 0.2, 0.05], dtype=DTYPE)
+    uf, vf = u.astype(float), v.astype(float)
+    expected = -np.log(1.0 + (np.exp(-theta * uf) - 1.0)
+                       * (np.exp(-theta * vf) - 1.0)
+                       / (np.exp(-theta) - 1.0)) / theta
+    np.testing.assert_allclose(frank(u, v, theta), expected, rtol=1e-5)
+
+
+def test_frank_limits_and_boundaries():
+    u, v = _grid()
+    np.testing.assert_allclose(frank(u, v, 1e-6), u * v, atol=1e-7)
+    np.testing.assert_allclose(frank(u, v, 1e4), comonotone(u, v), atol=0.03)
+    np.testing.assert_allclose(frank(u, v, -1e4), countermonotone(u, v),
+                               atol=0.03)
+    g = np.linspace(0.0, 1.0, 11, dtype=DTYPE)
+    for theta in (-5.0, 5.0):
+        np.testing.assert_allclose(frank(g, np.ones_like(g), theta), g, atol=1e-6)
+        np.testing.assert_allclose(frank(g, np.zeros_like(g), theta), 0.0,
+                                   atol=1e-7)
+
+
+@pytest.mark.parametrize("theta", [-20.0, -3.0, 0.7, 4.0, 30.0])
+def test_frank_is_symmetric_within_the_frechet_bounds(theta):
+    u, v = _grid()
+    out = frank(u, v, theta)
+    np.testing.assert_allclose(out, frank(v, u, theta), atol=1e-7)
+    assert frechet_violation(u, v, out) <= 5e-6
+    # positive theta raises the joint survival above independence, negative lowers it
+    assert np.all(np.sign(theta) * (out - u * v) >= -1e-6)
+
+
+def test_compose_filters_frank():
+    u = np.full((2, 2), 0.7, dtype=DTYPE)
+    v = np.full((2, 2), 0.4, dtype=DTYPE)
+    out = ensure_dense(compose_filters(u, v, family="frank", theta=3.0,
+                                       epsilon=None))
+    np.testing.assert_allclose(out, frank(u, v, 3.0), rtol=1e-6)
+    with pytest.raises(ValueError, match="requires theta"):
+        compose_filters(u, v, family="frank", epsilon=None)
+
+
 # ── Config integration ───────────────────────────────────────────────
 
 def test_blocks_parse_weibull_and_gumbel():

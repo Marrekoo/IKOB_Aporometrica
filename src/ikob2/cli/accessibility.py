@@ -546,7 +546,7 @@ def cmd_run(args) -> None:
         print(f"M1c: mean acceptable cost EUR {cost_mean:.2f} per trip; implied value "
               f"of time {scenario['m1c']['implied_vot_eur_per_hour']}")
     cost_cutoff = None
-    share = prm.accessibility.cutoff_share
+    cutoff_share = prm.accessibility.cutoff_share
     if args.spec in ("m0u", "m0s") and envelope_arg is not None:
         # the cost cut-offs: one for the population (M0u, persons per segment
         # in the study origins) or one per segment (M0s)
@@ -557,15 +557,15 @@ def cmd_run(args) -> None:
                      else pop).reindex(store.origins)
             persons = pop_o.sum()
             cost_cutoff = (prm.accessibility.m0u_cost_cutoff_eur or cutoff_cost(
-                env_rows, share, [float(persons.get(
+                env_rows, cutoff_share, [float(persons.get(
                     f"{r.household_type}_{r.income_class}", 0.0))
                     for r in env_rows]))
             scenario["m0u"] = {"cost_cutoff_eur": cost_cutoff,
-                               "cutoff_share": share}
+                               "cutoff_share": cutoff_share}
             print(f"M0u: cost cut-off EUR {cost_cutoff:.2f} per trip")
         else:
-            scenario["m0s"] = {"cutoff_share": share, "cost_cutoff_eur": {
-                f"{r.household_type}_{r.income_class}": cutoff_cost([r], share)
+            scenario["m0s"] = {"cutoff_share": cutoff_share, "cost_cutoff_eur": {
+                f"{r.household_type}_{r.income_class}": cutoff_cost([r], cutoff_share)
                 for r in env_rows}}
     hubs_used = None
     if args.shared_bike:
@@ -599,9 +599,9 @@ def cmd_run(args) -> None:
                     price_zone=price_zone,
                     unreachable_minutes=prm.accessibility.unreachable_minutes)
 
-            flat, scenario = calibrate_flat(usage_for,
-                                            method=prm.shared_bike.flat_method)
-            scenario["flat_eur"] = flat
+            flat, calibration = calibrate_flat(
+                usage_for, method=prm.shared_bike.flat_method)
+            scenario.update(calibration, flat_eur=flat)
             tariffs = replace(tariffs, flat_eur=flat)
             print(f"Flat price per Lime rental ({prm.shared_bike.flat_method}): "
                   f"EUR {flat:.3f} (tier weighted mean {scenario['weighted_mean_eur']:.3f})")
@@ -677,7 +677,7 @@ def cmd_run(args) -> None:
         price_zone=price_zone,
         common_jobs=prm.accessibility.common_jobs, cost_mean_eur=cost_mean,
         fare_scale=fare_scale, cost_cutoff_eur=cost_cutoff,
-        cutoff_share=prm.accessibility.cutoff_share)
+        cutoff_share=cutoff_share)
 
     t = result.table
     t.to_csv(out_dir / "accessibility.csv", index=False)

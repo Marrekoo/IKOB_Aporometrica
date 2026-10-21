@@ -208,14 +208,19 @@ def test_price_base_2022_converts_every_input_from_its_own_date(src, pub_prm):
     np.testing.assert_allclose(a1.loc[war, "b_bas"], a0.loc[war, "b_bas"] * pf["warnaar"])
 
 
-def test_published_aggregates_match_a_fresh_aggregation_when_odin_is_there():
+@pytest.mark.parametrize("files, folder", [
+    (P.envelope.odin, P.envelope.aggregates),      # the default: pooled 2022-23
+    (["ODIN_23.csv"], "2023")])
+def test_published_aggregates_match_a_fresh_aggregation_when_odin_is_there(
+        files, folder):
     root = os.environ.get("IKOB_DATA_ROOT")
-    f = Path(root) / "inputs" / "odin" / "ODIN_23.csv" if root else None
-    if f is None or not f.exists():
-        pytest.skip("ODiN 2023 microdata not available (IKOB_DATA_ROOT)")
+    paths = [Path(root) / "inputs" / "odin" / f for f in files] if root else []
+    if not paths or not all(p.exists() for p in paths):
+        pytest.skip(f"ODiN microdata {files} not available (IKOB_DATA_ROOT)")
     src = load_sources(SOURCES)
-    fresh = odin.aggregates(odin.read_odin(f), src["odin_household_types"])
-    pub = odin.read_aggregates(AGGREGATES / "2023")
+    data = pd.concat([odin.read_odin(p) for p in paths], ignore_index=True)
+    fresh = odin.aggregates(data, src["odin_household_types"])
+    pub = odin.read_aggregates(AGGREGATES / folder)
     for name, df in fresh.items():
         np.testing.assert_allclose(df.select_dtypes("number").to_numpy(float),
                                    pub[name].select_dtypes("number").to_numpy(float),

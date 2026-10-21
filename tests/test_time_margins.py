@@ -93,3 +93,13 @@ def test_validation(tmp_path):
     df.drop(columns="k").to_csv(p, index=False)
     with pytest.raises(KeyError, match="missing column"):
         load_time_margins(p)
+
+
+def test_columns_are_read_by_name_not_position(tmp_path):
+    p = _write(tmp_path)
+    df = pd.read_csv(p)
+    df[["class", "median", "k", "eta", "mode", "wfh"]].to_csv(p, index=False)
+    m = load_time_margins(p)
+    assert m[("car", "no_wfh")].params == pytest.approx((3.15, 44.8))
+    df.assign(note="x")[["note", *df.columns]].to_csv(p, index=False)
+    assert load_time_margins(p)[("car", "no_wfh")].params == pytest.approx((3.15, 44.8))

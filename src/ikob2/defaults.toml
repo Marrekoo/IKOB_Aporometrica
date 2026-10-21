@@ -178,9 +178,8 @@ hub_setup_eur_cluster = 75000.0            # signage, marking, bicycle parking (
 province_capex_share = 0.5                 # co-financing of the set-up by the province
 hub_rebalancing_eur_year_cluster = 20000.0
 hub_enforcement_eur_year_cluster = 5000.0
-# The social tariff compensation of the model (18,750 per cluster and year) is a
-# price concession: it is the cost side of S1, not of S2, and is not counted here.
-hub_tariff_compensation_eur_year_cluster = 18750.0
+# The social tariff compensation of the municipal model (EUR 18,750 per cluster and
+# year) is a price concession: it belongs to the cost of S1, not of S2.
 horizon_years = 5.0        # permit term 3 + 2 years; capex spread over it
 discount_rate = 0.0
 # Volume: rides of the whole concession area (RTV Utrecht, 2026-09-09): 1.25 million
@@ -291,7 +290,7 @@ otp_heap = "8G"
 
 [envelope]                 # reference-budget envelope (ikob2.envelope; docs: envelope/README.md)
 sources = "sources"        # folder of source tables under inputs/envelope
-odin = ["ODIN_23.csv"]     # ODiN files under inputs/odin for the tour rates (the envelope of Table 6 uses 2023)
+odin = ["ODIN_22_23_clean.csv"]   # ODiN files under inputs/odin read by `cli.envelope aggregates` (pooled 2022-23: the default `aggregates`)
 rent_lineage = "tussenrapport"
 gamma_grid = [0.0, 0.25, 0.5, 0.75, 1.0]   # share of the example basket given up for mobility
 n_min_fixed = 8.0          # lower bound on priced home-based tours per household and month

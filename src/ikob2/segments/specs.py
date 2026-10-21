@@ -49,13 +49,6 @@ EXPONENTIAL_SPECS = ("m1", "m1c", "m1p")
 CUTOFF_SPECS = ("m0", "m0u", "m0s")
 DUAL_CUTOFF_SPECS = ("m0u", "m0s")
 
-# Values of time (EUR per hour) of the M1 benchmark, from the Dutch national
-# value-of-time study (LMS/NRM): car driver, train, bus/tram/metro. Public
-# transport is priced at `pt` (rail) and `pt_other` per journey in proportion
-# to the rail share of its kilometres. Bicycle (10.50-11.00) and walking
-# (12.50-13.00) have no cost and need no VoT.
-DEFAULT_VOT = DEFAULTS.vot.to_dict()
-
 # Rate of an exponential with (effectively) zero mean: acceptable only at c = 0.
 _ZERO_MEAN_RATE = 1e6
 

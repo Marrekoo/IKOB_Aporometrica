@@ -510,3 +510,85 @@ def test_dual_cutoff_union_and_generalised_time_differ_by_hand():
                    for j in split_by_share(jobs, wfh))
     np.testing.assert_allclose(gc, all_jobs, rtol=1e-4)
     assert (dual < gc - 1.0).all()
+
+
+# ── hand computations of the priced gate (M2) and of M1 ──────────────
+
+def _pools(jobs, wfh, wage, cls):
+    W = rank_weights(wage, jobs.sum())
+    no, yes = split_by_share(jobs, wfh)
+    return {"no_wfh": sector_pools(no, DESTS, W)[cls].astype(float),
+            "wfh_possible": sector_pools(yes, DESTS, W)[cls].astype(float)}
+
+
+def test_m2_priced_gate_by_hand():
+    """a_i = sum_w sum_j D_j S_T,w(t_ij) S_M(c_ij): Weibull time margin, cost
+    uniform on [low, high] with the atom on positive costs."""
+    pop, jobs, wfh, wage, time, cost = world()
+    seg = "single_D4"
+    r = next(ENV[(ENV.household_type + "_" + ENV.income_class) == seg].itertuples())
+    assert r.low < r.high and r.atom == 0
+    cost = np.float32(r.low) + (cost / 30.0) * np.float32(r.high - r.low)
+    cost[0, 0] = 0.0                             # spans the band, one free pair
+    res = run(pop, jobs, wfh, wage, {"car": ModeMatrices(time, cost, "c")})
+    c = cost.astype(float)
+    s_m = np.where(c > 0, np.clip((r.high - c) / (r.high - r.low), 0, 1), 1.0)
+    expected = sum(fam.survival("weibull", MARGINS[("car", w)].params,
+                                time.astype(float)) * s_m @ p
+                   for w, p in _pools(jobs, wfh, wage, "D4").items())
+    got = _segment(res, "car", seg)["accessibility"].to_numpy()
+    np.testing.assert_allclose(got, expected, rtol=1e-4)
+    assert 0 < s_m[1:].min() < s_m.max() == 1.0      # the gate binds partly
+
+
+def test_m1_is_exponential_generalised_cost_by_hand():
+    """M1: exp(-(t + 60 c / VoT) / beta_w), beta_w the mean acceptable time of
+    the job type's margin; one VoT for every segment."""
+    pop, jobs, wfh, wage, time, cost = world()
+    vot = 11.0
+    res = run(pop, jobs, wfh, wage, {"car": ModeMatrices(time, cost, "c")},
+              spec="m1", vot={"car": vot})
+    for seg, cls in (("single_D1", "D1"), ("couple_children_D9", "D9")):
+        expected = 0.0
+        for w, p in _pools(jobs, wfh, wage, cls).items():
+            beta = fam.mean_threshold("weibull", MARGINS[("car", w)].params)
+            g = time.astype(float) + 60.0 * cost.astype(float) / vot
+            expected = expected + np.exp(-g / beta) @ p
+        got = _segment(res, "car", seg)["accessibility"].to_numpy()
+        np.testing.assert_allclose(got, expected, rtol=1e-4)
+    assert (res.table["atom"] == 0).all()
+
+
+@pytest.mark.parametrize("spec", ["m1", "m0"])
+def test_rail_share_value_of_time_in_option_and_leg_sets(spec):
+    """A uniform rail share s values the cost at s 15 + (1 - s) 10 per hour,
+    in every path a PT chain takes (plain mode, option set, leg-wise set)."""
+    pop, jobs, wfh, wage, time, cost = world()
+    share = np.full(time.shape, 0.5, dtype=np.float32)
+    mixed = {"pt": 15.0, "pt_other": 10.0}
+    half = time / 2
+    shared = run(pop, jobs, wfh, wage, {
+        "pt": ModeMatrices(time, cost, "fare", rail_share=share),
+        "set": OptionSet((ModeMatrices(time, cost, "fare", rail_share=share),),
+                         "pt"),
+        "legs": LegOptionSet((LegOption((half, half), cost, "fare",
+                                        rail_share=share),), ("pt", "pt"))},
+        spec=spec, vot=mixed)
+    single = run(pop, jobs, wfh, wage, {
+        "pt": ModeMatrices(time, cost, "fare"),
+        "set": OptionSet((ModeMatrices(time, cost, "fare"),), "pt"),
+        "legs": LegOptionSet((LegOption((half, half), cost, "fare"),),
+                             ("pt", "pt"))},
+        spec=spec, vot={"pt": 12.5})
+    for mode in ("pt", "set", "legs"):
+        np.testing.assert_allclose(acc(shared, mode), acc(single, mode),
+                                   rtol=1e-4, atol=1e-2)
+    # the share matters: all rail is valued at 15, not 12.5, so the same fare
+    # costs fewer minutes (M0's step need not move in this small world)
+    rail = run(pop, jobs, wfh, wage, {"set": OptionSet((ModeMatrices(
+        time, cost, "fare", rail_share=np.ones_like(share)),), "pt")},
+        spec=spec, vot=mixed)
+    if spec == "m1":
+        assert acc(rail, "set").sum() > acc(single, "set").sum()
+    else:
+        assert (acc(rail, "set") >= acc(single, "set") - 1e-6).all()

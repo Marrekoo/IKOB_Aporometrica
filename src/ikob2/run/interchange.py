@@ -8,8 +8,9 @@ against the same baseline. Under a generalised cost with common inputs R does
 not depend on s; under the gate it does, and the between-segment dispersion of
 R is the paper's central diagnostic.
 
-    * R is undefined where the gain of B is zero (|da(B)| <= `tol`); those
-      pairs are returned with `defined = False` and counted per origin.
+    * R is undefined where the gain of B cannot be told from zero
+      (|da(B)| <= `rel_tol` x the baseline value); those pairs are returned
+      with `defined = False` and counted per origin.
     * Dispersion is computed WITHIN an origin (across its segments) and pooled
       afterwards (population-weighted over the origins), which removes the
       between-origin composition; the statistics are an interquantile ratio

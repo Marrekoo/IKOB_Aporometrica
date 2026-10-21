@@ -8,7 +8,7 @@ and composed tolerance FILTERS.
   within their pool, against that pool's opportunity supply. The
   caller passes `opportunities` as a pool -> (n,) vector mapping;
   omitting it puts everything in one "default" pool fed by
-  state.opportunities (backwards compatible un-pooled behaviour).
+  state.opportunities.
 
   Each segment also names a FILTER IDENTITY:
 
@@ -24,8 +24,8 @@ Performance patterns:
   1. Marginal dedup: raw curve evaluations are registered under
      ("marginal", matrix_id, CurveSpec) and shared by every filter
      that references them. The exp-heavy work happens once per unique
-     marginal — the expected production shape (one shared time curve,
-     per-class cost curves) evaluates 5 marginals, not 8.
+     marginal: a time curve shared by all segments is evaluated once,
+     however many cost curves it is composed with.
   2. Composed dedup: composed matrices are keyed on weight_key ONLY.
      Segments in different pools with equal ClassFilters share one
      matrix; pools multiply matvecs (cheap), never matrices
@@ -39,17 +39,17 @@ Performance patterns:
      the memory/speed knob that matters at large zone counts; the
      pinned footprint is logged.
 
-epsilon policy: sparsification strength has a SINGLE OWNER (the CLI).
-It arrives through the constructor — a required keyword, deliberately
-without default — and is applied exactly once, inside compose_filters,
-to each composed matrix. Marginals are NEVER sparsified: the copula
+epsilon policy: the sparsification threshold is set once per run
+(`accessibility.epsilon`). It arrives through the constructor, a required
+keyword without default, and is applied exactly once, inside
+compose_filters, to each composed matrix. Marginals are NEVER sparsified: the copula
 needs genuine probabilities, and C(u,v) <= min(u,v) guarantees that
 thresholding after composition is equivalent anyway.
 
-The Frechet–Hoeffding sandwich (certified invariant #3) runs inside
-compose_filters, i.e. inside the composed recipes: it re-verifies on
-every rebuild. check_frechet=False disables it for production-scale
-batches, mirroring the opt-out philosophy of the nesting test.
+The Frechet-Hoeffding bounds of the parametric copulas are checked
+inside compose_filters, so every rebuild of a composed matrix is
+verified; check_frechet=False (`numerics.check_frechet`) switches the
+check off.
 
 The weighted total uses safe_divide: zones with zero total population
 come out as 0. That is correct INTERNAL semantics (zero weight in the
@@ -127,9 +127,9 @@ class SegmentedRunner:
         pin_marginals: bool = True,
         check_frechet: bool = True,
     ):
-        # decay_epsilon is a REQUIRED keyword with no default: the
-        # sparsification choice belongs to the CLI, and forgetting to
-        # thread it through must be a TypeError, not a silent drift.
+        # decay_epsilon is a required keyword with no default: forgetting
+        # to pass the run's sparsification threshold is a TypeError, not
+        # a silent change of results.
         self.registry = registry or MatrixRegistry()
         self.decay_epsilon = decay_epsilon
         self.pin_decay = pin_decay

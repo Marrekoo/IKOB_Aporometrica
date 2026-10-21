@@ -39,3 +39,23 @@ def test_compensation_is_the_revenue_foregone_at_baseline_volume():
     assert r["compensation_eur_year"] == pytest.approx(1_875_000 * 1.5)
     with pytest.raises(ValueError):
         s1_compensation(C, 1.0, 1.0, 0.0)
+
+
+def test_pt_fare_cost_is_persons_times_spend_times_the_cut():
+    import pandas as pd
+
+    from ikob2.run.costs import pt_fare_cost
+
+    spend = pd.DataFrame({"income_class": ["D2", "D3"],
+                          "spend_eur_year": [200.0, 300.0],
+                          "trips_national": [100.0, 150.0],
+                          "fare_national": [1.5, 1.8]})
+    persons = {"single_D2": 10.0, "couple_D2": 20.0, "single_D3": 5.0,
+               "single_D9": 7.0}                  # D9: no spend row, no cost
+    scale = {"single_D2": 0.5, "couple_D2": 0.0, "single_D3": 1.0,
+             "single_D9": 0.5}
+    r = pt_fare_cost(spend, persons, scale)
+    # D2: 10 x 200 x 0.5 + 20 x 200 x 1.0; D3 has no cut
+    assert r["eur_year"] == pytest.approx(1000.0 + 4000.0)
+    assert r["eur_year_national"] == pytest.approx((10 * 0.5 + 20) * 100 * 1.5)
+    assert r["by_decile"] == pytest.approx({"D2": 5000.0})

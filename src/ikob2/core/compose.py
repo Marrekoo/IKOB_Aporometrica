@@ -11,8 +11,8 @@ where F_t, F_c are marginal survival filters (core.decay_curves) and
 C_hat is a survival copula.
 
 Conventions, matching decay_curves.py:
-  * epsilon is a REQUIRED keyword argument with a single owner (the
-    runner). It is applied ONCE, to the composed matrix. This is exact:
+  * epsilon is a required keyword argument, set once per run and passed
+    by the runner. It is applied once, to the composed matrix. This is exact:
     C(u,v) <= min(u,v), so any entry with a sub-epsilon marginal is
     sub-epsilon after composition too.
   * Marginals fed to the copula MUST be unscaled probabilities in
@@ -65,20 +65,33 @@ def frank(u: np.ndarray, v: np.ndarray, theta: float) -> np.ndarray:
                                      / expm1(-theta) )
 
     Radially symmetric, so the survival copula is Frank with the same
-    theta — we can apply it to survival marginals directly.
+    theta: it applies to survival marginals directly.
+
+    For theta > 0 the argument of the logarithm is written as a sum of
+    positive terms, with a = exp(-theta u) and d = exp(-theta),
+
+        C(u,v) = -(1/theta) [ log( -a expm1(-theta v)
+                                    + d expm1(theta (1 - v)) ) - log1p(-d) ],
+
+    which keeps full precision near u = v = 1, where the form above
+    cancels (C(1, 1) = 1 exactly).
     """
     if abs(theta) < _THETA_INDEPENDENCE_TOL:
         return u * v
     theta = float(np.clip(theta, -_THETA_MAX, _THETA_MAX))
 
-    # Work in float64 internally: the expm1 products cancel harshly
-    # near the corners in float32. Cast back once at the end.
+    # float64 internally, cast back once at the end
     u64 = u.astype(np.float64, copy=False)
     v64 = v.astype(np.float64, copy=False)
 
-    num = np.expm1(-theta * u64) * np.expm1(-theta * v64)
-    den = np.expm1(-theta)
-    out = (-1.0 / theta) * np.log1p(num / den)
+    if theta > 0:
+        d = np.exp(-theta)
+        s = (-np.exp(-theta * u64) * np.expm1(-theta * v64)
+             + d * np.expm1(theta * (1.0 - v64)))
+        out = -(np.log(s) - np.log1p(-d)) / theta
+    else:
+        num = np.expm1(-theta * u64) * np.expm1(-theta * v64)
+        out = (-1.0 / theta) * np.log1p(num / np.expm1(-theta))
 
     # Guard float rounding at the corners; the true value is in [0,1].
     np.clip(out, 0.0, 1.0, out=out)
@@ -164,9 +177,8 @@ def frechet_violation(u: np.ndarray, v: np.ndarray,
                       composed: np.ndarray) -> float:
     """
     Max violation of  max(u+v-1, 0) <= C <= min(u,v),  which holds for
-    EVERY valid copula and every parameter value. Returns 0.0 when the
-    sandwich holds; certified invariant #3 alongside additivity and
-    nesting. Cost: three elementwise passes, milliseconds at n=1149.
+    every valid copula and every parameter value. Returns 0.0 when the
+    bounds hold. Cost: three elementwise passes.
     """
     lower = np.maximum(u + v - 1.0, 0.0)
     upper = np.minimum(u, v)
@@ -200,8 +212,9 @@ def compose_filters(
     family, theta : copula choice. theta is required for the
         parametric families ("frank", "gumbel") and forbidden otherwise (fail loud, no silent defaults).
     scaling : mode-availability factor, applied AFTER composition.
-    epsilon : REQUIRED keyword, single owner (CLI). Applied once to
-        the composed, scaled matrix. None disables sparsification.
+    epsilon : required keyword, the run's sparsification threshold.
+        Applied once to the composed, scaled matrix. None disables
+        sparsification.
     check_frechet : run the sandwich invariant on the raw copula
         output (before scaling/epsilon, where the bound is exact).
     """

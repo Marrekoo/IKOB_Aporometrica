@@ -167,12 +167,30 @@ def test_ttt_shapes():
         fam.ttt_transform("lomax", (0.8, 36.0))
 
 
-def test_moment_matching_gives_common_mean():
-    for name, shape in (("weibull", (2.5, 1.0)), ("lomax", (2.2, 1.0)),
-                        ("gamma", (3.0, 1.0)), ("lognormal", (1.0, 0.6)),
-                        ("loglogistic", (2.5, 1.0))):
-        p = fam.moment_matched_scale(name, shape, 30.0)
-        assert fam.mean_threshold(name, p) == pytest.approx(30.0, rel=1e-6)
+MATCH_CASES = {**{k: v for k, v in CASES.items() if k != "step"},
+               "step": (12.0,), "quadratic_ramp": (10.0, 50.0),
+               "triangular": (5.0, 10.0, 40.0),
+               "piecewise_linear": (0.0, 1.0, 10.0, 0.6, 40.0, 0.0),
+               "piecewise_quadratic": (0.0, 1.0, 10.0, 0.6, 40.0, 0.0)}
+
+
+@pytest.mark.parametrize("name,params", MATCH_CASES.items())
+def test_moment_matching_gives_the_target_mean_for_every_family(name, params):
+    p = fam.moment_matched_scale(name, params, 30.0)
+    assert fam.mean_threshold(name, p) == pytest.approx(30.0, rel=1e-3)
+
+
+@pytest.mark.parametrize("name,params", MATCH_CASES.items())
+def test_scaled_params_stretch_the_survival_function(name, params):
+    # f_new(z) = f(z / lambda): the same shape on a stretched axis
+    z = np.linspace(0.5, 150.0, 300)
+    lam = 2.5
+    np.testing.assert_allclose(
+        fam.survival(name, fam.scaled_params(name, params, lam), z),
+        fam.survival(name, params, z / lam), rtol=1e-6, atol=1e-9)
+
+
+def test_moment_matching_rejects_an_infinite_mean():
     with pytest.raises(ValueError, match="infinite"):
         fam.moment_matched_scale("lomax", (0.9, 1.0), 30.0)
 

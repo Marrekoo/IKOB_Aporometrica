@@ -14,9 +14,11 @@ OV-fiets.)
 Prices added to the public transport fare of the same journey:
 
     OV-fiets egress   a flat charge per rental (default EUR 4.80 per 24 h)
-    dockless access   Lime tiers by rental duration (EUR 3 / 4 / 5 up to
-                      20 / 30 / 40 minutes), or unlock fee + rate per riding
-                      minute (EUR 1.00 + 0.20): `dockless_model`
+    Lime egress       Lime tiers by rental duration (EUR 3 / 4 / 5 up to
+                      20 / 30 / 40 rental minutes) at a Lime hub
+    dockless access   the same Lime tiers, an unlock fee + rate per riding
+                      minute (EUR 1.00 + 0.20), or a flat price per rental:
+                      `dockless_model`
     own bicycle       free
 
 Variants (`shared_bike_modes`):
@@ -26,16 +28,17 @@ Variants (`shared_bike_modes`):
     v1  egress only: everyone may take a shared bicycle from a hub near the
         alighting stop instead of walking. Options: plain, walk + shared
         bicycle (one per hub kind).
-    v2  access and egress by ownership. Residents with a private bicycle:
-        own bicycle for access (free), OV-fiets for egress. Residents
-        without: dockless for access, OV-fiets for egress. Options: plain,
-        bicycle access, bicycle access + OV-fiets, walk + OV-fiets. The
-        share with a bicycle is the buurt's private bicycle share.
-
-    v3  the options of v2 judged leg by leg (paper eq. 3.2): the bicycle legs
-        have their own time margin (bicycle) and the public transport leg
-        the PT margin on its own time (total minus the bicycle legs); the
-        cost margin is on the journey total. Independent thresholds only.
+    v2  access and egress by ownership (the variant of the paper runs).
+        Residents with a private bicycle ride their own to the stop (free);
+        residents without one take a dockless Lime bicycle. Egress by shared
+        bicycle from a hub of every kind (OV-fiets, Lime) near the alighting
+        stop. Options: plain, bicycle access, bicycle access + shared-bicycle
+        egress, walk + shared-bicycle egress (one per hub kind and hub set).
+        The share with a bicycle is the buurt's private bicycle share.
+    v3  the options of v2 judged leg by leg: the bicycle legs have their own
+        time margin (bicycle) and the public transport leg the PT margin on
+        its own time (total minus the bicycle legs); the cost margin is on
+        the journey total (`run.accessibility.LegOptionSet`).
     v4  (`dockless_mode`) shared bicycle as a stand-alone mode: residents
         with a private bicycle ride it free, the others take a dockless
         bicycle door to door at the dockless price (`dockless_model`).

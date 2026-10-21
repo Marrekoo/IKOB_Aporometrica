@@ -15,10 +15,10 @@ k > 1 in every cell (increasing hazard): the soft-threshold corner of
 the threshold family. `median` is stored in the file and is checked
 against eta * ln(2)^(1/k) on loading, so a mangled row is caught.
 
-The WFH split describes the JOB (destination), not the traveller: which
-curve applies to a destination depends on whether its jobs admit
-working from home. Until jobs are split that way, a run picks one of the
-two curves for all jobs.
+The WFH split describes the JOB (destination), not the traveller: the
+jobs of every destination are split into those that do and do not admit
+working from home (segments.occupations), and each part is reached under
+its own curve.
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ def load_time_margins(path: str | Path) -> dict[tuple[str, str], CurveSpec]:
     if missing:
         raise KeyError(f"{path}: missing column(s) {missing}.")
     out: dict[tuple[str, str], CurveSpec] = {}
-    for r in df.itertuples(index=False):
+    for r in df[need].rename(columns={"class": "klass"}).itertuples(index=False):
         wfh = WFH_NAMES.get(str(r.wfh).strip().lower())
         mode = MODE_NAMES.get(str(r.mode).strip().lower())
         if wfh is None or mode is None:
@@ -67,8 +67,8 @@ def load_time_margins(path: str | Path) -> dict[tuple[str, str], CurveSpec]:
             raise ValueError(f"({mode}, {wfh}): stored median {r.median} "
                              f"differs from eta*ln(2)^(1/k) = {median}.")
         klass = "IFR" if k > 1 else "CFR" if k == 1 else "DFR"
-        if str(r._5).strip().upper() != klass:
-            raise ValueError(f"({mode}, {wfh}): class {r._5!r} does not "
+        if str(r.klass).strip().upper() != klass:
+            raise ValueError(f"({mode}, {wfh}): class {r.klass!r} does not "
                              f"match shape k={k} ({klass}).")
         if (mode, wfh) in out:
             raise ValueError(f"Duplicate row for ({mode}, {wfh}).")

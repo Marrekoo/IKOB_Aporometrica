@@ -1,13 +1,10 @@
 """
-Decay curves and clean sparsification pipeline.
+Decay curves (marginal survival functions) and their sparsification.
 
-No artificial cutoff.
-Only epsilon-based sparsification.
-Supports multi-parameter curves (logistic).
-
-epsilon is a REQUIRED keyword argument: sparsification strength is a
-modelling choice with a single owner (the CLI), never a per-module
-default. Pass None to disable sparsification entirely.
+Weights are never cut off at a fixed impedance; only weights below
+epsilon are set to zero. epsilon is a required keyword argument: the
+sparsification threshold is set once per run (`accessibility.epsilon`),
+never as a per-module default. Pass None to disable sparsification.
 
 All exponentials are clipped to a safe range before evaluation:
 float32 exp() overflows above ~88.7, so we clip at 80. Weights at

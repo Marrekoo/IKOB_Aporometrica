@@ -612,25 +612,38 @@ def ttt_transform(name: str, params, n: int = 400, upper: float | None = None):
     return u[idx], cum[idx] / mu
 
 
-def moment_matched_scale(name: str, shape_params, target_mean: float,
-                         *, scale_index: int = -1) -> tuple:
-    """Parameters with the given mean by rescaling one parameter (the
-    last by default): families become comparable on their first moment,
-    so that differences are dispersion alone.
-    Mean is proportional to the scale for the scale families; for tanner
-    or pareto pass the appropriate `scale_index`."""
+def scaled_params(name: str, params, factor: float) -> tuple:
+    """Parameters of the threshold factor * X, X with `params`: the same
+    family stretched along the impedance axis, so f_new(z) = f(z / factor)
+    and every moment scales with `factor`."""
+    if not (np.isfinite(factor) and factor > 0):
+        raise ValueError(f"factor must be positive and finite, got {factor}")
+    validate_params(name, params)
+    p = [float(v) for v in params]
+    lam = float(factor)
+    if name == "exponential":                     # rate
+        return (p[0] / lam,)
+    if name == "tanner":                          # rho, chi (a rate), scale
+        return (p[0], p[1] / lam, p[2] * lam)
+    if name == "lognormal":                       # mu = log of the scale
+        return (p[0] + math.log(lam), p[1])
+    if name in ("weibull", "lomax", "pareto", "gamma", "loglogistic"):
+        return (p[0], p[1] * lam)                 # shape, scale
+    if name in ("step", "quadratic_ramp", "triangular"):
+        return tuple(v * lam for v in p)          # impedances only
+    if get_family(name).variadic:                 # knots (z, f): stretch z
+        return tuple(v * lam if i % 2 == 0 else v for i, v in enumerate(p))
+    raise ValueError(f"No scale transform for family {name!r}.")
+
+
+def moment_matched_scale(name: str, params, target_mean: float) -> tuple:
+    """Parameters of the same family stretched (X -> lambda X) to the given
+    mean: families become comparable on their first moment, so that the
+    differences that remain are those of shape."""
     if target_mean <= 0:
         raise ValueError("target_mean must be positive.")
-    params = [float(p) for p in shape_params]
-    if name == "lognormal":
-        # scale is exp(mu); the mean is exp(mu + sigma^2 / 2)
-        validate_params(name, (0.0, params[1]))
-        return (math.log(target_mean) - params[1] ** 2 / 2.0, params[1])
-    trial = list(params)
-    trial[scale_index] = 1.0
-    m1 = mean_threshold(name, tuple(trial))
-    if not np.isfinite(m1) or m1 <= 0:
+    mean = mean_threshold(name, params)
+    if not np.isfinite(mean) or mean <= 0:
         raise ValueError("Cannot moment-match: the mean is infinite for "
                          "these shape parameters.")
-    params[scale_index] = target_mean / m1
-    return tuple(params)
+    return scaled_params(name, params, target_mean / mean)

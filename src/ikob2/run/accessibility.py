@@ -104,11 +104,12 @@ class LegOption:
 
 @dataclass(frozen=True)
 class LegOptionSet:
-    """Alternatives judged leg-wise (paper eq. 3.2): each leg has its own
-    time threshold (margin of `margin_modes[l]`) and the cost margin is on
-    the journey total. With independent thresholds the joint survival of an
-    option is prod_l S_T,l(t_l) x S_M(c); a person accepts a pair if any
-    option passes, computed by inclusion-exclusion over the options."""
+    """Alternatives judged leg-wise: each leg has its own time threshold
+    (margin of `margin_modes[l]`) and the cost margin is on the journey
+    total. The leg thresholds are independent, so the time block of an
+    option is prod_l S_T,l(t_l), joined to S_M(c) by the specification's
+    copula (the product under M2); a person accepts a pair if any option
+    passes, computed by inclusion-exclusion over the options."""
     options: tuple
     margin_modes: tuple = ("bike", "bike", "pt")
 
@@ -456,8 +457,9 @@ def run_accessibility(
         return total, priced
 
     def legwise_total(oset):
-        """Leg-wise gates, union by inclusion-exclusion (independent
-        thresholds, M2).
+        """Leg-wise gates, union by inclusion-exclusion (independent leg
+        thresholds; the time block and the money threshold joined by the
+        specification's copula).
 
         Subsets of the options are visited depth first, so the per-leg
         maximum time and the maximum cost of a subset are one elementwise
