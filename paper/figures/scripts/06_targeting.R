@@ -38,7 +38,8 @@ cells <- d$target_cells |> filter(scenario %in% c("S1a", "S4", "S2t")) |>
 save_table(cells, "targeting_cells", "Gain per resident by income group and place (M2)", "Section 4.4",
            report = function(df) round_cols(df, "gain_per_person", floor = CFG$gain_floor) |> mutate(population = signif(population, 2)))
 
-p <- ggplot(cells, aes(place, group, fill = gain_per_person)) +
+# Gains below the floor (rounding noise, slightly negative where a cut reaches nobody) fill as zero.
+p <- ggplot(cells, aes(place, group, fill = ifelse(abs(gain_per_person) < CFG$gain_floor, 0, gain_per_person))) +
   geom_tile(colour = "white", linewidth = 1) +
   geom_text(aes(label = format(round_report(gain_per_person, floor = CFG$gain_floor), big.mark = ",", trim = TRUE)), size = 3.6) +
   facet_wrap(~scenario) +
