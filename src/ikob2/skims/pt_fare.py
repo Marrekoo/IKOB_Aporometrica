@@ -32,6 +32,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ikob2 import prices
 from ikob2.params import DEFAULTS
 
 
@@ -65,6 +66,8 @@ def parse_ns_tariff(text: str) -> tuple[tuple[float, float], ...]:
 
 
 NS_RAIL_TABLE = load_ns_table()
+# the default conversion of the tariffs (pt_fare.price_date) to the run's price level
+DEFAULT_PRICE_FACTOR = prices.factor(DEFAULTS, DEFAULTS.pt_fare.price_date)
 
 
 @dataclass(frozen=True)
@@ -73,7 +76,9 @@ class PtFareModel:
     tapering power law through two anchors), read linearly between tariff
     units, with an optional discount; bus, tram, metro and ferry by a
     boarding charge plus a rate per km, the boarding once per journey or per
-    boarding. Defaults from the `pt_fare` parameters."""
+    boarding. The journey fare is converted from the tariffs' price date to
+    the run's price level by `price_factor` (`ikob2.prices`; `rail_fare`
+    gives the tariff itself). Defaults from the `pt_fare` parameters."""
     rail_eur_per_km_at_1km: float = DEFAULTS.pt_fare.rail_eur_per_km_at_1km
     rail_eur_per_km_at_100km: float = DEFAULTS.pt_fare.rail_eur_per_km_at_100km
     rail_table: tuple[tuple[float, float], ...] | None = NS_RAIL_TABLE
@@ -82,8 +87,12 @@ class PtFareModel:
     regional_boarding_eur: float = DEFAULTS.pt_fare.regional_boarding_eur
     regional_eur_per_km: float = DEFAULTS.pt_fare.regional_eur_per_km
     boardings: str = DEFAULTS.pt_fare.boardings   # single, count"
+    price_factor: float = DEFAULT_PRICE_FACTOR
 
     def __post_init__(self):
+        if not (math.isfinite(self.price_factor) and self.price_factor > 0):
+            raise ValueError(f"price_factor must be positive and finite, "
+                             f"got {self.price_factor}")
         for name in ("rail_eur_per_km_at_1km", "rail_eur_per_km_at_100km",
                      "regional_boarding_eur", "regional_eur_per_km"):
             v = getattr(self, name)
@@ -110,9 +119,12 @@ class PtFareModel:
                                  "and non-negative.")
 
     @classmethod
-    def from_params(cls, p) -> "PtFareModel":
+    def from_params(cls, p, price_factor: float = DEFAULT_PRICE_FACTOR
+                    ) -> "PtFareModel":
         """From the `pt_fare` parameters: a rail table CSV (km, eur)
-        replaces the NS table; `rail_anchors` selects the power law."""
+        replaces the NS table; `rail_anchors` selects the power law.
+        `price_factor` converts the tariffs to the run's price level
+        (`ikob2.prices.factor` of `pt_fare.price_date`)."""
         import pandas as pd
 
         table = NS_RAIL_TABLE
@@ -127,7 +139,8 @@ class PtFareModel:
             rail_table=table, rail_beyond_table=p.rail_beyond_table,
             rail_discount=p.rail_discount,
             regional_boarding_eur=p.regional_boarding_eur,
-            regional_eur_per_km=p.regional_eur_per_km, boardings=p.boardings)
+            regional_eur_per_km=p.regional_eur_per_km, boardings=p.boardings,
+            price_factor=price_factor)
 
     @property
     def matrix_id(self) -> str:
@@ -138,7 +151,8 @@ class PtFareModel:
             f"{self.rail_eur_per_km_at_1km:g}-{self.rail_eur_per_km_at_100km:g}")
         disc = f"-{self.rail_discount:g}" if self.rail_discount else ""
         return (f"ptfare(rail={table}{disc},reg={self.regional_boarding_eur:g}+"
-                f"{self.regional_eur_per_km:g}/km,{self.boardings})")
+                f"{self.regional_eur_per_km:g}/km,{self.boardings},"
+                f"x{self.price_factor:.6g})")
 
     def rail_fare(self, km) -> np.ndarray:
         """Rail fare (EUR) for in-vehicle rail km: the tariff table or the
@@ -167,7 +181,8 @@ class PtFareModel:
         return np.where(np.isnan(km), np.nan, fare)
 
     def fare(self, rail_km, other_km, other_boardings) -> np.ndarray:
-        """Fare (EUR) per journey; NaN where an input is NaN."""
+        """Fare (EUR at the run's price level) per journey; NaN where an
+        input is NaN."""
         rail = self.rail_fare(rail_km)
         other_km = np.asarray(other_km, dtype=float)
         boards = np.asarray(other_boardings, dtype=float)
@@ -175,4 +190,4 @@ class PtFareModel:
         regional = np.where(boards > 0,
                             n * self.regional_boarding_eur
                             + self.regional_eur_per_km * other_km, 0.0)
-        return (rail + regional).astype(np.float32)
+        return ((rail + regional) * self.price_factor).astype(np.float32)

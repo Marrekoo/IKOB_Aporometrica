@@ -23,6 +23,12 @@ from typing import Mapping
 
 import pandas as pd  # noqa: F401  (type of `spend`)
 
+from ikob2 import prices
+from ikob2.params import DEFAULTS
+
+# the conversion of the cost model (costs.price_date) to the run's price level
+DEFAULT_PRICE_FACTOR = prices.factor(DEFAULTS, DEFAULTS.costs.price_date)
+
 
 def annuity_factor(years: float, rate: float) -> float:
     """Years of cost an up-front amount is spread over: `years` without
@@ -34,11 +40,13 @@ def annuity_factor(years: float, rate: float) -> float:
     return (1.0 - (1.0 + rate) ** -years) / rate
 
 
-def hub_annual_cost(costs, n_hubs: float = 1.0) -> dict:
+def hub_annual_cost(costs, n_hubs: float = 1.0,
+                    price_factor: float = DEFAULT_PRICE_FACTOR) -> dict:
     """Yearly cost of `n_hubs` extra hubs (EUR): capex spread over the horizon
     (public = gross, municipal = net of the provincial share), rebalancing and
-    enforcement."""
-    per = 1.0 / costs.hub_cluster_size
+    enforcement; `price_factor` converts the amounts from `costs.price_date`
+    to the run's price level (`ikob2.prices.factor`)."""
+    per = price_factor / costs.hub_cluster_size
     factor = annuity_factor(costs.horizon_years, costs.discount_rate)
     capex = costs.hub_setup_eur_cluster * per * n_hubs
     running = (costs.hub_rebalancing_eur_year_cluster
@@ -81,9 +89,11 @@ def s1_compensation(costs, revenue_base: float, revenue_new_at_base_volume: floa
             "share_of_revenue": per_rental / mean_price}
 
 
-def hubs_for_budget(costs, budget_eur_year: float, view: str = "public") -> float:
-    """How many extra hubs a yearly budget pays for."""
-    return budget_eur_year / hub_annual_cost(costs, 1.0)[view]
+def hubs_for_budget(costs, budget_eur_year: float, view: str = "public",
+                    price_factor: float = DEFAULT_PRICE_FACTOR) -> float:
+    """How many extra hubs a yearly budget pays for (both at the price level
+    that `price_factor` converts to)."""
+    return budget_eur_year / hub_annual_cost(costs, 1.0, price_factor)[view]
 
 
 def pt_fare_cost(spend: "pd.DataFrame", persons: Mapping[str, float],

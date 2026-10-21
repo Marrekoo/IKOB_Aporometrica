@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 from ikob2 import params as params_mod
+from ikob2 import prices
 from ikob2.domain.filter_config import INDEPENDENCE, CopulaSpec, CurveSpec
 from ikob2.run.accessibility import ModeMatrices, run_accessibility
 from ikob2.segments.bridge import envelope_segment_names, load_reference_budgets
@@ -163,7 +164,9 @@ def build_matrices(store, zones, modes, *, detour, car_model, parking_search,
 def pt_fare_model(prm) -> PtFareModel:
     """Fare model from the `pt_fare` parameters (rail anchors, regional
     charge, optional rail tariff table CSV with columns km, eur)."""
-    return PtFareModel.from_params(prm.pt_fare)
+    from ikob2 import prices
+    return PtFareModel.from_params(
+        prm.pt_fare, prices.factor(prm, prm.pt_fare.price_date))
 
 
 def time_curve(shape: str, cutoff: float, calibration: str = "mean") -> CurveSpec:
@@ -187,14 +190,17 @@ def codes_all(zones) -> list[str]:
 
 
 def tariffs_from(prm):
-    """SharedBikeTariffs of the `shared_bike` parameters."""
+    """SharedBikeTariffs of the `shared_bike` parameters, converted from
+    `shared_bike.price_date` to the run's price level."""
+    from ikob2 import prices
     from ikob2.run.shared_bike import SharedBikeTariffs
 
     s = prm.shared_bike
     return SharedBikeTariffs(
         s.ovfiets_eur, s.dockless_unlock_eur, s.dockless_per_min_eur,
         tuple(tuple(t) for t in s.lime_tiers), tuple(s.hub_tariffs),
-        s.dockless_model, s.lime_scale, s.flat_eur)
+        s.dockless_model, s.lime_scale, s.flat_eur,
+        price_factor=prices.factor(prm, s.price_date))
 
 
 def load_chains(prm, args, store, codes, model):
@@ -463,7 +469,9 @@ def cmd_run(args) -> None:
                        prm.car.detour_constant)
     matrices, dest_codes = build_matrices(
         store, zones, args.modes, detour=detour,
-        car_model=CarCostModel.from_params(prm.car.models.get(args.car_model)),
+        car_model=CarCostModel.from_params(
+            prm.car.models.get(args.car_model),
+            prices.factor(prm, prm.car.price_date)),
         parking_search=args.parking_search,
         distance_store=dist_store, pt_fare_model=pt_fare_model(prm),
         parking_arrival_min=prm.car.parking_arrival_min.to_dict(),

@@ -49,6 +49,7 @@ import logging
 import pandas as pd
 
 from ikob2 import params as params_mod
+from ikob2 import prices
 from ikob2.run.gap import reachability_gap, summarise
 from ikob2.run.interchange import gains, interchange_ratio
 from ikob2.utils.paths import DataLayout
@@ -197,13 +198,14 @@ def tables(lay: DataLayout, tags, mode: str, prefix: str = "sp",
 
 
 def targeting_tables(lay: DataLayout, base_run: str, runs: dict, zone_file,
-                     mode: str, target_classes, costs=None) -> dict[str, pd.DataFrame]:
+                     mode: str, target_classes, costs=None,
+                     price_factor: float | None = None) -> dict[str, pd.DataFrame]:
     """run.targeting for the runs `runs` (label -> run name) against
     `base_run`, with the zone of `zone_file` (column buurtcode). A run with
     extra hubs (`shared_bike.egress_suffix`) gets their yearly public cost
-    (`run.costs.hub_annual_cost`, the hubs of its hub file) as
-    `hub_cost_eur_year`."""
-    from ikob2.run.costs import hub_annual_cost
+    (`run.costs.hub_annual_cost`, the hubs of its hub file, at the run's
+    price level by `price_factor`) as `hub_cost_eur_year`."""
+    from ikob2.run.costs import DEFAULT_PRICE_FACTOR, hub_annual_cost
     import json
 
     from ikob2.run.targeting import targeting
@@ -228,7 +230,9 @@ def targeting_tables(lay: DataLayout, base_run: str, runs: dict, zone_file,
             else:
                 logger.warning("no hub file %s for run %s", f, name)
         if n_hubs and costs is not None:
-            meta["hub_cost_eur_year"] = hub_annual_cost(costs, n_hubs)["public"]
+            meta["hub_cost_eur_year"] = hub_annual_cost(
+                costs, n_hubs, DEFAULT_PRICE_FACTOR if price_factor is None
+                else price_factor)["public"]
             meta["hubs"] = n_hubs
         loaded[label] = (t, meta)
     zone = pd.read_csv(zone_file, dtype={"buurtcode": str})["buurtcode"]
@@ -303,7 +307,8 @@ def main(argv=None) -> None:
         zone = resolve_input(args.zone, lay.inputs / "tariffs")
         tt = targeting_tables(lay, args.base_run,
                               dict(x.split("=", 1) for x in args.targeting),
-                              zone, args.mode, args.target_classes, prm.costs)
+                              zone, args.mode, args.target_classes, prm.costs,
+                              prices.factor(prm, prm.costs.price_date))
         tdir = lay.comparison_dir() / "targeting"
         tdir.mkdir(parents=True, exist_ok=True)
         for name, df in tt.items():

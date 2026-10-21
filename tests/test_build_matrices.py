@@ -95,7 +95,8 @@ def test_pt_matrices_with_and_without_fare_inputs(tmp_path):
                                                     regional_eur_per_km=0.1))
     pt = m["pt"]
     assert pt.cost_id.startswith("ptfare(")
+    f = PtFareModel().price_factor          # 2026 tariffs at the 2022 price level
     assert pt.cost[0, 1] == pytest.approx(
-        PtFareModel().rail_fare([10.0])[0], rel=1e-5)
-    assert pt.cost[0, 2] == pytest.approx(2.0 + 0.1 * 10.0)
+        PtFareModel().rail_fare([10.0])[0] * f, rel=1e-5)
+    assert pt.cost[0, 2] == pytest.approx((2.0 + 0.1 * 10.0) * f)
     assert np.isnan(pt.cost[0, 0]) and pt.time[0, 2] == 50.0

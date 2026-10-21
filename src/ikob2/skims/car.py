@@ -37,6 +37,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ikob2 import prices
 from ikob2.params import DEFAULTS
 
 # KWB urbanisation class (1 = most urban) -> minutes to find parking on
@@ -46,11 +47,16 @@ PARKING_ARRIVAL_MIN = {int(k): float(v) for k, v in
 DEPARTURE_FACTOR = DEFAULTS.car.departure_factor
 
 
+# the conversion of the car rates (car.price_date) to the run's price level
+DEFAULT_PRICE_FACTOR = prices.factor(DEFAULTS, DEFAULTS.car.price_date)
+
+
 @dataclass(frozen=True)
 class CarCostModel:
     """Per-km money cost of using a car, and per-minute charges for
-    shared-car and taxi users."""
-    variable_eur_per_km: float = DEFAULTS.car.models.fossil.variable_eur_per_km
+    shared-car and taxi users, at the run's price level."""
+    variable_eur_per_km: float = (DEFAULTS.car.models.fossil.variable_eur_per_km
+                                  * DEFAULT_PRICE_FACTOR)
     road_pricing_eur_per_km: float = 0.0
     per_minute_eur: float = 0.0
 
@@ -72,10 +78,15 @@ class CarCostModel:
 
 
     @classmethod
-    def from_params(cls, spec) -> "CarCostModel":
-        """From a parameter table (`car.models.<name>`)."""
+    def from_params(cls, spec, price_factor: float = DEFAULT_PRICE_FACTOR
+                    ) -> "CarCostModel":
+        """From a parameter table (`car.models.<name>`), its rates converted
+        from `car.price_date` to the run's price level by `price_factor`
+        (`ikob2.prices.factor`)."""
         d = spec.to_dict() if hasattr(spec, "to_dict") else dict(spec)
-        return cls(**d)
+        if not (np.isfinite(price_factor) and price_factor > 0):
+            raise ValueError("price_factor must be positive and finite.")
+        return cls(**{k: float(v) * price_factor for k, v in d.items()})
 
 
 # The car models of the parameter file (car.models): fossil, electric, and

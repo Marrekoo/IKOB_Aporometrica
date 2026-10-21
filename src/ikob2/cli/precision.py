@@ -30,6 +30,7 @@ from pathlib import Path
 import pandas as pd
 
 from ikob2 import params as params_mod
+from ikob2 import prices
 from ikob2.run.precision import statistics, summarise
 from ikob2.utils.paths import DataLayout
 
@@ -41,7 +42,7 @@ def _acc(lay: DataLayout, run: str) -> pd.DataFrame | None:
     return pd.read_csv(f) if f.exists() else None
 
 
-def _cost(lay: DataLayout, run: str, costs) -> float | None:
+def _cost(lay: DataLayout, run: str, costs, price_factor: float) -> float | None:
     """Yearly public cost of a scenario run: price compensation plus hubs."""
     from ikob2.run.costs import hub_annual_cost
 
@@ -53,7 +54,7 @@ def _cost(lay: DataLayout, run: str, costs) -> float | None:
     suffix = (meta.get("parameters", {}).get("shared_bike", {}).get("egress_suffix") or {})
     n = sum(len(pd.read_csv(lay.s2_hubs(s.lstrip("_")))) for s in suffix.values()
             if lay.s2_hubs(s.lstrip("_")).exists())
-    total = price + (hub_annual_cost(costs, n)["public"] if n else 0.0)
+    total = price + (hub_annual_cost(costs, n, price_factor)["public"] if n else 0.0)
     return total or None
 
 
@@ -76,7 +77,9 @@ def main(argv=None) -> None:
     missing = [s for s, t in ref_runs.items() if t is None]
     if missing:
         raise SystemExit(f"No reference runs for {missing}.")
-    costs = {s: _cost(lay, f"{prm.paper.precision_cost_runs}_{s}", prm.costs) for s in scens}
+    factor = prices.factor(prm, prm.costs.price_date)
+    costs = {s: _cost(lay, f"{prm.paper.precision_cost_runs}_{s}", prm.costs, factor)
+             for s in scens}
     reference = statistics(ref_runs, mode, costs)
     rows = []
     for d in draws:

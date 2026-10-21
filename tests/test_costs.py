@@ -9,19 +9,22 @@ C = params.DEFAULTS.costs
 
 
 def test_hub_cost_public_and_municipal():
-    h = hub_annual_cost(C, 1.0)
+    h = hub_annual_cost(C, 1.0, price_factor=1.0)       # at the cost model's prices
     # 75,000 / 10 hubs = 7,500 over 5 years; 25,000 / 10 running per hub
     assert h["capex_per_year_public"] == pytest.approx(1500.0)
     assert h["running_per_year"] == pytest.approx(2500.0)   # no tariff compensation
     assert h["public"] == pytest.approx(4000.0)
     assert h["municipal"] == pytest.approx(750.0 + 2500.0)  # 50% provincial share
-    assert hub_annual_cost(C, 27)["public"] == pytest.approx(108000.0)
+    assert hub_annual_cost(C, 27, price_factor=1.0)["public"] == pytest.approx(108000.0)
+    # the default converts the January 2026 amounts to the 2022 price level
+    assert hub_annual_cost(C, 27)["public"] == pytest.approx(108000.0 * 90.29 / 99.99)
 
 
 def test_annuity_and_budget_in_hubs():
     assert annuity_factor(5, 0.0) == 5
     assert annuity_factor(5, 0.04) == pytest.approx(4.4518, abs=1e-3)
-    assert hubs_for_budget(C, 40000.0) == pytest.approx(10.0)
+    assert hubs_for_budget(C, 40000.0, price_factor=1.0) == pytest.approx(10.0)
+    assert hubs_for_budget(C, 40000.0 * 0.9, price_factor=0.9) == pytest.approx(10.0)
     with pytest.raises(ValueError):
         annuity_factor(0, 0.0)
 

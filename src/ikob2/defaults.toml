@@ -36,6 +36,11 @@ ikob_jobs = "Alle_Zones_2030_2040.xlsx"               # under inputs/ikob: buurt
 education_jobs = "jobs_by_education_buurt_2016.csv"  # under inputs/jobs_education (data/jobs_education)
 odin = "ODIN_22_23_clean.csv"                         # under inputs/odin
 
+[prices]                   # price level of every amount in the money gates (src/ikob2/prices.py)
+level = "2022"             # the budgets and values of time are in 2022 euros; tariffs are converted to it
+# CPI, all items, 2025 = 100 (CBS StatLine 86141NED): year averages and months of the tariffs' price dates
+cpi = { "2022" = 90.29, "2026-01" = 99.99 }
+
 [vot]                      # EUR per hour, commuting, 2022 prices incl. VAT (KiM 2023), used by M0 and M1
 car = 10.78
 pt = 12.05                 # rail
@@ -68,6 +73,7 @@ shared_bike = []           # variants v0..v4
 
 [car]
 default_model = "fossil"
+price_date = "2022"        # the per-km rates of car.models are 2022 prices
 parking_search = true
 departure_factor = 0.25    # departure search time as a share of arrival
 detour_constant = 1.3      # route/crow-fly factor without a calibrated model
@@ -77,10 +83,17 @@ detour_constant = 1.3      # route/crow-fly factor without a calibrated model
 3 = 4.0
 4 = 0.0
 5 = 0.0
+# Per-km cost: every distance-dependent cost of the car, paid from the same residual as a fare.
+# fossil (petrol): fuel 6.75 l/100 km (TNO 2023 R12726: about 160 g CO2/km real world, 2370 g/l)
+#   x EUR 2.072/l (Euro95, 2022 average of CBS 84991NED) = 0.140, plus maintenance, repair and
+#   tyres 0.07 (Nibud/ANWB variable car costs, 2025/26 prices deflated to 2022)
+# electric: 20 kWh/100 km x EUR 0.381/kWh (public charging, 2022 average of CBS 84991NED) = 0.076,
+#   plus maintenance, repair and tyres 0.05, rounded to 0.13
+# shared, taxi: the values of the original IKOB software (not used in the paper runs)
 [car.models.fossil]
-variable_eur_per_km = 0.16
+variable_eur_per_km = 0.21
 [car.models.electric]
-variable_eur_per_km = 0.05
+variable_eur_per_km = 0.13
 [car.models.shared]
 variable_eur_per_km = 0.33
 per_minute_eur = 0.05
@@ -114,17 +127,19 @@ max_minutes = 20.0
 fixed_minutes = 1.0
 
 [pt_fare]
+price_date = "2026-01"     # NS tariffs and the regional fares from 1 January 2026
 rail_eur_per_km_at_1km = 2.60
 rail_eur_per_km_at_100km = 0.20
 rail_discount = 0.0       # off-peak discounts do not apply: the model is the 7-9 h peak (commuting)
 rail_beyond_table = "cap"
-regional_boarding_eur = 1.08
-regional_eur_per_km = 0.18
+regional_boarding_eur = 1.16   # the national boarding fee of 2026
+regional_eur_per_km = 0.201    # U-OV (Utrecht) per-km fare of 2026
 boardings = "single"
 rail_table = ""            # CSV km,eur; empty: NS 2026 table shipped with the package
 rail_anchors = false       # true: power law through the two anchors above
 
 [shared_bike]
+price_date = "2026-01"     # OV-fiets and Lime tariffs from January 2026 (flat_eur is at the run's price level)
 ovfiets_eur = 4.80
 dockless_unlock_eur = 1.00
 dockless_per_min_eur = 0.20
@@ -172,6 +187,7 @@ threads = 0                # worker threads of the leg-wise evaluation; 0 = all 
 check_frechet = true       # verify the Frechet-Hoeffding bounds of parametric copulas
 
 [costs]                    # public cost model of the shared-bicycle measures (EUR)
+price_date = "2026-01"     # the amounts below are taken as January 2026 prices
 # Cluster of hubs (municipal financial model; the province co-finances the set-up)
 hub_cluster_size = 10
 hub_setup_eur_cluster = 75000.0            # signage, marking, bicycle parking (once)

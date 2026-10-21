@@ -36,7 +36,10 @@ option.
 
 ### Tariffs
 
-Added to the PT fare of the same journey:
+Added to the PT fare of the same journey, at the tariffs of January 2026
+(`shared_bike.price_date`), converted to the run's 2022 price level with the
+CPI (x 0.903; `skims.md`, PT fares); a flat price per rental (`flat_eur`) is
+at the run's price level:
 
 | Rental | Price | Parameter |
 |---|---|---|
@@ -169,6 +172,10 @@ household type, each group's share of the gain and of the cost and their
 ratio (`run.scenarios.effectiveness`).
 
 ## Public cost (`run.costs`, `[costs]`)
+
+All amounts at the run's 2022 price level: the model's revenue is in 2022
+euros, and the amounts of the cost model (`[costs]`) are taken as January
+2026 prices (`costs.price_date`) and converted with the CPI.
 
 * **S2 hubs**: set-up cost per cluster of `hub_cluster_size` hubs spread
   over `horizon_years` (annuity at `discount_rate`), counted in full for the

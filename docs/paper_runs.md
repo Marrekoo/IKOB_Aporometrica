@@ -15,10 +15,11 @@ microfoundations for accessibility" (Utrecht shared bicycles). The plan is
 | Segments | 4 household types x 10 income deciles per buurt | `segments.md` |
 | Time margins | Weibull per mode and job type (`data/margins/S_T_work.csv`) | `families.md` |
 | Cost margins | reference budgets per priced one-way journey, 2022 euros (`data/envelope/reference_budgets.csv`; `[envelope]`) | `envelope/README.md` |
-| PT | GTFS NL, Tuesday 15 September 2026, 07:00-09:00; NS 2026 fares | `skims.md` |
-| Shared bicycles | OV-fiets (EUR 4.80), the 27 municipal Lime hubs, dockless Lime access everywhere; Lime tiers EUR 3 / 4 / 5 up to 20 / 30 / 40 rental minutes; bicycle legs at most 20 minutes plus 1 fixed minute | `scenarios.md` |
+| PT | GTFS NL, Tuesday 15 September 2026, 07:00-09:00; NS and regional fares of 2026 (EUR 1.16 boarding + 0.201 per km), in 2022 euros (x 0.903, CPI) | `skims.md` |
+| Shared bicycles | OV-fiets (EUR 4.80), the 27 municipal Lime hubs, dockless Lime access everywhere; Lime tiers EUR 3 / 4 / 5 up to 20 / 30 / 40 rental minutes (2026 tariffs, in 2022 euros x 0.903); bicycle legs at most 20 minutes plus 1 fixed minute | `scenarios.md` |
 | Bicycle ownership | per buurt, Utrecht buurtteam survey 2025 | `inputs/veh_owners` |
 | Car availability | ODiN 2022-23 per household type and decile | `cli.segments car-availability` |
+| Car cost | EUR 0.21 per km (2022: fuel, maintenance, repair, tyres) x routed distance, parking search time by urbanisation class | `skims.md` |
 
 All other parameters are those of `src/ikob2/defaults.toml` at the commit
 in `run.json`.

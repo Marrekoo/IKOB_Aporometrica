@@ -23,9 +23,13 @@ def test_parking_times_by_urbanisation_class():
     np.testing.assert_array_equal(dep, arr / 4)
 
 
-def test_ikob_rates():
-    assert FOSSIL_CAR.variable_eur_per_km == 0.16
-    assert ELECTRIC_CAR.variable_eur_per_km == 0.05
+def test_car_rates_at_the_2022_price_level():
+    # fossil: fuel 6.75 l/100 km x EUR 2.072/l + 0.07 maintenance, repair and
+    # tyres; electric: 20 kWh/100 km x EUR 0.381/kWh + 0.05 (defaults.toml)
+    assert FOSSIL_CAR.variable_eur_per_km == pytest.approx(0.21)
+    assert 0.0675 * 2.072 + 0.07 == pytest.approx(0.21, abs=0.001)
+    assert ELECTRIC_CAR.variable_eur_per_km == pytest.approx(0.13)
+    assert 0.20 * 0.381 + 0.05 == pytest.approx(0.13, abs=0.005)   # 0.126, rounded
     assert (SHARED_CAR.variable_eur_per_km, SHARED_CAR.per_minute_eur) == (0.33, 0.05)
     assert (TAXI.variable_eur_per_km, TAXI.per_minute_eur) == (2.40, 0.40)
     assert FOSSIL_CAR.matrix_id != TAXI.matrix_id
@@ -91,3 +95,15 @@ def test_calibration_recovers_band_medians_and_round_trips(tmp_path):
     assert DetourModel.load(p) == m
     with pytest.raises(ValueError, match="enough"):
         calibrate_detour(crow[:5], route[:5])
+
+
+def test_rates_are_converted_from_their_price_date():
+    from ikob2.skims.car import CarCostModel
+
+    m = CarCostModel.from_params({"variable_eur_per_km": 0.20,
+                                  "per_minute_eur": 0.10}, price_factor=0.9)
+    assert (m.variable_eur_per_km, m.per_minute_eur) == pytest.approx((0.18, 0.09))
+    assert CarCostModel.from_params({"variable_eur_per_km": 0.2}).variable_eur_per_km \
+        == pytest.approx(0.2)                    # car.price_date is the run's level
+    with pytest.raises(ValueError, match="price_factor"):
+        CarCostModel.from_params({"variable_eur_per_km": 0.2}, price_factor=-1)

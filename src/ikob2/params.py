@@ -28,7 +28,7 @@ ENV_ROOT = "IKOB_DATA_ROOT"
 # Tables whose keys are user data (a car model, a road class, an
 # urbanisation class): new keys are allowed there.
 OPEN_TABLES = frozenset({"car.models", "peak.factors",
-                         "car.parking_arrival_min"})
+                         "car.parking_arrival_min", "prices.cpi"})
 
 
 class Params:

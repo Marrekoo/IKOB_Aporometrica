@@ -4,6 +4,10 @@ import pytest
 from ikob2.run.accessibility import MixedMode, OptionSet
 from ikob2.run.shared_bike import SharedBikeTariffs, shared_bike_modes
 
+# the tariffs at their own prices: these tests check the chains and the tariff
+# rules; the conversion to the run's price level is tested separately
+NOMINAL = SharedBikeTariffs(price_factor=1.0)
+
 SHAPE = (3, 4)
 
 
@@ -20,7 +24,7 @@ def chains():
 
 def test_v1_prices_ovfiets_egress_only():
     c, f = chains()
-    out = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v1",))
+    out = shared_bike_modes(c, f, np.array([.9, .8, .5]), NOMINAL, variants=("v1",))
     v1 = out["pt_v1"]
     assert isinstance(v1, OptionSet) and len(v1.options) == 2
     plain, egress = v1.options
@@ -32,7 +36,8 @@ def test_v2_owners_ride_free_others_pay_dockless_and_weights_sum_to_one():
     c, f = chains()
     p = np.array([.9, .8, .5])
     v2 = shared_bike_modes(c, f, p, SharedBikeTariffs(4.8, 1.0, 0.2,
-                                             dockless_model="unlock_per_minute"),
+                                             dockless_model="unlock_per_minute",
+                                             price_factor=1.0),
                            variants=("v2",))["pt_v2"]
     assert isinstance(v2, MixedMode)
     (w_o, owners), (w_n, others) = v2.parts
@@ -47,7 +52,7 @@ def test_v2_owners_ride_free_others_pay_dockless_and_weights_sum_to_one():
 
 def test_v0_and_validation():
     c, f = chains()
-    v0 = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v0",))["pt_v0"]
+    v0 = shared_bike_modes(c, f, np.array([.9, .8, .5]), NOMINAL, variants=("v0",))["pt_v0"]
     (_, owners), (_, others) = v0.parts
     assert len(owners.options) == 2 and len(others.options) == 1
     with pytest.raises(ValueError):
@@ -64,7 +69,7 @@ def test_v3_splits_times_into_legs_and_v4_prices_dockless():
     c, f = chains()
     c["pt_bb"]["egress_min"] = np.full(SHAPE, 6.0, dtype=np.float32)
     c["pt_wb"]["egress_min"] = np.full(SHAPE, 6.0, dtype=np.float32)
-    v3 = shared_bike_modes(c, f, np.array([.9, .8, .5]),
+    v3 = shared_bike_modes(c, f, np.array([.9, .8, .5]), NOMINAL,
                            variants=("v3",), bike_fixed_min=1.0)["pt_v3"]
     (_, owners), _ = v3.parts
     assert isinstance(owners, LegOptionSet)
@@ -75,7 +80,8 @@ def test_v3_splits_times_into_legs_and_v4_prices_dockless():
     bike_t = np.full(SHAPE, 20.0, dtype=np.float32)
     v4 = dockless_mode(bike_t, np.array([.9, .8, .5]),
                        SharedBikeTariffs(4.8, 1.0, 0.2,
-                                         dockless_model="unlock_per_minute"),
+                                         dockless_model="unlock_per_minute",
+                                         price_factor=1.0),
                        1.0)
     (_, own), (w_n, rent) = v4.parts
     assert own.options[0].cost is None
@@ -101,7 +107,7 @@ def kind_chains():
 
 def test_each_hub_kind_is_its_own_option_with_its_own_price():
     c, f = kind_chains()
-    out = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v1",))
+    out = shared_bike_modes(c, f, np.array([.9, .8, .5]), NOMINAL, variants=("v1",))
     plain, *egress = out["pt_v1"].options
     assert len(egress) == 2
     by_time = {o.time[0, 0]: o.cost[0, 0] for o in egress}
@@ -117,7 +123,7 @@ def test_a_slower_cheaper_hub_can_be_the_one_that_passes():
     c, f = kind_chains()
     c["pt_wb_ovfiets"]["time"][:] = 48.0
     c["pt_wb_lime"]["time"][:] = 50.0
-    out = shared_bike_modes(c, f, np.array([1.0, 1.0, 1.0]), variants=("v1",))
+    out = shared_bike_modes(c, f, np.array([1.0, 1.0, 1.0]), NOMINAL, variants=("v1",))
     opts = out["pt_v1"].options
     ts = np.stack([o.time for o in opts])
     cs = np.stack([o.cost for o in opts])
@@ -134,7 +140,7 @@ def test_a_slower_cheaper_hub_can_be_the_one_that_passes():
 def test_lime_tiers_price_dockless_access_as_the_baseline():
     c, f = chains()
     p = np.array([.9, .8, .5])
-    v2 = shared_bike_modes(c, f, p, variants=("v2",))["pt_v2"]   # default
+    v2 = shared_bike_modes(c, f, p, NOMINAL, variants=("v2",))["pt_v2"]   # default tiers
     _, (_, others) = v2.parts
     costs = sorted(o.cost[0, 0] for o in others.options)
     # dockless access: 10 min ride + 1 min fixed = 11 min -> EUR 3 -> 8 + 3;
@@ -147,13 +153,13 @@ def test_lime_tiers_price_dockless_access_as_the_baseline():
 def test_dockless_door_to_door_uses_the_same_model():
     from ikob2.run.shared_bike import dockless_mode
     bike_t = np.full(SHAPE, 20.0, dtype=np.float32)
-    lime = dockless_mode(bike_t, np.array([.9, .8, .5]), SharedBikeTariffs(), 1.0)
+    lime = dockless_mode(bike_t, np.array([.9, .8, .5]), NOMINAL, 1.0)
     (_, _), (_, rent) = lime.parts
     assert rent.options[0].cost[0, 0] == 4.0          # 21 min rented
 
 
 def test_lime_scale_scales_every_tier_for_access_and_lime_hubs_not_ovfiets():
-    half = SharedBikeTariffs(lime_scale=0.5)
+    half = SharedBikeTariffs(lime_scale=0.5, price_factor=1.0)
     assert list(half.lime_eur([10.0, 25.0, 35.0])) == [1.5, 2.0, 2.5]
     assert half.egress_eur([10.0], "lime", 1.0)[0] == 1.5
     assert half.egress_eur([10.0], "ovfiets", 1.0)[0] == half.ovfiets_eur
@@ -177,12 +183,12 @@ def scenario_chains():
 
 def test_scenario_hubs_are_options_next_to_the_existing_hubs():
     c, f = scenario_chains()
-    v1 = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v1",))["pt_v1"]
+    v1 = shared_bike_modes(c, f, np.array([.9, .8, .5]), NOMINAL, variants=("v1",))["pt_v1"]
     got = sorted((float(o.time[0, 0]), round(float(o.cost[0, 0]), 2))
                  for o in v1.options)
     # plain, Lime (48 min, 8 + 3), scenario Lime (40 min, 14 + 3), OV-fiets
     assert got == [(40.0, 17.0), (48.0, 11.0), (50.0, 12.8), (60.0, 8.0)]
-    v2 = shared_bike_modes(c, f, np.array([.9, .8, .5]), variants=("v2",))["pt_v2"]
+    v2 = shared_bike_modes(c, f, np.array([.9, .8, .5]), NOMINAL, variants=("v2",))["pt_v2"]
     (_, owners), (_, others) = v2.parts
     # both bicycle-access and walk-access chains of the scenario are added
     assert len(owners.options) == 2 + 2 * 3 and len(others.options) == 2 + 2 * 3
@@ -208,8 +214,8 @@ def test_adding_scenario_hubs_never_lowers_accessibility(spec):
         return c, {m: np.resize(v, shape).astype(np.float32) for m, v in f.items()}
 
     p = np.array([0.0, 0.5, 1.0])
-    base = shared_bike_modes(*resized(base_c, base_f), p, variants=("v1",))["pt_v1"]
-    scen = shared_bike_modes(*resized(scen_c, scen_f), p, variants=("v1",))["pt_v1"]
+    base = shared_bike_modes(*resized(base_c, base_f), p, NOMINAL, variants=("v1",))["pt_v1"]
+    scen = shared_bike_modes(*resized(scen_c, scen_f), p, NOMINAL, variants=("v1",))["pt_v1"]
     res = run(pop, jobs, wfh, wage, {"base": base, "scen": scen}, spec=spec)
     t = res.table.pivot_table(index=["buurtcode", "segment"], columns="mode",
                               values="accessibility")
@@ -224,3 +230,33 @@ def test_adding_scenario_hubs_never_lowers_accessibility(spec):
                                values="accessibility")
     assert (u["only"] < u["base"] - 1e-6).any()
     assert set(NAMES) == set(t.index.get_level_values("segment"))
+
+
+def test_tariffs_are_converted_to_the_runs_price_level():
+    """Every tariff is at its price date (January 2026) and enters the run at
+    the 2022 price level: x CPI(2022) / CPI(2026-01) = 90.29 / 99.99; a flat
+    price per rental is already at the run's level."""
+    from ikob2 import params, prices
+
+    f = prices.factor(params.DEFAULTS, params.DEFAULTS.shared_bike.price_date)
+    assert f == pytest.approx(90.29 / 99.99)
+    t = SharedBikeTariffs()                                   # the defaults
+    assert t.price_factor == pytest.approx(f)
+    assert list(t.lime_eur([10.0, 25.0, 35.0])) == pytest.approx(
+        [3.0 * f, 4.0 * f, 5.0 * f])
+    assert t.egress_eur([10.0], "ovfiets", 1.0)[0] == pytest.approx(4.80 * f)
+    per_min = SharedBikeTariffs(dockless_model="unlock_per_minute")
+    assert per_min.dockless_eur([10.0], 1.0)[0] == pytest.approx((1.0 + 0.2 * 10) * f)
+    flat = SharedBikeTariffs(dockless_model="flat", flat_eur=3.0)
+    assert flat.lime_eur([10.0])[0] == 3.0
+    c, fares = chains()
+    v1 = shared_bike_modes(c, fares, np.array([.9, .8, .5]), variants=("v1",))["pt_v1"]
+    nominal = shared_bike_modes(c, fares, np.array([.9, .8, .5]), NOMINAL,
+                                variants=("v1",))["pt_v1"]
+    # the fare matrices passed in are already at the run's level; only the
+    # rental part is converted
+    np.testing.assert_allclose(v1.options[1].cost - fares["pt_wb"],
+                               (nominal.options[1].cost - fares["pt_wb"]) * f,
+                               rtol=1e-6)
+    with pytest.raises(ValueError, match="price_factor"):
+        SharedBikeTariffs(price_factor=0.0)

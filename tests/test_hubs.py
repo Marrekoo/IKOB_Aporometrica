@@ -120,7 +120,7 @@ from ikob2.run.shared_bike import SharedBikeTariffs  # noqa: E402
 
 
 def test_lime_price_by_rental_duration():
-    t = SharedBikeTariffs()
+    t = SharedBikeTariffs(price_factor=1.0)
     got = t.lime_eur([0.0, 20.0, 20.5, 30.0, 35.0, 40.0, 90.0, np.nan])
     assert np.allclose(got[:7], [3, 3, 4, 4, 5, 5, 5])      # last tier beyond
     assert np.isnan(got[7])
@@ -129,7 +129,7 @@ def test_lime_price_by_rental_duration():
 
 
 def test_egress_price_follows_the_hub_tariff():
-    t = SharedBikeTariffs()
+    t = SharedBikeTariffs(price_factor=1.0)
     assert t.egress_eur([10.0, np.nan], "lime", 1.0)[0] == 3.0
     assert t.egress_eur([19.5], "lime", 1.0)[0] == 4.0   # 20.5 min rented
     assert t.egress_eur([10.0], "ovfiets", 1.0)[0] == t.ovfiets_eur

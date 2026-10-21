@@ -249,7 +249,7 @@ rectangular and use the Hansen form (`run_hansen`).
 | Jobs by income class | sector x occupation cells (Eurostat LFS and SES 2022) with a lognormal wage spread (CBS 85517NED); the deciles of the national wage distribution of jobs partition them | `data_lineage.md` |
 | Job type (home working) | teleworkability of the cell's occupation (Sostero et al., 2020) | `data_lineage.md` |
 | Travel times | OSM (car, bicycle, walking), GTFS frequency model (PT), road-class peak load | `skims.md` |
-| Cost | car: per-km rate x routed distance + parking time; PT: NS 2026 rail table + regional boarding and per-km fare; shared bicycles: operator tariffs | `skims.md`, `scenarios.md` |
+| Cost | car: per-km rate (fuel, maintenance, repair, tyres; 2022 prices) x routed distance; PT: NS 2026 rail table + the 2026 regional boarding and per-km fare; shared bicycles: operator tariffs of 2026; tariffs converted to 2022 euros by the CPI | `skims.md`, `scenarios.md` |
 
 ## 10. Assumptions and limits
 
@@ -263,7 +263,8 @@ rectangular and use the Hansen form (`run_hansen`).
   bus/tram/metro fares are a regional linear approximation.
 * Jobs below the municipal level are imputed (`data_lineage.md`).
 * The cost of a journey is gated as a whole; the budget is per journey.
-* Price levels are not harmonised: the budgets and the values of time are in
-  2022 euros, the fares and shared-bicycle tariffs are the 2026 tariffs, so a
-  fare is compared with a budget about four years of inflation older
-  (`data_specification.md`, conventions).
+* One price level: the budgets and the values of time are in 2022 euros, and
+  every tariff (NS and regional fares, OV-fiets and Lime from January 2026,
+  the public cost model) is converted from its price date with the consumer
+  price index, all items (`ikob2.prices`, `[prices]`); the car rates are 2022
+  prices. A tariff keeps its real value at its own date.

@@ -18,6 +18,7 @@ explicit `fetch`, download and server steps use the network.
     outputs/    run products for analysis (tables, GeoPackage, diagnostics)
     utils/      DataLayout (data folder structure)
     params.py   parameter resolution; defaults.toml holds the values
+    prices.py   conversion of tariffs to the run's price level (CPI)
 
 Dependencies point downwards: `core` uses `params` (and `domain.state` for
 the Shen measure); `engine` uses `core`, `domain` and `data.validation`;
@@ -56,6 +57,7 @@ these; `cli` uses everything.
 | outputs | `export`, `diagnostics` | analysis products of a run, aggregated money-gate curves |
 | data | `geopackage`, `validation` | CBS buurt GeoPackage reader, collected validation |
 | utils | `paths` | `DataLayout` |
+| - | `params`, `prices` | parameter resolution; the conversion of every tariff from its price date to the run's price level (`[prices]`) |
 
 ### Command-line entry points
 

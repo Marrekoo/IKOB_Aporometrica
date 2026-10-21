@@ -97,7 +97,8 @@ def test_flat_model_charges_the_same_per_rental_at_any_duration():
     t = SharedBikeTariffs(dockless_model="flat", flat_eur=3.5, lime_scale=0.5)
     assert list(t.dockless_eur([2.0, 15.0, 39.0], 1.0)) == [1.75] * 3
     assert t.egress_eur([5.0], "lime", 1.0)[0] == pytest.approx(1.75)
-    assert t.egress_eur([5.0], "ovfiets", 1.0)[0] == t.ovfiets_eur
+    assert t.egress_eur([5.0], "ovfiets", 1.0)[0] == pytest.approx(
+        t.ovfiets_eur * t.price_factor)
 
 
 # ── fare concessions: a multiplier on the public transport fare part ───

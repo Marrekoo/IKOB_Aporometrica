@@ -208,8 +208,9 @@ README with an R snippet). Columns: `data_specification.md`.
   classes 1-5) plus a departure search at the origin of a quarter of that;
 * **money**: variable cost per km x distance, plus optional road charge and
   per-zone parking cost (supported, no data wired in). Car models in
-  `[car.models]`: `fossil` 0.16 EUR/km (default), `electric` 0.05,
-  `shared` 0.33 EUR/km + 0.05 EUR/min, `taxi` 2.40 EUR/km + 0.40 EUR/min.
+  `[car.models]`, 2022 euros: `fossil` 0.21 EUR/km (default), `electric`
+  0.13, `shared` 0.33 EUR/km + 0.05 EUR/min, `taxi` 2.40 EUR/km + 0.40
+  EUR/min (sources: `skims.md`).
 
 Distances are the store's routed `distance`; without it, the crow-fly
 distance times the detour model (`--detour`, or the constant 1.3).

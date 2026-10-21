@@ -330,10 +330,15 @@ def test_parse_ns_tariff_from_price_list_text():
     assert rows[-1] == (200.0, 1234.5) and len(rows) == 4   # thousands separator
 
 
+# the journey fare is the 2026 tariff converted to the 2022 price level
+F = 90.29 / 99.99
+
+
 def test_rail_discount_scales_the_rail_fare_only():
     m = PtFareModel(rail_discount=0.2)
     assert m.rail_fare([50.0])[0] == pytest.approx(12.40 * 0.8)
-    assert m.fare(50.0, 10.0, 1) == pytest.approx(12.40 * 0.8 + 1.08 + 1.8)
+    assert m.fare(50.0, 10.0, 1) == pytest.approx(
+        (12.40 * 0.8 + 1.16 + 0.201 * 10) * F)
     assert "-0.2" in m.matrix_id and "-0.2" not in PtFareModel().matrix_id
     with pytest.raises(ValueError, match="rail_discount"):
         PtFareModel(rail_discount=1.0)
@@ -362,11 +367,12 @@ def test_regional_fare_single_versus_count_and_total():
     single = PtFareModel()
     count = PtFareModel(boardings="count")
     assert single.fare(0, 10.0, 0)[()] == 0.0           # no regional boarding
-    assert single.fare(0, 10.0, 1) == pytest.approx(1.08 + 0.18 * 10)
-    assert single.fare(0, 10.0, 3) == pytest.approx(1.08 + 0.18 * 10)
-    assert count.fare(0, 10.0, 3) == pytest.approx(3 * 1.08 + 0.18 * 10)
+    assert single.fare(0, 10.0, 1) == pytest.approx((1.16 + 0.201 * 10) * F)
+    assert single.fare(0, 10.0, 3) == pytest.approx((1.16 + 0.201 * 10) * F)
+    assert count.fare(0, 10.0, 3) == pytest.approx((3 * 1.16 + 0.201 * 10) * F)
     both = single.fare(10.0, 5.0, 1)
-    assert both == pytest.approx(single.rail_fare([10.0])[0] + 1.08 + 0.9)
+    assert both == pytest.approx(
+        (single.rail_fare([10.0])[0] + 1.16 + 0.201 * 5) * F)
     assert single.rail_fare([10.0])[0] == pytest.approx(3.50)
     assert np.isnan(single.fare(np.nan, 5.0, 1))
 
@@ -385,12 +391,33 @@ def test_fare_model_validation_and_id():
     assert "rail=2.6-0.2" in PtFareModel(rail_table=None).matrix_id
 
 
+def test_the_journey_fare_is_converted_to_the_runs_price_level():
+    from ikob2 import params, prices
+
+    p = params.DEFAULTS
+    assert PtFareModel().price_factor == pytest.approx(
+        prices.factor(p, p.pt_fare.price_date)) == pytest.approx(F)
+    nominal = PtFareModel(price_factor=1.0)
+    assert nominal.fare(10.0, 5.0, 1) == pytest.approx(3.50 + 1.16 + 0.201 * 5)
+    assert PtFareModel().fare(10.0, 5.0, 1) == pytest.approx(
+        nominal.fare(10.0, 5.0, 1) * F)
+    assert nominal.matrix_id != PtFareModel().matrix_id     # its own cost matrix
+    assert PtFareModel.from_params(p.pt_fare, 0.5).fare(10.0, 0.0, 0) == \
+        pytest.approx(3.50 * 0.5)
+    with pytest.raises(ValueError, match="price_factor"):
+        PtFareModel(price_factor=0.0)
+    later = p.with_values({"prices.level": "2026-01"})       # no conversion
+    assert prices.factor(later, "2026-01") == 1.0
+    with pytest.raises(KeyError, match="2019"):
+        prices.factor(p, "2019")
+
+
 def test_fare_of_a_routed_journey(tmp_path):
     j = journeys(tmp_path)
     fare = PtFareModel().fare(j["rail_km"], j["other_km"],
                               j["other_boardings"])
-    assert fare[0, 0] == pytest.approx(PtFareModel().rail_fare([5.75])[0],
-                                       rel=1e-3)
+    assert fare[0, 0] == pytest.approx(
+        PtFareModel().rail_fare([5.75])[0] * F, rel=1e-3)
     assert fare[0, 1] > fare[0, 0] and np.isnan(fare[0, 2])
 
 

@@ -131,11 +131,12 @@ tables to `outputs/paper_figures/`.
 
 * Buurt codes are strings `BUnnnnnnnn`; municipality codes `GMnnnn`;
   segments `<household_type>_<income_class>`.
-* Time in minutes, distance in km, money in euro at the price level of the
-  source, not deflated to a common year: the reference budgets and the values
-  of time are in 2022 euros, the fares and tariffs are those of 2026 (NS
-  2026, Lime from January 2026), the car costs per km are nominal
-  (`[car.models]`).
+* Time in minutes, distance in km, money in euro at the run's price level,
+  `prices.level` (2022): the reference budgets and the values of time are in
+  2022 euros, every tariff is converted from its price date (`price_date` of
+  `[pt_fare]`, `[shared_bike]`, `[car]`, `[costs]`) with the CPI of
+  `prices.cpi` (CBS 86141NED, all items). Input tables (the NS table,
+  `[shared_bike]` tariffs) hold the tariffs at their own date.
 * Populations and jobs are non-integer after IPF and imputation.
 * Every negative value in a CBS numeric attribute is a suppression code and
   is read as NaN.

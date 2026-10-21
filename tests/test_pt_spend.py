@@ -28,8 +28,10 @@ def test_a_pt_tour_is_priced_by_the_model_fare_rules():
     fm = PtFareModel()
     t = pt_trips(legs(), fm)
     assert set(t.index) == {"a", "b", "d"}            # the car tour is not a public transport tour
-    assert t.loc["a", "fare"] == pytest.approx(float(fm.rail_fare([20.0])[0]), rel=1e-6)
-    assert t.loc["b", "fare"] == pytest.approx(1.08 + 0.18 * 5.0, rel=1e-6)
+    assert t.loc["a", "fare"] == pytest.approx(
+        float(fm.rail_fare([20.0])[0]) * fm.price_factor, rel=1e-6)
+    assert t.loc["b", "fare"] == pytest.approx((1.16 + 0.201 * 5.0) * fm.price_factor,
+                                               rel=1e-6)
 
 
 def test_spend_is_trips_times_fare_with_local_shrinkage_towards_national():
@@ -38,7 +40,8 @@ def test_spend_is_trips_times_fare_with_local_shrinkage_towards_national():
     d2 = out.loc["D2"]
     # D2: persons p1 (local), p2 and p3 (not local, p3 without trips), 100 each;
     # PT tours a (rail 20 km), b (bus 5 km) by p1 and d (rail 20 km) by p2, 100 each
-    rail, bus = float(fm.rail_fare([20.0])[0]), 1.08 + 0.18 * 5.0
+    rail = float(fm.rail_fare([20.0])[0]) * fm.price_factor
+    bus = (1.16 + 0.201 * 5.0) * fm.price_factor
     assert (d2["n_national"], d2["n_local"]) == (3, 1)
     assert d2["trips_national"] == pytest.approx(300.0 / 300.0)
     assert d2["trips_local"] == pytest.approx(200.0 / 100.0)

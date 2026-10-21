@@ -54,6 +54,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from ikob2 import prices
 from ikob2.params import DEFAULTS
 from ikob2.run.accessibility import (LegOption, LegOptionSet, MixedMode,
                                      ModeMatrices, OptionSet)
@@ -67,8 +68,10 @@ class SharedBikeTariffs:
     """Prices of the shared-bicycle rentals added to a PT journey: OV-fiets per
     rental, dockless access by Lime tiers, unlock fee plus rate per minute,
     or a flat price (`dockless_model`), a scale on every Lime price
-    (`lime_scale`), and the known hub tariff kinds. Defaults from the
-    `shared_bike` parameters."""
+    (`lime_scale`), and the known hub tariff kinds. The tariffs are at their
+    price date and converted to the run's price level by `price_factor`
+    (`ikob2.prices`); `flat_eur` is at the run's price level. Defaults from
+    the `shared_bike` parameters."""
     ovfiets_eur: float = DEFAULTS.shared_bike.ovfiets_eur   # per rental (egress)
     dockless_unlock_eur: float = DEFAULTS.shared_bike.dockless_unlock_eur
     dockless_per_min_eur: float = DEFAULTS.shared_bike.dockless_per_min_eur
@@ -77,8 +80,11 @@ class SharedBikeTariffs:
     dockless_model: str = DEFAULTS.shared_bike.dockless_model
     lime_scale: float = DEFAULTS.shared_bike.lime_scale
     flat_eur: float = DEFAULTS.shared_bike.flat_eur
+    price_factor: float = prices.factor(DEFAULTS, DEFAULTS.shared_bike.price_date)
 
     def __post_init__(self):
+        if not (np.isfinite(self.price_factor) and self.price_factor > 0):
+            raise ValueError("price_factor must be positive and finite.")
         if min(self.ovfiets_eur, self.dockless_unlock_eur,
                self.dockless_per_min_eur, self.flat_eur) < 0:
             raise ValueError("Tariffs must be >= 0.")
@@ -94,14 +100,16 @@ class SharedBikeTariffs:
 
     def lime_eur(self, minutes) -> np.ndarray:
         """Lime price of a rental of `minutes`: the tier of its duration
-        (the last tier's price beyond the last bound), or the flat price per
-        rental in the `flat` model; times `lime_scale`. NaN stays NaN."""
+        (the last tier's price beyond the last bound, converted by
+        `price_factor`), or the flat price per rental in the `flat` model;
+        times `lime_scale`. NaN stays NaN."""
         m = np.asarray(minutes, dtype=float)
         if self.dockless_model == "flat":
             price = np.full(m.shape, self.flat_eur * self.lime_scale)
         else:
             bounds = np.array([b for b, _ in self.lime_tiers])
-            tiers = np.array([p for _, p in self.lime_tiers]) * self.lime_scale
+            tiers = (np.array([p for _, p in self.lime_tiers])
+                     * self.price_factor * self.lime_scale)
             price = tiers[np.minimum(np.searchsorted(bounds, m, side="left"),
                                      len(tiers) - 1)]
         return np.where(np.isfinite(m), price, np.nan)
@@ -113,7 +121,8 @@ class SharedBikeTariffs:
         ride = np.asarray(ride_min, dtype=float)
         if self.dockless_model in ("lime_tiers", "flat"):
             return self.lime_eur(ride + fixed_min)
-        return self.dockless_unlock_eur + self.dockless_per_min_eur * ride
+        return self.price_factor * (self.dockless_unlock_eur
+                                    + self.dockless_per_min_eur * ride)
 
     def egress_eur(self, ride_min, kind: str, fixed_min: float) -> np.ndarray:
         """Price of a bicycle egress of `ride_min` minutes from a hub of
@@ -124,7 +133,7 @@ class SharedBikeTariffs:
                              f"{self.hub_tariffs}.")
         ride = np.asarray(ride_min, dtype=float)
         price = (self.lime_eur(ride + fixed_min) if kind == "lime"
-                 else np.full(ride.shape, self.ovfiets_eur))
+                 else np.full(ride.shape, self.ovfiets_eur * self.price_factor))
         return np.where(np.isfinite(ride), price, np.nan).astype(np.float32)
 
 
@@ -252,7 +261,7 @@ def shared_bike_modes(chains: dict, fares: dict, bike_share: np.ndarray,
     def egress_part(mode, kind):
         """(OV-fiets charge, Lime matrix, Lime rentals) of a bicycle egress."""
         if kind is None or kind == "ovfiets":
-            return tariffs.ovfiets_eur, None, 0
+            return tariffs.ovfiets_eur * tariffs.price_factor, None, 0
         return 0.0, tariffs.egress_eur(chains[mode]["egress_min"], kind,
                                        bike_fixed_min), 1
 

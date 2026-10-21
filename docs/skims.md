@@ -77,8 +77,19 @@ search: arrival search at the destination by KWB urbanisation class
 departure search at the origin of `car.departure_factor` (0.25) of the
 origin's arrival value. Money is the variable cost per km x distance, plus an
 optional per-km road charge and per-zone parking cost. Models
-(`car.models`, `--car-model`): `fossil` 0.16 EUR/km (default), `electric`
-0.05, `shared` 0.33 EUR/km + 0.05 EUR/min, `taxi` 2.40 EUR/km + 0.40 EUR/min.
+(`car.models`, `--car-model`), in 2022 euros (`car.price_date`):
+
+* `fossil` (default) 0.21 EUR/km: every distance-dependent cost, since it is
+  paid from the same residual as a fare. Fuel 6.75 l/100 km (real-world
+  consumption of recent petrol cars, about 160 g CO2/km at 2,370 g per litre;
+  TNO 2023 R12726) at EUR 2.072/l (Euro95, 2022 average of CBS 84991NED) is
+  0.140; maintenance, repair and tyres add 0.07 (the Nibud/ANWB variable car
+  costs, 2025/26 prices deflated to 2022);
+* `electric` 0.13 EUR/km: 20 kWh/100 km at EUR 0.381/kWh (public charging,
+  2022 average of CBS 84991NED), 0.076, plus 0.05 maintenance, repair and
+  tyres;
+* `shared` 0.33 EUR/km + 0.05 EUR/min and `taxi` 2.40 EUR/km + 0.40 EUR/min,
+  the values of the original IKOB software (not used in the paper runs).
 
 ## Peak load by road class (`skims.peak`)
 
@@ -151,8 +162,18 @@ Applied when a run is set up, so fare assumptions change without rerouting:
   to the 7-9 h peak); `--pt-rail-table km,eur.csv` uses another table;
   `--pt-rail-anchors` a tapering power law through two anchors
   (`pt_fare.rail_eur_per_km_at_1km`, `_at_100km`).
-* **Bus, tram, metro, ferry**: EUR 1.08 boarding + 0.18 per km, the boarding
-  charged once per journey (`--pt-boardings count` charges every boarding).
+* **Bus, tram, metro, ferry**: EUR 1.16 boarding (the national boarding fee
+  of 2026) + 0.201 per km (U-OV, Utrecht, 2026), the boarding charged once
+  per journey (`--pt-boardings count` charges every boarding). One per-km
+  rate serves every concession.
+
+**Price level.** The tariffs are those of 1 January 2026
+(`pt_fare.price_date`); the journey fare is converted to the run's price
+level, 2022, with the consumer price index (all items, CBS 86141NED):
+x 90.29 / 99.99 = 0.903 (`ikob2.prices`). A fare keeps its real 2026 value
+and is expressed in the euros of the budgets. Rail fares rose faster than
+prices in general (the rail index gives 0.827), so a 2026 rail fare in 2022
+euros is dearer than the 2022 rail fare was.
 
 The fare is the PT cost matrix of the run, gated by the segments' cost
 margins; a fare-scale table can scale it per segment (`scenarios.md`).
